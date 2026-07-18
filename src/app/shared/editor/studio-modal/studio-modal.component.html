@@ -1,0 +1,23 @@
+@if (open) {
+  <div class="studio-modal-backdrop" (click)="onBackdropClick($event)">
+    <div
+      class="studio-modal-card"
+      [class.wide]="wide"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="title ? titleId : null"
+    >
+      @if (title) {
+        <h3 [id]="titleId">{{ title }}</h3>
+      }
+
+      <div class="studio-modal-body">
+        <ng-content />
+      </div>
+
+      <div class="studio-modal-actions">
+        <ng-content select="[studioModalActions]" />
+      </div>
+    </div>
+  </div>
+}

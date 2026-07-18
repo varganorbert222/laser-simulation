@@ -1,0 +1,46 @@
+:host {
+  display: block;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ls-muted);
+}
+
+.value {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  color: var(--ls-text);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ls-muted);
+  opacity: 0.9;
+}
+
+input[type='range'] {
+  width: 100%;
+}
+
+select {
+  max-width: 100%;
+}

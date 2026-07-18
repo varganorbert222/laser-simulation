@@ -1,0 +1,52 @@
+:host {
+  display: block;
+}
+
+.vision-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.ambient {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  color: var(--ls-muted, #9aa8b5);
+}
+
+.ambient input[type='range'] {
+  width: 100%;
+}
+
+.mode-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  opacity: 0.85;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--ls-muted, #9aa8b5);
+}
+
+.curve-canvas {
+  width: 100%;
+  height: 200px;
+  display: block;
+  border-radius: 4px;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.axis-hint {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.68rem;
+  color: var(--ls-muted, #9aa8b5);
+}

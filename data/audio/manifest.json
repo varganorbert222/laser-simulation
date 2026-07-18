@@ -1,0 +1,32 @@
+{
+  "version": 2,
+  "libraries": {
+    "sfx": "libraries/sfx.json",
+    "ambient": "libraries/ambient.json",
+    "ui": "libraries/ui.json"
+  },
+  "music": {
+    "studio_idle": {
+      "path": "audio/music/studio_idle.mp3",
+      "loop": true,
+      "volume": 0.45
+    },
+    "studio_focus": {
+      "path": "audio/music/studio_focus.mp3",
+      "loop": true,
+      "volume": 0.4
+    }
+  },
+  "musicSets": {
+    "studio_default": {
+      "layers": [
+        { "id": "studio_idle", "role": "calm", "volume": 0.45 },
+        { "id": "studio_focus", "role": "tension", "volume": 0.4 }
+      ],
+      "crossfadeMs": 2500,
+      "attackThreshold": 0.35,
+      "releaseThreshold": 0.15,
+      "smoothing": 2.0
+    }
+  }
+}

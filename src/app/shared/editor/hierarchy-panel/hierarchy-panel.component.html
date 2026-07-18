@@ -1,0 +1,154 @@
+<section class="hierarchy-panel" (click)="contextMenu = null">
+  <div class="panel-header">
+    <h3>Hierarchia</h3>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="hist-btn"
+        [disabled]="!canUndo"
+        [attr.title]="undoLabel ?? 'Visszavonás'"
+        (click)="undo.emit(); $event.stopPropagation()"
+      >
+        ↶
+      </button>
+      <button
+        type="button"
+        class="hist-btn"
+        [disabled]="!canRedo"
+        [attr.title]="redoLabel ?? 'Újra'"
+        (click)="redo.emit(); $event.stopPropagation()"
+      >
+        ↷
+      </button>
+      @if (editable) {
+        <button type="button" class="root-add-btn" title="Új objektum" (click)="onAddRoot($event)">
+          +
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (!rows.length) {
+    <p class="empty">Üres jelenet</p>
+  } @else {
+    <ul class="tree" role="tree">
+      @for (row of rows; track trackRow($index, row)) {
+        <li
+          class="tree-node"
+          [class.selected]="isNodeSelected(row.node.id)"
+          [class.dimmed]="!row.viewportVisible"
+          [class.drop-before]="dropHintId === row.node.id && dropHintPosition === 'before'"
+          [class.drop-after]="dropHintId === row.node.id && dropHintPosition === 'after'"
+          [class.drop-inside]="dropHintId === row.node.id && dropHintPosition === 'inside'"
+          [attr.draggable]="canDrag(row) ? true : null"
+          (click)="onNodeClick(row.node, $event)"
+          (contextmenu)="onRowContextMenu(row, $event)"
+          (dragstart)="onDragStart(row, $event)"
+          (dragover)="onDragOver(row, $event)"
+          (dragleave)="onDragLeave()"
+          (drop)="onDrop(row, $event)"
+          (dragend)="onDragEnd()"
+        >
+          <div class="row" [style.padding-left.rem]="row.depth * 0.85">
+            @if (row.hasChildren) {
+              <button
+                type="button"
+                class="expand-btn"
+                (click)="toggleExpanded(row.node.id, $event)"
+              >
+                {{ isExpanded(row.node.id) ? '▼' : '▶' }}
+              </button>
+            } @else {
+              <span class="expand-spacer"></span>
+            }
+
+            <button
+              type="button"
+              class="visibility-btn"
+              [class.off]="!row.selfViewportVisible"
+              title="Láthatóság"
+              (click)="onVisibilityClick(row, $event)"
+            >
+              {{ row.selfViewportVisible ? '◉' : '○' }}
+            </button>
+
+            <span class="kind">{{ kindIcon(row.node.kind) }}</span>
+            <span class="label">{{ row.node.label }}</span>
+            <span class="kind-tag">{{ row.node.kind }}</span>
+
+            @if (editable) {
+              <span class="row-actions">
+                <button
+                  type="button"
+                  class="row-action-btn"
+                  title="Gyerek hozzáadása"
+                  (click)="onAddBelow(row.node, $event)"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  class="row-action-btn remove"
+                  title="Törlés"
+                  [disabled]="row.node.locked"
+                  (click)="onRemove(row.node, $event)"
+                >
+                  −
+                </button>
+              </span>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+  @if (contextMenu) {
+    <div
+      class="context-menu"
+      [style.left.px]="contextMenu.x"
+      [style.top.px]="contextMenu.y"
+      (click)="$event.stopPropagation()"
+    >
+      <button type="button" (click)="onContextPick('add')">Új gyerek</button>
+      <button type="button" (click)="onContextPick('rename')">Átnevezés</button>
+      <div class="context-menu-separator" role="separator"></div>
+      <button
+        type="button"
+        [disabled]="!canCopyNode(contextMenu.node)"
+        (click)="onContextPick('copy')"
+      >
+        Másolás
+      </button>
+      <button
+        type="button"
+        [disabled]="!canCutNode(contextMenu.node)"
+        (click)="onContextPick('cut')"
+      >
+        Kivágás
+      </button>
+      <button
+        type="button"
+        [disabled]="!canPasteIntoNode(contextMenu.node)"
+        (click)="onContextPick('paste')"
+      >
+        Beillesztés
+      </button>
+      <button
+        type="button"
+        [disabled]="!canCopyNode(contextMenu.node)"
+        (click)="onContextPick('duplicate')"
+      >
+        Duplikálás
+      </button>
+      <div class="context-menu-separator" role="separator"></div>
+      <button
+        type="button"
+        [disabled]="!canRemoveNode(contextMenu.node)"
+        (click)="onContextPick('delete')"
+      >
+        Törlés
+      </button>
+    </div>
+  }
+</section>

@@ -1,0 +1,98 @@
+import type { Vec3 } from '../math/vec3';
+
+export type {
+  Quality,
+  QualityPreset,
+  QualityRenderScaleConfig,
+} from '../render/quality';
+export {
+  configureQualityRenderScale,
+  createQuality,
+  getQualityRenderScaleConfig,
+  QUALITY_PRESETS,
+  refreshQualityPresets,
+  renderScaleForPreset,
+} from '../render/quality';
+
+export type { DisplayVision } from '../optics/display-vision';
+export { createDefaultDisplayVision, normalizeDisplayVision } from '../optics/display-vision';
+export type { EnvironmentLighting } from '../optics/environment-lighting';
+export {
+  createDefaultEnvironmentLighting,
+  normalizeEnvironmentLighting,
+  ENVIRONMENT_AMBIENT_DEFAULT,
+} from '../optics/environment-lighting';
+
+/** edit = gizmos/grid/wireframes; photo = clean shot view. */
+export type PresentationMode = 'edit' | 'photo';
+
+export type GizmoMode = 'position' | 'rotation' | 'scale' | 'none';
+
+export interface ActiveScene {
+  sceneId: string;
+  label: string;
+}
+
+export interface TimeResource {
+  elapsedS: number;
+  deltaS: number;
+}
+
+export interface CameraResource {
+  position: Vec3;
+  target: Vec3;
+  fovYDeg: number;
+  near: number;
+  far: number;
+  dirty: boolean;
+}
+
+export interface EditorSelection {
+  /** Primary / last-clicked — gizmo pivot, paste parent default. */
+  entityId: string | null;
+  /** Full selection set including primary; empty when none. */
+  entityIds: string[];
+}
+
+export function createDefaultEditorSelection(): EditorSelection {
+  return { entityId: null, entityIds: [] };
+}
+
+/** Migrate legacy `{ entityId }` or partial selection payloads. */
+export function normalizeEditorSelection(raw: unknown): EditorSelection {
+  if (!raw || typeof raw !== 'object') return createDefaultEditorSelection();
+  const r = raw as { entityId?: unknown; entityIds?: unknown };
+  const primary =
+    typeof r.entityId === 'string' ? r.entityId : r.entityId === null ? null : null;
+  let ids: string[] = [];
+  if (Array.isArray(r.entityIds)) {
+    ids = r.entityIds.filter((id): id is string => typeof id === 'string');
+  } else if (primary) {
+    ids = [primary];
+  }
+  if (primary && !ids.includes(primary)) {
+    ids = [...ids, primary];
+  }
+  if (!primary && ids.length > 0) {
+    return { entityId: ids[ids.length - 1]!, entityIds: ids };
+  }
+  if (primary && ids.length === 0) {
+    return { entityId: primary, entityIds: [primary] };
+  }
+  return { entityId: primary, entityIds: ids };
+}
+
+export interface EditorTooling {
+  gizmoMode: GizmoMode;
+}
+
+export function createDefaultCamera(): CameraResource {
+  return {
+    position: [4, 2.5, 6],
+    target: [0, 0.5, 0],
+    fovYDeg: 60,
+    near: 0.05,
+    far: 5000,
+    dirty: true,
+  };
+}

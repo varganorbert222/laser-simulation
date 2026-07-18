@@ -1,0 +1,49 @@
+{
+  "models": {
+    "laser_pointer": {
+      "label": "Lézer mutató",
+      "category": "fixture",
+      "path": "models/fixtures/laser_pointer/laser_pointer.glb",
+      "scale": 1
+    },
+    "spotlight_stage": {
+      "label": "Színpadi spot",
+      "category": "fixture",
+      "path": "models/fixtures/spotlight_stage/spotlight_stage.glb",
+      "scale": 1
+    },
+    "omni_lamp": {
+      "label": "Lámpa",
+      "category": "fixture",
+      "path": "models/fixtures/omni_lamp/omni_lamp.glb",
+      "scale": 1
+    },
+    "studio_floor": {
+      "label": "Stúdió padló",
+      "category": "stage",
+      "path": "models/stage/studio_floor/studio_floor.glb",
+      "scale": 1
+    }
+  },
+  "skyboxes": {
+    "studio_dark": {
+      "type": "photodome",
+      "textures": [
+        "textures/skybox/studio_dark/studio_dark_01.png"
+      ],
+      "resolution": 32,
+      "size": 1000
+    },
+    "studio_hdr_cube": {
+      "type": "cubemap",
+      "faces": [
+        "textures/skybox/studio_hdr_cube/px.png",
+        "textures/skybox/studio_hdr_cube/nx.png",
+        "textures/skybox/studio_hdr_cube/py.png",
+        "textures/skybox/studio_hdr_cube/ny.png",
+        "textures/skybox/studio_hdr_cube/pz.png",
+        "textures/skybox/studio_hdr_cube/nz.png"
+      ]
+    }
+  }
+}

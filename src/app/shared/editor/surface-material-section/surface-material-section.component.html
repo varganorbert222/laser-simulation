@@ -1,0 +1,57 @@
+<section class="block">
+  <h3>{{ i18n.t('surfaceMaterial') }}</h3>
+
+  <label>
+    {{ i18n.t('fixtureFinish') }}
+    <select
+      [value]="material().preset"
+      [disabled]="!editor.isEditMode()"
+      (change)="onFinishPreset($any($event.target).value)"
+    >
+      @for (p of finishPresets; track p) {
+        <option [value]="p">{{ finishLabel(p) }}</option>
+      }
+      <option value="custom">{{ i18n.t('finishCustom') }}</option>
+    </select>
+  </label>
+  <label>
+    {{ i18n.t('albedo') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="material().albedo"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSurfaceParam('albedo', $any($event.target).value)"
+    />
+    <span class="value">{{ material().albedo | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('metalness') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="material().metalness"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSurfaceParam('metalness', $any($event.target).value)"
+    />
+    <span class="value">{{ material().metalness | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('roughness') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="material().roughness"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSurfaceParam('roughness', $any($event.target).value)"
+    />
+    <span class="value">{{ material().roughness | number: '1.2-2' }}</span>
+  </label>
+  <p class="hint">{{ i18n.t('hintSurfaceMaterial') }}</p>
+</section>

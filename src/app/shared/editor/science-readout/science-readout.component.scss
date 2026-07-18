@@ -1,0 +1,93 @@
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 0.8rem;
+}
+
+.insight {
+  margin: 0;
+  line-height: 1.35;
+}
+
+.formula {
+  margin: 0;
+}
+
+.formula code {
+  font-family: var(--ls-font-mono);
+  font-size: 0.78rem;
+  color: #d4c48a;
+}
+
+.example {
+  margin: 0;
+  color: var(--ls-muted);
+  font-size: 0.75rem;
+}
+
+.swatch {
+  width: 100%;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid var(--ls-border);
+}
+
+h4 {
+  margin: 0.35rem 0 0;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ls-muted);
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+}
+
+li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.5rem;
+}
+
+.label {
+  color: var(--ls-muted);
+}
+
+.val {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.note {
+  grid-column: 1 / -1;
+  font-size: 0.7rem;
+  color: var(--ls-muted);
+}
+
+.approx .label::after {
+  content: ' ≈';
+  opacity: 0.6;
+}
+
+.safety {
+  margin: 0.35rem 0 0;
+  padding: 0.45rem;
+  border-left: 2px solid #c4a35a;
+  background: rgba(196, 163, 90, 0.08);
+  color: #e6d7a8;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.empty {
+  margin: 0;
+  color: var(--ls-muted);
+  font-size: 0.8rem;
+}

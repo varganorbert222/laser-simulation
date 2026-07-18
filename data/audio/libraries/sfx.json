@@ -1,0 +1,24 @@
+{
+  "id": "sfx",
+  "category": "sfx",
+  "basePath": "audio/sfx/fixtures",
+  "clips": {
+    "fixture_place": {
+      "registry": "fixtures/fixture_place",
+      "volume": 0.7,
+      "volumeRange": [0.9, 1.0],
+      "pitchRange": [0.96, 1.04],
+      "cooldownMs": 80,
+      "maxVoices": 4
+    },
+    "fixture_delete": {
+      "registry": "fixtures/fixture_delete",
+      "volume": 0.65,
+      "maxVoices": 3
+    }
+  },
+  "aliases": {
+    "place": "fixture_place",
+    "delete": "fixture_delete"
+  }
+}

@@ -1,0 +1,65 @@
+<div class="color-field">
+  <span class="title">{{ label }}</span>
+  <div class="row picker-row">
+    <input
+      type="color"
+      [value]="hex"
+      [disabled]="readonly"
+      [attr.aria-label]="label"
+      (focus)="editStart.emit()"
+      (input)="onPicker($any($event.target).value)"
+    />
+    <label class="hex">
+      Hex
+      <input
+        type="text"
+        spellcheck="false"
+        [disabled]="readonly"
+        [value]="hex"
+        (focus)="editStart.emit()"
+        (change)="onHexText($any($event.target).value)"
+      />
+    </label>
+  </div>
+  <div class="row rgb-row">
+    <label
+      >R
+      <input
+        type="number"
+        min="0"
+        max="1"
+        step="0.01"
+        [disabled]="readonly"
+        [value]="rgb[0]"
+        (focus)="editStart.emit()"
+        (change)="onChannel(0, $any($event.target).value)"
+      />
+    </label>
+    <label
+      >G
+      <input
+        type="number"
+        min="0"
+        max="1"
+        step="0.01"
+        [disabled]="readonly"
+        [value]="rgb[1]"
+        (focus)="editStart.emit()"
+        (change)="onChannel(1, $any($event.target).value)"
+      />
+    </label>
+    <label
+      >B
+      <input
+        type="number"
+        min="0"
+        max="1"
+        step="0.01"
+        [disabled]="readonly"
+        [value]="rgb[2]"
+        (focus)="editStart.emit()"
+        (change)="onChannel(2, $any($event.target).value)"
+      />
+    </label>
+  </div>
+</div>

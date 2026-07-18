@@ -1,0 +1,22 @@
+{
+  "id": "ambient",
+  "category": "ambient",
+  "basePath": "audio/sfx/ambient",
+  "clips": {
+    "room_hum": {
+      "registry": "ambient/room_hum",
+      "volume": 0.35,
+      "loop": true,
+      "maxVoices": 1
+    },
+    "soft_hiss": {
+      "registry": "ambient/soft_hiss",
+      "volume": 0.25,
+      "loop": true,
+      "maxVoices": 1
+    }
+  },
+  "aliases": {
+    "studio_ambience": "room_hum"
+  }
+}

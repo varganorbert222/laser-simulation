@@ -1,0 +1,59 @@
+<section class="transform-inspector">
+  <div class="head">
+    <h3>Transform</h3>
+    @if (showGizmo && !readonly) {
+      <div class="gizmo-modes">
+        <button
+          type="button"
+          [class.active]="gizmoMode === 'position'"
+          (click)="gizmoModeChange.emit('position')"
+        >
+          Move
+        </button>
+        <button
+          type="button"
+          [class.active]="gizmoMode === 'rotation'"
+          (click)="gizmoModeChange.emit('rotation')"
+        >
+          Rotate
+        </button>
+        <button
+          type="button"
+          [class.active]="gizmoMode === 'scale'"
+          (click)="gizmoModeChange.emit('scale')"
+        >
+          Scale
+        </button>
+      </div>
+    }
+  </div>
+  <p class="hint">Helyi pozíció, Euler forgatás (°), skála — szülőhöz képest.</p>
+  <app-vec3-field
+    label="Position (m)"
+    [value]="position"
+    [readonly]="readonly || positionMixed"
+    [step]="0.1"
+    [decimals]="3"
+    (editStart)="editStart.emit()"
+    (valueChange)="positionChange.emit($event)"
+  />
+  <app-vec3-field
+    label="Rotation Euler (°)"
+    [value]="rotationDeg"
+    [readonly]="readonly || rotationMixed"
+    [step]="1"
+    [decimals]="2"
+    [axes]="['X', 'Y', 'Z']"
+    (editStart)="editStart.emit()"
+    (valueChange)="rotationChange.emit($event)"
+  />
+  <app-vec3-field
+    label="Scale"
+    [value]="scale"
+    [readonly]="readonly || scaleMixed"
+    [step]="0.05"
+    [decimals]="3"
+    (editStart)="editStart.emit()"
+    (valueChange)="scaleChange.emit($event)"
+  />
+</section>

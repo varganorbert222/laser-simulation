@@ -1,0 +1,59 @@
+@if (editor.scienceReadout(); as readout) {
+  <article class="readout">
+    <p class="insight">{{ readout.insight }}</p>
+    <p class="formula"><code>{{ readout.formula }}</code></p>
+    @if (readout.example) {
+      <p class="example">{{ readout.example }}</p>
+    }
+
+    <div
+      class="swatch"
+      [style.background]="
+        'rgb(' +
+        readout.rgb[0] * 255 +
+        ',' +
+        readout.rgb[1] * 255 +
+        ',' +
+        readout.rgb[2] * 255 +
+        ')'
+      "
+      [attr.title]="i18n.t('hintColor')"
+    ></div>
+
+    <h4>{{ i18n.t('calculated') }}</h4>
+    <ul>
+      @for (q of readout.quantities; track q.id) {
+        @if (q.kind === 'calculated') {
+          <li>
+            <span class="label">{{ q.label }}</span>
+            <span class="val">{{ q.value }} {{ q.unit }}</span>
+            @if (q.note) {
+              <span class="note">{{ q.note }}</span>
+            }
+          </li>
+        }
+      }
+    </ul>
+
+    <h4>{{ i18n.t('approximated') }}</h4>
+    <ul>
+      @for (q of readout.quantities; track q.id) {
+        @if (q.kind === 'approximated') {
+          <li class="approx">
+            <span class="label">{{ q.label }}</span>
+            <span class="val">{{ q.value }} {{ q.unit }}</span>
+            @if (q.note) {
+              <span class="note">{{ q.note }}</span>
+            }
+          </li>
+        }
+      }
+    </ul>
+
+    @if (readout.safetyNote) {
+      <p class="safety">{{ readout.safetyNote }}</p>
+    }
+  </article>
+} @else {
+  <p class="empty">{{ i18n.t('noSelection') }}</p>
+}

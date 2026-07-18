@@ -1,0 +1,168 @@
+<div class="studio" [class.photo-mode]="!editor.isEditMode()">
+  <header class="topbar">
+    <div class="brand">
+      <h1>{{ i18n.t('appTitle') }}</h1>
+      <p>{{ i18n.t('appSubtitle') }}</p>
+    </div>
+    <div class="actions">
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="editor.isEditMode()"
+        (click)="editor.setPresentation('edit')"
+        [attr.title]="i18n.t('presentationEdit')"
+      >
+        {{ i18n.t('presentationEdit') }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="!editor.isEditMode()"
+        (click)="editor.setPresentation('photo')"
+        [attr.title]="i18n.t('presentationPhoto')"
+      >
+        {{ i18n.t('presentationPhoto') }}
+      </button>
+      <button
+        type="button"
+        (click)="engine.undo()"
+        [disabled]="!engine.canUndo()"
+        [attr.title]="engine.undoLabel() ?? i18n.t('undo')"
+      >
+        {{ i18n.t('undo') }}
+        @if (engine.undoLabel(); as label) {
+          <span class="cmd-label">{{ label }}</span>
+        }
+      </button>
+      <button
+        type="button"
+        (click)="engine.redo()"
+        [disabled]="!engine.canRedo()"
+        [attr.title]="engine.redoLabel() ?? i18n.t('redo')"
+      >
+        {{ i18n.t('redo') }}
+        @if (engine.redoLabel(); as label) {
+          <span class="cmd-label">{{ label }}</span>
+        }
+      </button>
+      <label class="quality">
+        {{ i18n.t('quality') }}
+        <select
+          [value]="editor.quality()"
+          (change)="editor.setQuality($any($event.target).value)"
+        >
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="ultra">Ultra</option>
+        </select>
+      </label>
+      <label class="quality aa">
+        <input
+          type="checkbox"
+          [checked]="editor.antiAliasing()"
+          (change)="editor.setAntiAliasing($any($event.target).checked)"
+        />
+        {{ i18n.t('antiAliasing') }}
+      </label>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="visionModalOpen()"
+        (click)="visionModalOpen.set(true)"
+        [attr.title]="i18n.t('toggleVisionPanel')"
+      >
+        {{ i18n.t('toggleVisionPanel') }}
+      </button>
+      <button type="button" (click)="save()">{{ i18n.t('save') }}</button>
+      <button type="button" (click)="loadClick()">{{ i18n.t('load') }}</button>
+      <button type="button" (click)="screenshot()">{{ i18n.t('capture') }}</button>
+      <button type="button" class="ghost" (click)="resetDemo()">Demo</button>
+      <select
+        class="locale"
+        [value]="i18n.locale()"
+        (change)="i18n.setLocale($any($event.target).value)"
+      >
+        <option value="hu">HU</option>
+        <option value="en">EN</option>
+      </select>
+    </div>
+    <input #fileInput type="file" accept="application/json,.json" hidden (change)="onFile($event)" />
+  </header>
+
+  <app-studio-modal
+    [open]="visionModalOpen()"
+    [title]="i18n.t('displayVision')"
+    titleId="vision-curve-modal-title"
+    [wide]="true"
+    (dismiss)="visionModalOpen.set(false)"
+  >
+    <app-display-response-curve
+      [curve]="editor.responseCurve()"
+      [ambientLevel]="editor.ambientLevel()"
+      [readonly]="!editor.isEditMode()"
+      (curveChange)="editor.setResponseCurve($event)"
+      (ambientLevelChange)="editor.setAmbientLevel($event)"
+    />
+    <div studioModalActions>
+      <button type="button" (click)="editor.resetResponseCurve()">
+        {{ i18n.t('resetCurve') }}
+      </button>
+      <button type="button" class="primary" (click)="visionModalOpen.set(false)">
+        {{ i18n.t('modalClose') }}
+      </button>
+    </div>
+  </app-studio-modal>
+
+  <div class="dock">
+    <aside class="panel left" [style.width.px]="leftWidth()">
+      <app-hierarchy-panel
+        [nodes]="editor.hierarchyTree()"
+        [selectedId]="editor.selectedId()"
+        [selectedIds]="editor.selectedIds()"
+        [editable]="editor.isEditMode()"
+        [worldHidden]="editor.worldHidden"
+        [resetKey]="engine.epoch()"
+        [clipboardReady]="editor.hasClipboard()"
+        [canUndo]="engine.canUndo()"
+        [canRedo]="engine.canRedo()"
+        [undoLabel]="engine.undoLabel()"
+        [redoLabel]="engine.redoLabel()"
+        (nodeSelect)="editor.onHierarchySelect($event)"
+        (nodeReorder)="editor.reorder($event)"
+        (visibilityChange)="editor.setVisibility($event.id, $event.visible)"
+        (addAtRoot)="editor.addEmpty()"
+        (addBelow)="editor.addBelow($event)"
+        (removeNode)="editor.deleteSelected($event)"
+        (contextAction)="onHierarchyContext($event)"
+        (undo)="engine.undo()"
+        (redo)="engine.redo()"
+      />
+    </aside>
+
+    <div class="splitter" role="separator" (mousedown)="startResize('left', $event)"></div>
+
+    <main class="viewport-wrap">
+      <canvas #viewport class="viewport"></canvas>
+      @if (editor.isEditMode()) {
+        <app-viewport-axes />
+      }
+      <p class="hint">
+        @if (editor.isEditMode()) {
+          {{ i18n.t('hintEditorMode') }}
+        } @else {
+          {{ i18n.t('hintPhotoMode') }}
+        }
+      </p>
+    </main>
+
+    <div class="splitter" role="separator" (mousedown)="startResize('right', $event)"></div>
+
+    <aside class="panel right" [style.width.px]="rightWidth()">
+      <h2>{{ i18n.t('inspector') }}</h2>
+      <app-inspector-panel />
+      <h2 class="science-title">{{ i18n.t('science') }}</h2>
+      <app-science-readout />
+    </aside>
+  </div>
+</div>

@@ -1,0 +1,169 @@
+<section class="block">
+  <h3>LightEmitter</h3>
+
+  <app-spectral-color-field
+    [label]="i18n.t('wavelength')"
+    [wavelengthNm]="light().wavelengthNm"
+    [readonly]="!editor.isEditMode()"
+    (wavelengthChange)="onWavelength($event)"
+  />
+  <p class="hint">{{ i18n.t('hintColor') }}</p>
+
+  <div class="power-block">
+    <div class="power-head">
+      <span class="power-label">{{ i18n.t('power') }}</span>
+      <select
+        class="power-unit"
+        [value]="powerUnit()"
+        [disabled]="!editor.isEditMode()"
+        (change)="onPowerUnit($any($event.target).value)"
+      >
+        @for (u of powerUnits; track u) {
+          <option [value]="u">{{ u }}</option>
+        }
+      </select>
+    </div>
+    <div class="power-inputs">
+      <input
+        type="number"
+        class="power-number"
+        min="0"
+        step="any"
+        [disabled]="!editor.isEditMode()"
+        [value]="powerValueInUnit()"
+        (change)="onPowerNumber($any($event.target).value)"
+      />
+      <input
+        type="range"
+        class="power-slider"
+        min="0"
+        max="1"
+        step="0.001"
+        [value]="powerSliderT()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onPowerSlider($any($event.target).value)"
+      />
+    </div>
+    <span class="value">{{ formatPower(light().powerW) }} · max 500 kW</span>
+  </div>
+  <div class="chips">
+    @for (p of editor.powerPresets; track p) {
+      <button type="button" [disabled]="!editor.isEditMode()" (click)="editor.setPower(p)">
+        {{ formatPower(p) }}
+      </button>
+    }
+  </div>
+  @if (light().params.mode === 'laser') {
+    <label>
+      w₀ (m)
+      <input
+        type="range"
+        min="0.0005"
+        max="0.02"
+        step="0.0001"
+        [value]="laserW0()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onLaserW0($any($event.target).value)"
+      />
+      <span class="value">{{ laserW0() * 1000 | number: '1.2-2' }} mm</span>
+    </label>
+  }
+  <p class="mode">Mód: {{ light().params.mode }}</p>
+
+  <h4 class="subhead">{{ i18n.t('opticsSpill') }}</h4>
+  <label>
+    {{ i18n.t('strayLight') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="light().spill.strayLight"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSpill('strayLight', $any($event.target).value)"
+    />
+    <span class="value">{{ light().spill.strayLight | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('internalReflection') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="light().spill.internalReflection"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSpill('internalReflection', $any($event.target).value)"
+    />
+    <span class="value">{{ light().spill.internalReflection | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('apertureSpill') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="light().spill.apertureSpill"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSpill('apertureSpill', $any($event.target).value)"
+    />
+    <span class="value">{{ light().spill.apertureSpill | number: '1.2-2' }}</span>
+  </label>
+  <p class="hint">{{ i18n.t('hintOpticsSpill') }}</p>
+
+  <h4 class="subhead">{{ i18n.t('lightPresentation') }}</h4>
+  <label>
+    {{ i18n.t('surfaceGain') }}
+    <input
+      type="range"
+      min="0"
+      max="3.5"
+      step="0.01"
+      [value]="light().surfaceGain"
+      [disabled]="!editor.isEditMode()"
+      (input)="onGain('surfaceGain', $any($event.target).value)"
+    />
+    <span class="value">{{ light().surfaceGain | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('glowGain') }}
+    <input
+      type="range"
+      min="0"
+      max="3.5"
+      step="0.01"
+      [value]="light().glowGain"
+      [disabled]="!editor.isEditMode()"
+      (input)="onGain('glowGain', $any($event.target).value)"
+    />
+    <span class="value">{{ light().glowGain | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('bloomGain') }}
+    <input
+      type="range"
+      min="0"
+      max="3.5"
+      step="0.01"
+      [value]="light().bloomGain"
+      [disabled]="!editor.isEditMode()"
+      (input)="onGain('bloomGain', $any($event.target).value)"
+    />
+    <span class="value">{{ light().bloomGain | number: '1.2-2' }}</span>
+  </label>
+  <label>
+    {{ i18n.t('apertureCoupling') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="light().apertureCoupling"
+      [disabled]="!editor.isEditMode()"
+      (input)="onApertureCoupling($any($event.target).value)"
+    />
+    <span class="value">{{ light().apertureCoupling | number: '1.2-2' }}</span>
+  </label>
+  <p class="hint">{{ i18n.t('hintLightPresentation') }}</p>
+</section>

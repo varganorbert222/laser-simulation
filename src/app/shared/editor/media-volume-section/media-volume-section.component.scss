@@ -1,0 +1,61 @@
+:host {
+  display: block;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
+}
+
+h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+h4.subhead {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ls-text);
+  opacity: 0.9;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ls-muted);
+}
+
+input[type='range'],
+select {
+  width: 100%;
+}
+
+select {
+  font: inherit;
+  color: var(--ls-text);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--ls-border);
+  border-radius: 3px;
+  padding: 0.3rem 0.4rem;
+}
+
+input[type='range'] {
+  accent-color: #c4a35a;
+}
+
+.value {
+  color: var(--ls-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ls-muted);
+}

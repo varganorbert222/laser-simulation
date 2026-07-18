@@ -1,0 +1,99 @@
+@if (editor.selectionCount() > 0) {
+  <section class="block identity">
+    <h3>Objektum</h3>
+    @if (editor.selectionCount() > 1) {
+      <p class="meta multi">{{ editor.selectionCount() }} {{ i18n.t('multiSelectionLabel') }}</p>
+    }
+    <label>
+      Név
+      <input
+        type="text"
+        [value]="editor.selectedNameMixed() ? i18n.t('mixedValue') : (editor.selectedName() ?? '')"
+        [disabled]="!editor.isEditMode() || editor.selectedNameMixed()"
+        (change)="onRename($any($event.target).value)"
+      />
+    </label>
+    @if (editor.selectionCount() === 1) {
+      <p class="meta">id: {{ editor.selectedId() }}</p>
+    }
+  </section>
+
+  @if (editor.selectedTransformView(); as tv) {
+    <app-transform-inspector
+      [position]="tv.position"
+      [rotationDeg]="tv.rotationDeg"
+      [scale]="tv.scale"
+      [positionMixed]="tv.positionMixed"
+      [rotationMixed]="tv.rotationMixed"
+      [scaleMixed]="tv.scaleMixed"
+      [gizmoMode]="editor.gizmoMode()"
+      [readonly]="!editor.isEditMode()"
+      [showGizmo]="editor.isEditMode()"
+      (gizmoModeChange)="editor.setGizmoMode($event)"
+      (positionChange)="editor.applyTransformFromView({ position: $event }, { coalesce: true })"
+      (rotationChange)="editor.applyTransformFromView({ rotationDeg: $event }, { coalesce: true })"
+      (scaleChange)="editor.applyTransformFromView({ scale: $event }, { coalesce: true })"
+    />
+  }
+
+  <section class="block">
+    <h3>Komponensek</h3>
+    <ul class="comp-list">
+      @for (c of editor.selectedComponents(); track c) {
+        <li>
+          <span>{{ c }}</span>
+          @if (c === 'LightEmitter' || c === 'MediaVolume' || c === 'EnvironmentPiece' || c === 'FixtureRef' || c === 'SurfaceMaterial') {
+            <button
+              type="button"
+              class="tiny"
+              [disabled]="!editor.isEditMode()"
+              (click)="editor.removeComponent($any(c))"
+            >
+              −
+            </button>
+          }
+        </li>
+      }
+    </ul>
+    @if (editor.isEditMode()) {
+      <label class="add-comp">
+        Hozzáadás
+        <select (change)="addComponent($any($event.target).value); $any($event.target).value = ''">
+          <option value="">—</option>
+          @for (c of addable; track c) {
+            <option [value]="c" [disabled]="!canAdd(c)">{{ c }}</option>
+          }
+        </select>
+      </label>
+    }
+  </section>
+
+  @if (editor.selectedLight(); as light) {
+    @if (editor.selectedLightMixed()) {
+      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+    }
+    <fieldset class="merge-section" [disabled]="editor.selectedLightMixed()">
+      <app-light-emitter-section [light]="light" />
+    </fieldset>
+  }
+
+  @if (editor.selectedSurfaceMaterial(); as material) {
+    @if (editor.selectedSurfaceMaterialMixed()) {
+      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+    }
+    <fieldset class="merge-section" [disabled]="editor.selectedSurfaceMaterialMixed()">
+      <app-surface-material-section [material]="material" />
+    </fieldset>
+  }
+
+  @if (editor.selectedMedia(); as media) {
+    @if (editor.selectedMediaMixed()) {
+      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+    }
+    <fieldset class="merge-section" [disabled]="editor.selectedMediaMixed()">
+      <app-media-volume-section [media]="media" />
+    </fieldset>
+  }
+} @else {
+  <p class="empty">{{ i18n.t('noSelection') }}</p>
+}

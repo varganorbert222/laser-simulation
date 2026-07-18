@@ -1,0 +1,35 @@
+<section class="vision-panel">
+  <label class="ambient">
+    <span>{{ i18n.t('environmentAmbient') }} · {{ i18n.t('eyeExposure') }} {{ exposureLabel }}</span>
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="ambientLevel"
+      [disabled]="readonly"
+      (input)="onAmbientSlider($any($event.target).value)"
+    />
+    <span class="mode-labels">
+      <span>{{ i18n.t('ambientDark') }}</span>
+      <span>{{ i18n.t('ambientBright') }}</span>
+    </span>
+  </label>
+
+  <p class="hint">{{ i18n.t('hintEnvironmentExposure') }}</p>
+  <p class="hint">{{ i18n.t('hintDisplayCurve') }}</p>
+
+  <canvas
+    #canvas
+    class="curve-canvas"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointercancel)="onPointerUp($event)"
+  ></canvas>
+
+  <div class="axis-hint">
+    <span>X: {{ i18n.t('curveAxisPower') }}</span>
+    <span>Y: {{ i18n.t('curveAxisHdr') }} (0–{{ hdrMax }})</span>
+  </div>
+</section>

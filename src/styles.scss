@@ -1,0 +1,31 @@
+/* Volumetric Light Studio */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600&display=swap');
+
+:root {
+  --ls-text: #e8ecef;
+  --ls-muted: #9aa3ad;
+  --ls-border: rgba(255, 255, 255, 0.1);
+  --ls-panel: #1a2129;
+  --ls-font-display: 'Source Serif 4', 'Times New Roman', serif;
+  --ls-font-body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+  --ls-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--ls-font-body);
+  color: var(--ls-text);
+  background: #0e1216;
+  -webkit-font-smoothing: antialiased;
+}
