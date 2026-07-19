@@ -11,11 +11,22 @@ import {
   lightWorldPose,
   MAX_GPU_LIGHTS,
   normalizeChromaticity,
+  normalizeOpticsSpill,
   wavelengthToRgb,
   type LightEmitter,
   type World,
 } from '../../../engine';
 
+/**
+ * Surface lighting via Babylon lights (StandardMaterial diffuse + specular),
+ * matching the working e1233f9 path and Unity Point / Spot classes:
+ *
+ *   omni_lamp           → PointLight
+ *   spotlight / laser /
+ *   parallel            → SpotLight (localized spot + specular; laser = tight cone ≈ collimated)
+ *
+ * Volumetrics still use BeamModel / evalRadianceField separately.
+ */
 export class SurfaceLightSync {
   private readonly lights = new Map<string, Light>();
 
@@ -27,10 +38,7 @@ export class SurfaceLightSync {
     for (const id of world.query('LightEmitter', 'Transform')) {
       const emitter = world.get(id, 'LightEmitter');
       if (!emitter?.enabled) continue;
-      if (bound >= MAX_GPU_LIGHTS) {
-        // Keep volumetric / surface specular budgets aligned; dispose overflow below.
-        continue;
-      }
+      if (bound >= MAX_GPU_LIGHTS) continue;
       bound++;
       alive.add(id);
 
@@ -42,7 +50,8 @@ export class SurfaceLightSync {
         ambientLevel: env.ambientLevel,
         responseCurve: vision.responseCurve,
       });
-      const intensity = Math.max(0, emitter.surfaceGain) * power * 2.0;
+      // Match e1233f9 display scale so specular/diffuse read on StandardMaterial.
+      const intensity = Math.max(0, power) * 2;
       const color = new Color3(rgb[0], rgb[1], rgb[2]);
       const pos = new Vector3(pose.position[0], pose.position[1], pose.position[2]);
       const dir = new Vector3(pose.direction[0], pose.direction[1], pose.direction[2]);
@@ -79,7 +88,7 @@ export class SurfaceLightSync {
         const { angle, exponent } = spotShapeForEmitter(emitter);
         spot.angle = angle;
         spot.exponent = exponent;
-        spot.range = 40;
+        spot.range = 80;
       }
     }
 
@@ -99,11 +108,10 @@ export class SurfaceLightSync {
 
 function spotShapeForEmitter(emitter: LightEmitter): { angle: number; exponent: number } {
   const params = emitter.params;
-  const spill = emitter.spill;
-  const spillWiden =
-    1 + spill.strayLight * 0.12 + spill.apertureSpill * 0.1 + spill.internalReflection * 0.06;
-  const spillSoft =
-    spill.strayLight * 0.12 + spill.apertureSpill * 0.08 + spill.internalReflection * 0.05;
+  const spill = normalizeOpticsSpill(emitter.spill);
+  const f = spill.strayPowerFraction;
+  const spillWiden = 1 + f * 0.35;
+  const spillSoft = f * 0.4;
 
   switch (params.mode) {
     case 'spotlight': {
@@ -115,10 +123,15 @@ function spotShapeForEmitter(emitter: LightEmitter): { angle: number; exponent: 
     }
     case 'laser': {
       const w0 = Math.max(params.laser.w0M, 0.0005);
-      const angle = Math.max(0.03, Math.min(0.55, Math.atan(w0 * 12) * 2 * spillWiden));
+      const m2 = Math.max(params.laser.m2, 1);
+      // Tight cone ≈ collimated beam; M² widens / softens the spot.
+      const angle = Math.max(
+        0.02,
+        Math.min(0.55, Math.atan(w0 * 12 * Math.sqrt(m2)) * 2 * spillWiden),
+      );
       return {
         angle,
-        exponent: Math.max(2, (8 + params.laser.parallelness * 24) * (1 - spillSoft * 0.6)),
+        exponent: Math.max(2, (8 + 24 / m2) * (1 - spillSoft * 0.6)),
       };
     }
     case 'parallel': {

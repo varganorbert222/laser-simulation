@@ -27,21 +27,6 @@ import {
 } from './photopic-efficacy-table';
 import { rayleighScatterWeight } from './wavelength';
 
-/** Luminous product (mW·V) for 1 W at V=1 — science / curve reference. */
-export const LASER_LIGHTSABER_LUMINOUS_REF = 1000;
-
-/** @deprecated Prefer LASER_LIGHTSABER_LUMINOUS_REF — kept for older imports. */
-export const LASER_DISPLAY_LUMINOUS_REF = LASER_LIGHTSABER_LUMINOUS_REF;
-
-/** @deprecated Theatrical scale; scientific default uses DISPLAY_SCIENCE_HDR_AT_REF. */
-export const LASER_LIGHTSABER_DISPLAY_HDR = 48;
-
-/** Scientific Stevens-like exponent (aligned with display-response-curve). */
-export const LASER_DISPLAY_POWER_GAMMA = 0.7;
-
-/** Soft HDR ceiling. */
-export const LASER_DISPLAY_HDR_CEILING = 96;
-
 /**
  * Max eye-adaptation gain in a fully dark environment (ambientLevel = 0).
  * Models pupil + dark adaptation vs bright-lab baseline (gain = 1).
@@ -78,11 +63,6 @@ export function eyeSensitivity(wavelengthNm: number): number {
 export function eyeAdaptationGainFromAmbient(ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT): number {
   const a = clampAmbientLevel(ambientLevel);
   return 1 + (1 - a) * (DARK_ENVIRONMENT_ADAPTATION_GAIN - 1);
-}
-
-/** Alias of eyeAdaptationGainFromAmbient. */
-export function eyeAdaptationGain(ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT): number {
-  return eyeAdaptationGainFromAmbient(ambientLevel);
 }
 
 /** Relative perceived brightness of a laser spot: P(mW) · V(λ) · exposure(ambient). */
@@ -143,10 +123,10 @@ export function laserDotDisplayBrightness(
 }
 
 /**
- * Volumetric beam display power factor (V(λ) + ambient exposure + response curve).
- * Multiply by rayleighScatterWeight in the pack/shader for full beam model.
+ * Educational display luminous scale for emitters (V(λ) + ambient exposure + response curve).
+ * Used as GpuLight.powerDisplay; Rayleigh remains scatterWeight in fog.
  */
-export function laserBeamDisplayPower(
+export function displayLuminousPower(
   powerW: number,
   wavelengthNm: number,
   opts?: VisionBrightnessOpts | null,
@@ -190,4 +170,4 @@ export function relativeBeamBrightness(
   return laserBeamLuminousProduct(a.powerW, a.wavelengthNm, 550, ambientLevel) / lb;
 }
 
-export { scientificDisplayLuminousToneMap, analyticDisplayLuminousToneMap } from './display-response-curve';
+export { scientificDisplayLuminousToneMap } from './display-response-curve';

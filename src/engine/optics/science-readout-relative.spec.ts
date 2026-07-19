@@ -9,7 +9,7 @@ describe('science readout relative brightness', () => {
       powerW: 0.005,
       params: {
         mode: 'laser',
-        laser: { w0M: 0.01, parallelness: 1, probeDistanceM: 5 },
+        laser: { w0M: 0.01, m2: 1, probeDistanceM: 5, ellipticRatio: 1, waistOffsetM: 0, topHatMix: 0, sphericalAberration: 0, coma: 0, astigmatism: 0 },
       },
       vision: { ambientLevel: 0.38 },
     });

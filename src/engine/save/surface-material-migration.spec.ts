@@ -66,6 +66,7 @@ describe('surface material save migration', () => {
     expect(comps.LightEmitter?.surfaceGain).toBeCloseTo(2);
     expect(comps.LightEmitter?.glowGain).toBeCloseTo(1.5);
     expect(comps.LightEmitter?.bloomGain).toBeCloseTo(2.2);
+    expect(comps.LightEmitter?.spill.strayPowerFraction).toBeGreaterThan(0);
     expect(
       (comps.LightEmitter as unknown as { surfaceMaterial?: unknown }).surfaceMaterial,
     ).toBeUndefined();

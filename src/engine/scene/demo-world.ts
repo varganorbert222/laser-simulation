@@ -73,13 +73,10 @@ export function createDemoWorld(): World {
     powerW: 1,
     params: {
       mode: 'laser' as const,
-      laser: { w0M: 0.01, parallelness: 0.85, probeDistanceM: 5 },
+      laser: { w0M: 0.01, m2: 1.45, probeDistanceM: 5, ellipticRatio: 1, waistOffsetM: 0, topHatMix: 0, sphericalAberration: 0, coma: 0, astigmatism: 0 },
     },
-    apertureCoupling: 0.4,
     spill: {
-      strayLight: 0.22,
-      internalReflection: 0.12,
-      apertureSpill: 0.28,
+      strayPowerFraction: 0.12,
     },
   });
 

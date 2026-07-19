@@ -66,7 +66,7 @@ describe('science readout', () => {
       powerW: 0.005,
       params: {
         mode: 'laser',
-        laser: { w0M: 0.002, parallelness: 0.9, probeDistanceM: 10 },
+        laser: { w0M: 0.002, m2: 1.3, probeDistanceM: 10, ellipticRatio: 1, waistOffsetM: 0, topHatMix: 0, sphericalAberration: 0, coma: 0, astigmatism: 0 },
       },
     });
     expect(readout.quantities.some((q) => q.id === 'zR' && q.kind === 'calculated')).toBe(true);

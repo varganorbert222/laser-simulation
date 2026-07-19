@@ -43,6 +43,13 @@ export class StudioPipeline {
   }
 
   syncBloomFromLights(world: World): void {
+    // Theatrical glow is presentation-only; physics path never depends on it.
+    if (!world.resources.Quality.theatricalGlow) {
+      this.pipeline.bloomEnabled = false;
+      this.glowLayer.intensity = 0;
+      return;
+    }
+
     let bloomSum = 0;
     let glowSum = 0;
     let n = 0;

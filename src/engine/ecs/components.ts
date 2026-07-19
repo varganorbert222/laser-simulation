@@ -2,6 +2,7 @@ import type { Mat4 } from '../math/mat4';
 import type { Quat } from '../math/quat';
 import type { Vec3 } from '../math/vec3';
 import type { ModeParams } from '../optics/modes';
+import { defaultLaserParams, normalizeLaserParams } from '../optics/modes';
 import {
   apertureCouplingFromLegacyMaterial,
   clampUnit,
@@ -30,7 +31,6 @@ export type { OpticsSpillParams } from '../optics/optics-spill';
 export type {
   SurfaceFinishPreset,
   SurfaceMaterial,
-  FixtureFinishPreset,
 } from '../optics/surface-material';
 
 export type EntityId = string;
@@ -74,20 +74,21 @@ export interface LightEmitter {
   powerW: number;
   enabled: boolean;
   params: ModeParams;
-  /** Multiplier for Babylon surface Spot/Point intensity. */
+  /**
+   * Presentation-only multipliers (theatrical glow / bloom). Ignored on the
+   * scientific radiance path when theatricalGlow is off; surfaceGain is unused
+   * (always treated as 1 for physical surface irradiance).
+   */
   surfaceGain: number;
-  /** Multiplier for fixture housing emissive / GlowLayer. */
   glowGain: number;
-  /** Multiplier for bloom contribution. */
   bloomGain: number;
   /**
-   * Exit-pupil → housing coupling (baffling / aperture efficiency complement), 0–1.
-   * Scales fixture housing glow together with glowGain.
+   * Exit-pupil → housing coupling for theatrical housing glow only (0–1).
    */
   apertureCoupling: number;
   /**
-   * Soft secondary light from the fixture optics (stray / internal reflection /
-   * aperture spill) — visible around or under the main beam in fog.
+   * Residual optical power fraction outside the designed beam (energy-conserving).
+   * Core × (1 − f); wide residual lobe gets fraction f.
    */
   spill: OpticsSpillParams;
 }
@@ -202,7 +203,7 @@ export function defaultLightEmitter(): LightEmitter {
     enabled: true,
     params: {
       mode: 'laser',
-      laser: { w0M: 0.01, parallelness: 0.85, probeDistanceM: 5 },
+      laser: defaultLaserParams(),
     },
     surfaceGain: 1,
     glowGain: 1,
@@ -276,7 +277,7 @@ export function normalizeLightEmitter(
     wavelengthNm: typeof raw.wavelengthNm === 'number' ? raw.wavelengthNm : d.wavelengthNm,
     powerW: clampPowerW(typeof raw.powerW === 'number' ? raw.powerW : d.powerW),
     enabled: typeof raw.enabled === 'boolean' ? raw.enabled : d.enabled,
-    params: (raw.params as LightEmitter['params']) ?? d.params,
+    params: normalizeModeParams(raw.params as ModeParams | undefined, d.params),
     surfaceGain,
     glowGain,
     bloomGain,
@@ -285,6 +286,17 @@ export function normalizeLightEmitter(
       raw.spill as Partial<OpticsSpillParams> | null | undefined,
     ),
   };
+}
+
+function normalizeModeParams(
+  raw: ModeParams | undefined,
+  fallback: ModeParams,
+): ModeParams {
+  if (!raw || typeof raw !== 'object' || !('mode' in raw)) return fallback;
+  if (raw.mode === 'laser') {
+    return { mode: 'laser', laser: normalizeLaserParams(raw.laser) };
+  }
+  return raw;
 }
 
 /** Fill missing fields when loading older saves. */

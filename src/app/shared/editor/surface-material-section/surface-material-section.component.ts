@@ -39,7 +39,10 @@ export class SurfaceMaterialSectionComponent {
     }
   }
 
-  onSurfaceParam(key: 'albedo' | 'metalness' | 'roughness', value: string): void {
+  onSurfaceParam(
+    key: 'albedo' | 'metalness' | 'roughness' | 'transmission',
+    value: string,
+  ): void {
     const n = Number(value);
     if (!Number.isFinite(n)) return;
     this.editor.updateSurfaceMaterial(

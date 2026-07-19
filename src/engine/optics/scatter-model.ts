@@ -87,13 +87,19 @@ export function spectralWeightFromRayleigh(
 }
 
 /**
- * Henyey–Greenstein phase function (relative form: g=0 → 1).
- * cosTheta = dot(incidentLightDir, viewDirTowardCamera).
+ * Henyey–Greenstein phase function (absolute, ∫ p dΩ = 1):
+ * p(θ) = (1−g²) / (4π (1+g²−2gμ)^{3/2}).
+ * At g=0 → 1/(4π).
  */
 export function phaseHG(cosTheta: number, g: number): number {
   const gg = clampMieAnisotropy(g);
   const mu = Math.min(1, Math.max(-1, cosTheta));
   const g2 = gg * gg;
   const denom = Math.pow(Math.max(1 - 2 * gg * mu + g2, 1e-8), 1.5);
-  return (1 - g2) / denom;
+  return ((1 - g2) / denom) / (4 * Math.PI);
+}
+
+/** Relative HG (g=0 → 1) for UI / legacy comparisons. */
+export function phaseHGRelative(cosTheta: number, g: number): number {
+  return phaseHG(cosTheta, g) * 4 * Math.PI;
 }

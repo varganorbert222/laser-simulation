@@ -12,6 +12,13 @@ export interface Quality {
   renderScale: number;
   /** Post-process FXAA (+ pipeline MSAA when on). Default true. */
   antiAliasing: boolean;
+  /**
+   * Theatrical GlowLayer / bloom (presentation only — not part of the physics path).
+   * Default false for physically plausible baseline.
+   */
+  theatricalGlow: boolean;
+  /** Volumetric compose tonemap: aces (default) or reinhard. */
+  tonemapMode: 'aces' | 'reinhard';
 }
 
 export interface QualityRenderScaleConfig {
@@ -21,7 +28,10 @@ export interface QualityRenderScaleConfig {
   renderScaleMax: number;
 }
 
-type QualityTune = Omit<Quality, 'preset' | 'renderScale' | 'antiAliasing'>;
+type QualityTune = Omit<
+  Quality,
+  'preset' | 'renderScale' | 'antiAliasing' | 'theatricalGlow' | 'tonemapMode'
+>;
 
 const PRESET_ORDER: readonly QualityPreset[] = ['low', 'medium', 'high', 'ultra'];
 
@@ -64,6 +74,8 @@ export function createQuality(preset: QualityPreset = 'medium'): Quality {
     ...QUALITY_TUNE[preset],
     renderScale: renderScaleForPreset(preset),
     antiAliasing: true,
+    theatricalGlow: false,
+    tonemapMode: 'aces',
   };
 }
 

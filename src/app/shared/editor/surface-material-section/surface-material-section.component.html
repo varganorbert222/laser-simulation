@@ -53,5 +53,19 @@
     />
     <span class="value">{{ material().roughness | number: '1.2-2' }}</span>
   </label>
+  <label>
+    {{ i18n.t('transmission') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="material().transmission"
+      [disabled]="!editor.isEditMode()"
+      (input)="onSurfaceParam('transmission', $any($event.target).value)"
+    />
+    <span class="value">{{ material().transmission | number: '1.2-2' }}</span>
+  </label>
   <p class="hint">{{ i18n.t('hintSurfaceMaterial') }}</p>
+  <p class="hint">{{ i18n.t('hintTransmission') }}</p>
 </section>

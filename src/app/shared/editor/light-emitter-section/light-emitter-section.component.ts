@@ -1,10 +1,10 @@
 import { Component, effect, input, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
-  POWER_UNITS,
   clampSpill01,
-  clampUnit,
   formatPowerW,
+  normalizeOpticsSpill,
+  POWER_UNITS,
   powerFromUnit,
   powerToUnit,
   powerWFromSliderT,
@@ -73,29 +73,17 @@ export class LightEmitterSectionComponent {
     this.editor.setPower(powerWFromSliderT(t));
   }
 
-  onSpill(
-    key: 'strayLight' | 'internalReflection' | 'apertureSpill',
-    value: string,
-  ): void {
+  strayPowerFraction(): number {
+    return normalizeOpticsSpill(this.light().spill).strayPowerFraction;
+  }
+
+  onStrayPowerFraction(value: string): void {
     const v = Number(value);
     if (!Number.isFinite(v)) return;
-    const spill = { ...this.light().spill, [key]: clampSpill01(v) };
-    this.editor.updateLight({ spill }, { coalesce: true });
-  }
-
-  onGain(
-    key: 'surfaceGain' | 'glowGain' | 'bloomGain',
-    value: string,
-  ): void {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return;
-    this.editor.updateLight({ [key]: Math.min(8, Math.max(0, n)) }, { coalesce: true });
-  }
-
-  onApertureCoupling(value: string): void {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return;
-    this.editor.updateLight({ apertureCoupling: clampUnit(n) }, { coalesce: true });
+    this.editor.updateLight(
+      { spill: { strayPowerFraction: clampSpill01(v) } },
+      { coalesce: true },
+    );
   }
 
   laserW0(): number {
@@ -103,13 +91,63 @@ export class LightEmitterSectionComponent {
     return p.mode === 'laser' ? p.laser.w0M : 0;
   }
 
+  laserM2(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.m2 : 1;
+  }
+
+  laserElliptic(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.ellipticRatio : 1;
+  }
+
+  laserWaistOffset(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.waistOffsetM : 0;
+  }
+
+  laserTopHat(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.topHatMix : 0;
+  }
+
+  laserSpherical(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.sphericalAberration : 0;
+  }
+
+  laserComa(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.coma : 0;
+  }
+
+  laserAstig(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.astigmatism : 0;
+  }
+
   onLaserW0(value: string): void {
+    this.onLaserParam('w0M', value);
+  }
+
+  onLaserParam(
+    key:
+      | 'w0M'
+      | 'm2'
+      | 'ellipticRatio'
+      | 'waistOffsetM'
+      | 'topHatMix'
+      | 'sphericalAberration'
+      | 'coma'
+      | 'astigmatism',
+    value: string,
+  ): void {
     const light = this.light();
     if (light.params.mode !== 'laser') return;
-    const w0 = Number(value);
-    if (!Number.isFinite(w0)) return;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
     this.editor.updateLight(
-      { params: { mode: 'laser', laser: { ...light.params.laser, w0M: w0 } } },
+      { params: { mode: 'laser', laser: { ...light.params.laser, [key]: n } } },
       { coalesce: true },
     );
   }

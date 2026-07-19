@@ -8,6 +8,7 @@ import {
   RenderTargetTexture,
   Vector2,
   Vector3,
+  type BaseTexture,
   type Camera,
   type Engine,
   type Scene,
@@ -23,6 +24,7 @@ import {
 import {
   VOLUMETRIC_COMPOSE_FRAGMENT,
   VOLUMETRIC_FRAGMENT,
+  VOLUMETRIC_SAMPLERS,
   VOLUMETRIC_UNIFORMS,
 } from '../shaders/volumetric-shader';
 
@@ -34,7 +36,7 @@ type EffectLike = {
   setVector2: (name: string, v: Vector2) => void;
   setVector3: (name: string, v: Vector3) => void;
   setMatrix: (name: string, v: Matrix) => void;
-  setTexture: (name: string, texture: RenderTargetTexture) => void;
+  setTexture: (name: string, texture: BaseTexture) => void;
 };
 
 type AbsoluteSize = { width: number; height: number };
@@ -64,6 +66,7 @@ export class VolumetricBinder {
 
   private _world: World | null = null;
   private _camera: Camera | null = null;
+  private _sceneDepth: BaseTexture | null = null;
 
   constructor(
     private readonly engine: Engine,
@@ -98,6 +101,7 @@ export class VolumetricBinder {
       name: 'volumetricRaymarch',
       fragmentShader: VOLUMETRIC_FRAGMENT,
       uniformNames: [...VOLUMETRIC_UNIFORMS],
+      samplerNames: [...VOLUMETRIC_SAMPLERS],
       useAsPostProcess: true,
       allowEmptySourceTexture: true,
     });
@@ -109,7 +113,7 @@ export class VolumetricBinder {
     this.compose = new PostProcess(
       'volumetricCompose',
       'volumetricCompose',
-      null,
+      ['uTonemapMode'],
       ['volumetricTexture'],
       1.0,
       camera,
@@ -118,7 +122,10 @@ export class VolumetricBinder {
       false,
     );
     this.compose.onApply = (effect) => {
-      (effect as unknown as EffectLike).setTexture('volumetricTexture', this.volumetricTarget);
+      const fx = effect as unknown as EffectLike;
+      fx.setTexture('volumetricTexture', this.volumetricTarget);
+      const mode = this._world?.resources.Quality.tonemapMode === 'reinhard' ? 1 : 0;
+      fx.setFloat('uTonemapMode', mode);
     };
 
     this.lastRenderScale = scale;
@@ -129,6 +136,11 @@ export class VolumetricBinder {
   bindWorld(world: World, camera: Camera): void {
     this._world = world;
     this._camera = camera;
+  }
+
+  /** Scene depth (camera-space Z) for solid occlusion — typically from DepthRenderer. */
+  setSceneDepthTexture(texture: BaseTexture | null): void {
+    this._sceneDepth = texture;
   }
 
   /** Raymarch into the low-res RTT (call once per frame before scene.render). */
@@ -192,7 +204,12 @@ export class VolumetricBinder {
     effect.setVector2('uResolution', new Vector2(this.lastVolW, this.lastVolH));
     effect.setFloat('uTime', pack.timeS);
     effect.setMatrix('uInvViewProj', inv);
+    effect.setMatrix('uView', this._camera.getViewMatrix());
     effect.setVector3('uCameraPos', this._camera.position);
+    effect.setFloat('uUseSceneDepth', this._sceneDepth ? 1 : 0);
+    if (this._sceneDepth) {
+      effect.setTexture('uSceneDepth', this._sceneDepth);
+    }
     effect.setFloat('uStepSize', pack.quality.stepSize);
     effect.setFloat('uMaxSteps', pack.quality.maxSteps);
     effect.setFloat('uDensityThreshold', pack.quality.densityThreshold);
@@ -223,6 +240,8 @@ export class VolumetricBinder {
       effect.setFloat(`uLightP1${s}`, 0);
       effect.setFloat(`uLightP2${s}`, 0);
       effect.setFloat(`uLightP3${s}`, 0);
+      effect.setFloat(`uLightP4${s}`, 0);
+      effect.setFloat(`uLightP5${s}`, 0);
       effect.setVector3(`uLightSpill${s}`, Vector3.Zero());
       return;
     }
@@ -236,6 +255,8 @@ export class VolumetricBinder {
     effect.setFloat(`uLightP1${s}`, L.p1);
     effect.setFloat(`uLightP2${s}`, L.p2);
     effect.setFloat(`uLightP3${s}`, L.p3);
+    effect.setFloat(`uLightP4${s}`, L.p4);
+    effect.setFloat(`uLightP5${s}`, L.p5);
     effect.setVector3(`uLightSpill${s}`, new Vector3(...L.spill));
   }
 

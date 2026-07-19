@@ -49,6 +49,8 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   leftWidth = signal(280);
   rightWidth = signal(340);
   visionModalOpen = signal(false);
+  scenesModalOpen = signal(false);
+  selectedLibraryId = signal<string | null>(null);
   private resizeSide: 'left' | 'right' | null = null;
   private resizeStartX = 0;
   private resizeStartW = 0;
@@ -59,6 +61,10 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
       if (pose && this.editor.isEditMode()) {
         this.axes?.update(pose);
       }
+    });
+    effect(() => {
+      const active = this.editor.activeSceneId();
+      if (active) this.selectedLibraryId.set(active);
     });
   }
 
@@ -115,7 +121,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     const key = event.key.toLowerCase();
     if (key === 's') {
       event.preventDefault();
-      this.save();
+      this.saveCurrent();
       return;
     }
     if (key === 'c') {
@@ -197,11 +203,64 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     window.addEventListener('mouseup', up);
   }
 
-  save(): void {
-    this.editor.saveScene();
+  openScenes(): void {
+    const active = this.editor.activeSceneId();
+    this.selectedLibraryId.set(active);
+    this.scenesModalOpen.set(true);
   }
 
-  loadClick(): void {
+  saveCurrent(): void {
+    const activeId = this.editor.activeSceneId();
+    if (activeId) {
+      this.editor.saveToLibrary({
+        id: activeId,
+        label: this.editor.activeSceneLabel() || undefined,
+      });
+      this.selectedLibraryId.set(activeId);
+      return;
+    }
+    const label = this.promptName(this.editor.activeSceneLabel() || undefined);
+    if (label === null) return;
+    this.editor.saveToLibrary({ label: label || undefined });
+    this.selectedLibraryId.set(this.editor.activeSceneId());
+  }
+
+  saveAsNew(): void {
+    const label = this.promptName(this.editor.activeSceneLabel() || undefined);
+    if (label === null) return;
+    this.editor.saveToLibrary({ label: label || undefined, asNew: true });
+    this.selectedLibraryId.set(this.editor.activeSceneId());
+  }
+
+  loadSelected(): void {
+    const id = this.selectedLibraryId();
+    if (!id) return;
+    this.editor.loadFromLibrary(id);
+  }
+
+  renameSelected(): void {
+    const id = this.selectedLibraryId();
+    if (!id) return;
+    const current =
+      this.editor.sceneList().find((s) => s.id === id)?.label ?? this.editor.activeSceneLabel();
+    const label = this.promptName(current);
+    if (label === null || !label.trim()) return;
+    this.editor.renameInLibrary(id, label.trim());
+  }
+
+  deleteSelected(): void {
+    const id = this.selectedLibraryId();
+    if (!id) return;
+    if (!window.confirm(this.i18n.t('sceneDeleteConfirm'))) return;
+    this.editor.deleteFromLibrary(id);
+    this.selectedLibraryId.set(this.editor.activeSceneId());
+  }
+
+  exportFile(): void {
+    this.editor.exportSceneFile();
+  }
+
+  importClick(): void {
     this.fileInput.nativeElement.click();
   }
 
@@ -209,16 +268,35 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    await this.editor.loadSceneFile(file);
+    await this.editor.importSceneFile(file);
+    this.selectedLibraryId.set(this.editor.activeSceneId());
     input.value = '';
   }
 
   resetDemo(): void {
     this.editor.resetDemo();
+    this.selectedLibraryId.set(null);
   }
 
   screenshot(): void {
     this.editor.screenshot();
+  }
+
+  formatUpdated(ms: number): string {
+    try {
+      return new Date(ms).toLocaleString(this.i18n.locale() === 'hu' ? 'hu-HU' : 'en-GB', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
+    } catch {
+      return '';
+    }
+  }
+
+  private promptName(initial?: string): string | null {
+    const raw = window.prompt(this.i18n.t('sceneNamePrompt'), initial ?? '');
+    if (raw === null) return null;
+    return raw.trim();
   }
 }
 

@@ -23,6 +23,15 @@ h4.subhead {
   opacity: 0.9;
 }
 
+h5.subhead-sm {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--ls-muted);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 label {
   display: flex;
   flex-direction: column;

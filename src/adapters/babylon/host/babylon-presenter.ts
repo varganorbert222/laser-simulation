@@ -14,6 +14,8 @@ import '@babylonjs/core/Lights/hemisphericLight.js';
 import '@babylonjs/core/Lights/directionalLight.js';
 import '@babylonjs/core/Lights/spotLight.js';
 import '@babylonjs/core/Lights/pointLight.js';
+import '@babylonjs/core/Rendering/depthRendererSceneComponent.js';
+import type { DepthRenderer } from '@babylonjs/core/Rendering/depthRenderer.js';
 import {
   environmentClearRgb,
   environmentHemiIntensity,
@@ -60,6 +62,7 @@ export class BabylonPresenter implements FramePresenter {
   private readonly lights: SurfaceLightSync;
   private readonly pipeline: StudioPipeline;
   private readonly volumetrics: VolumetricBinder;
+  private readonly depthRenderer: DepthRenderer;
   private readonly hemi: HemisphericLight;
   private readonly sun: DirectionalLight;
   private readonly canvas: HTMLCanvasElement;
@@ -133,6 +136,10 @@ export class BabylonPresenter implements FramePresenter {
       (id, t) => this.options.onTransformDragEnd?.(id, t),
     );
     this.lights = new SurfaceLightSync(this.scene);
+    // Surface spots/specular: Babylon Point/Spot/Directional → StandardMaterial.
+    // (SurfaceRadiancePlugin kept in tree for BeamModel experiments; not wired here.)
+    // Rebuild meshes after lights exist so maxSimultaneousLights covers emitters.
+    this.meshes.setWorld(this.world);
     // Low-res volumetric RTT + native compose PP (Babylon multi-pass pattern).
     // StudioPipeline (bloom/FXAA) attaches after so the scene RT stays native.
     this.volumetrics = new VolumetricBinder(
@@ -142,6 +149,16 @@ export class BabylonPresenter implements FramePresenter {
       this.world.resources.Quality.renderScale,
     );
     this.volumetrics.bindWorld(this.world, this.camera);
+    // Camera-space Z depth — opaque surfaces stop volumetric beams; transparent (transmission) skip depth write.
+    this.depthRenderer = this.scene.enableDepthRenderer(
+      this.camera,
+      false,
+      true,
+      undefined,
+      true,
+    );
+    this.depthRenderer.forceDepthWriteTransparentMeshes = false;
+    this.volumetrics.setSceneDepthTexture(this.depthRenderer.getDepthMap());
     this.pipeline = new StudioPipeline(this.scene, this.camera);
 
     this.pickingDispose = bindViewportPicking(
@@ -260,6 +277,7 @@ export class BabylonPresenter implements FramePresenter {
     this.lights.dispose();
     this.pipeline.dispose();
     this.volumetrics.dispose();
+    this.scene.disableDepthRenderer(this.camera);
     this.scene.dispose();
     this.engine.dispose();
   }
@@ -272,7 +290,3 @@ export class BabylonPresenter implements FramePresenter {
     this.world.resources.Camera.dirty = false;
   }
 }
-
-/** @deprecated Use BabylonPresenter */
-export { BabylonPresenter as BabylonHost };
-export type { BabylonPresenterOptions as BabylonHostOptions };

@@ -11,9 +11,6 @@ export type SurfaceFinishPreset =
   | 'chrome'
   | 'custom';
 
-/** @deprecated Use SurfaceFinishPreset */
-export type FixtureFinishPreset = SurfaceFinishPreset;
-
 export const SURFACE_FINISH_PRESETS: readonly Exclude<SurfaceFinishPreset, 'custom'>[] = [
   'matte_black',
   'anodized_aluminum',
@@ -21,9 +18,6 @@ export const SURFACE_FINISH_PRESETS: readonly Exclude<SurfaceFinishPreset, 'cust
   'brushed_metal',
   'chrome',
 ] as const;
-
-/** @deprecated Use SURFACE_FINISH_PRESETS */
-export const FIXTURE_FINISH_PRESETS = SURFACE_FINISH_PRESETS;
 
 export interface SurfaceMaterial {
   preset: SurfaceFinishPreset;
@@ -33,6 +27,11 @@ export interface SurfaceMaterial {
   metalness: number;
   /** Roughness 0–1 (smooth → sharp specular). */
   roughness: number;
+  /**
+   * Optical transmission 0–1 (0 = opaque blocks volumetric beams;
+   * 1 = glass-like, beam continues through).
+   */
+  transmission: number;
 }
 
 /** Legacy nested shape on LightEmitter saves (may include housingCoupling). */
@@ -44,11 +43,11 @@ const PRESET_TABLE: Record<
   Exclude<SurfaceFinishPreset, 'custom'>,
   Omit<SurfaceMaterial, 'preset'>
 > = {
-  matte_black: { albedo: 0.06, metalness: 0.05, roughness: 0.85 },
-  anodized_aluminum: { albedo: 0.28, metalness: 0.75, roughness: 0.45 },
-  painted_plastic: { albedo: 0.22, metalness: 0.0, roughness: 0.7 },
-  brushed_metal: { albedo: 0.35, metalness: 0.9, roughness: 0.55 },
-  chrome: { albedo: 0.55, metalness: 1.0, roughness: 0.12 },
+  matte_black: { albedo: 0.06, metalness: 0.05, roughness: 0.85, transmission: 0 },
+  anodized_aluminum: { albedo: 0.28, metalness: 0.75, roughness: 0.45, transmission: 0 },
+  painted_plastic: { albedo: 0.22, metalness: 0.0, roughness: 0.7, transmission: 0 },
+  brushed_metal: { albedo: 0.35, metalness: 0.9, roughness: 0.55, transmission: 0 },
+  chrome: { albedo: 0.55, metalness: 1.0, roughness: 0.12, transmission: 0 },
 };
 
 /** Default aperture coupling when migrating old housingCoupling presets. */
@@ -71,13 +70,6 @@ export function surfaceMaterialFromPreset(
   return { preset, ...PRESET_TABLE[preset] };
 }
 
-/** @deprecated Use surfaceMaterialFromPreset */
-export function fixtureSurfaceFromPreset(
-  preset: Exclude<SurfaceFinishPreset, 'custom'>,
-): SurfaceMaterial {
-  return surfaceMaterialFromPreset(preset);
-}
-
 export function defaultSurfaceMaterial(): SurfaceMaterial {
   return surfaceMaterialFromPreset('anodized_aluminum');
 }
@@ -89,12 +81,8 @@ export function defaultGroundSurfaceMaterial(): SurfaceMaterial {
     albedo: 0.18,
     metalness: 0.05,
     roughness: 0.82,
+    transmission: 0,
   };
-}
-
-/** @deprecated Use defaultSurfaceMaterial */
-export function defaultFixtureSurface(): SurfaceMaterial {
-  return defaultSurfaceMaterial();
 }
 
 export function isSurfaceFinishPreset(value: unknown): value is SurfaceFinishPreset {
@@ -108,9 +96,6 @@ export function isSurfaceFinishPreset(value: unknown): value is SurfaceFinishPre
   );
 }
 
-/** @deprecated Use isSurfaceFinishPreset */
-export const isFixtureFinishPreset = isSurfaceFinishPreset;
-
 export function normalizeSurfaceMaterial(
   raw: Partial<SurfaceMaterial> | LegacyFixtureSurfaceMaterial | null | undefined,
 ): SurfaceMaterial {
@@ -121,7 +106,8 @@ export function normalizeSurfaceMaterial(
     const hasCustom =
       typeof raw.albedo === 'number' ||
       typeof raw.metalness === 'number' ||
-      typeof raw.roughness === 'number';
+      typeof raw.roughness === 'number' ||
+      typeof raw.transmission === 'number';
     if (!hasCustom) return surfaceMaterialFromPreset(preset);
   }
   return {
@@ -135,14 +121,11 @@ export function normalizeSurfaceMaterial(
       typeof raw.roughness === 'number' ? raw.roughness : d.roughness,
       d.roughness,
     ),
+    transmission: clampUnit(
+      typeof raw.transmission === 'number' ? raw.transmission : d.transmission,
+      d.transmission,
+    ),
   };
-}
-
-/** @deprecated Use normalizeSurfaceMaterial */
-export function normalizeFixtureSurface(
-  raw: Partial<SurfaceMaterial> | LegacyFixtureSurfaceMaterial | null | undefined,
-): SurfaceMaterial {
-  return normalizeSurfaceMaterial(raw);
 }
 
 export function apertureCouplingFromLegacyMaterial(

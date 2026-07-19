@@ -1,3 +1,4 @@
+import { radianceFieldGlslFunctions } from '../../../engine/optics/beam-model';
 import { VOLUMETRIC_LIGHT_SLOTS } from '../../../engine/render/pack';
 
 function lightUniformDecls(slots: number): string {
@@ -7,6 +8,7 @@ function lightUniformDecls(slots: number): string {
       `uniform vec3 uLightOrigin${i}; uniform vec3 uLightDir${i}; uniform vec3 uLightColor${i};`,
       `uniform float uLightPower${i}; uniform float uLightScatter${i}; uniform float uLightMode${i};`,
       `uniform float uLightP0${i}; uniform float uLightP1${i}; uniform float uLightP2${i}; uniform float uLightP3${i};`,
+      `uniform float uLightP4${i}; uniform float uLightP5${i};`,
       `uniform vec3 uLightSpill${i};`,
     );
   }
@@ -17,16 +19,22 @@ function lightEvalInMarch(slots: number): string {
   const blocks: string[] = [];
   for (let i = 0; i < slots; i++) {
     blocks.push(`    if (uLightCount > ${i}.5) {
-      float Li = evalLightWithSpill(
+      float Li = rfEvalRadianceField(
         p, uLightOrigin${i}, uLightDir${i}, uLightMode${i},
-        uLightP0${i}, uLightP1${i}, uLightP2${i}, uLightP3${i}, uLightSpill${i}
+        uLightP0${i}, uLightP1${i}, uLightP2${i}, uLightP3${i},
+        uLightP4${i}, uLightP5${i}, uLightSpill${i}
       );
-      float spec${i} = spectralScatterFactor(uLightScatter${i}, spectralExp);
-      // Mie: cosθ = ω_in · ω_out (laser dir · view toward camera; cam-space origin = 0).
-      vec3 viewDir${i} = normalize(-(p + rd * 1e-4));
-      float cosTheta${i} = clamp(dot(normalize(uLightDir${i}), viewDir${i}), -1.0, 1.0);
-      float mie${i} = phaseHG(cosTheta${i}, mieG);
-      col += tint * uLightColor${i} * Li * scatter * T * uLightPower${i} * (0.5 + spec${i}) * mie${i} * 2.4;
+      if (Li > 1e-8) {
+        float spec${i} = spectralScatterFactor(uLightScatter${i}, spectralExp);
+        vec3 incident${i} = uLightMode${i} < 0.5
+          ? normalize(p - uLightOrigin${i})
+          : normalize(uLightDir${i});
+        vec3 viewDir${i} = normalize(-rd);
+        float cosTheta${i} = clamp(dot(incident${i}, viewDir${i}), -1.0, 1.0);
+        // Full media HG phase (absolute); no mode-dependent theatrical blend.
+        float mie${i} = phaseHG(cosTheta${i}, mieG);
+        col += tint * uLightColor${i} * Li * scatter * T * uLightPower${i} * (0.5 + spec${i}) * mie${i};
+      }
     }`);
   }
   return blocks.join('\n');
@@ -46,6 +54,8 @@ function lightUniformNames(slots: number): string[] {
       `uLightP1${i}`,
       `uLightP2${i}`,
       `uLightP3${i}`,
+      `uLightP4${i}`,
+      `uLightP5${i}`,
       `uLightSpill${i}`,
     );
   }
@@ -60,7 +70,10 @@ varying vec2 vUV;
 uniform vec2 uResolution;
 uniform float uTime;
 uniform mat4 uInvViewProj;
+uniform mat4 uView;
 uniform vec3 uCameraPos;
+uniform float uUseSceneDepth;
+uniform sampler2D uSceneDepth;
 
 uniform float uStepSize;
 uniform float uMaxSteps;
@@ -197,119 +210,19 @@ float spectralScatterFactor(float rayleighWeight, float exponent) {
 }
 
 /**
- * Henyey–Greenstein phase (relative: g=0 → 1).
+ * Henyey–Greenstein phase (absolute: ∫p dΩ = 1; g=0 → 1/(4π)).
  * Forward Mie (g→1): bright looking into the beam, dark from behind.
  */
 float phaseHG(float cosTheta, float g) {
   float g2 = g * g;
   float denom = pow(max(1.0 - 2.0 * g * cosTheta + g2, 1e-6), 1.5);
-  return (1.0 - g2) / denom;
+  return ((1.0 - g2) / denom) * 0.0795774715; // 1/(4π)
 }
 
-float beamRadiusAt(float t, float w0, float parallelness, float lambdaM) {
-  float zR = 3.14159265 * w0 * w0 / max(lambdaM, 1e-12);
-  float gauss = w0 * sqrt(1.0 + (t / max(zR, 1e-6)) * (t / max(zR, 1e-6)));
-  float diverging = w0 + 0.002 * t;
-  return mix(diverging, gauss, clamp(parallelness, 0.0, 1.0));
-}
+/* Shared with surface plugin — CPU twin: engine/optics/beam-model.ts evalRadianceField */
+${radianceFieldGlslFunctions()}
 
-float evalLight(vec3 pCam, vec3 o, vec3 dIn, float mode, float p0, float p1, float p2, float p3) {
-  vec3 d = normalize(dIn);
-  vec3 op = pCam - o;
-  float t = dot(op, d);
-  if (t < 0.0) return 0.0;
-  float r = length(pCam - (o + d * t));
-
-  if (mode < 0.5) {
-    float softR = max(p0, 0.01);
-    return 1.0 / (1.0 + pow(length(op) / softR, max(p1, 0.5)));
-  }
-  if (mode < 1.5) {
-    float inner = p0;
-    float outer = max(p1, inner + 0.001);
-    vec3 v = normalize(op);
-    float cosTheta = max(dot(v, d), 0.0);
-    float angle = acos(cosTheta);
-    float cone = 1.0 - smoothstep(inner, outer, angle);
-    return cone * pow(cosTheta, max(p2, 1.0) * 0.25) * exp(-(r * r) / 0.0225);
-  }
-  if (mode < 2.5) {
-    float br = p0 + p1 * t;
-    return exp(-(r * r) / max(br * br, 1e-8));
-  }
-  float w0 = max(p0, 1e-4);
-  float br = beamRadiusAt(t, w0, p1, max(p2, 1e-9));
-  return exp(-(r * r) / max(br * br, 1e-10)) * exp(-0.08 * t);
-}
-
-/**
- * Core beam + optics spill:
- * - stray: wide soft field under/around the focused beam
- * - internal reflection: farther secondary lobe / “ground field”
- * - aperture spill: near-origin glow at the aperture rim
- * Core radius estimate keeps spill proportional to the main beam width.
- */
-float evalLightWithSpill(
-  vec3 pCam,
-  vec3 o,
-  vec3 dIn,
-  float mode,
-  float p0,
-  float p1,
-  float p2,
-  float p3,
-  vec3 spill
-) {
-  float core = evalLight(pCam, o, dIn, mode, p0, p1, p2, p3);
-  float strayW = max(spill.x, 0.0);
-  float internalW = max(spill.y, 0.0);
-  float apertureW = max(spill.z, 0.0);
-  if (strayW + internalW + apertureW < 1e-5) return core;
-
-  vec3 d = normalize(dIn);
-  vec3 op = pCam - o;
-  float t = dot(op, d);
-  if (t < 0.0) {
-    // Behind aperture: only a tiny rim glow can peek backward.
-    float rb = length(op);
-    return core + apertureW * 0.025 * exp(-(rb * rb) / 0.01);
-  }
-  float r = length(pCam - (o + d * t));
-
-  float brCore = 0.02;
-  if (mode >= 2.5) {
-    brCore = beamRadiusAt(t, max(p0, 1e-4), p1, max(p2, 1e-9));
-  } else if (mode >= 1.5) {
-    brCore = max(p0 + p1 * t, 0.01);
-  } else if (mode >= 0.5) {
-    brCore = 0.15;
-  } else {
-    brCore = max(p0 * 0.25, 0.05);
-  }
-
-  // Stray / internal / aperture are fractions of optical power — keep peaks ≪ core (~1).
-  // Previously strayW≈1 made spill as bright as the main beam and washed it out.
-  float brStray = brCore * (2.5 + 2.0 * strayW);
-  float stray =
-    0.045 * strayW * exp(-(r * r) / max(brStray * brStray, 1e-6)) * exp(-0.05 * t);
-
-  float brLobe = brCore * (5.0 + 3.0 * internalW);
-  float lobe =
-    0.028 * internalW *
-    exp(-(r * r) / max(brLobe * brLobe, 1e-6)) *
-    smoothstep(0.6, 4.0, t) *
-    exp(-0.035 * t);
-
-  float apertR = 0.02 + brCore * 1.2;
-  float apert =
-    0.07 * apertureW *
-    exp(-(r * r) / max(apertR * apertR, 1e-6)) *
-    exp(-t / max(0.1 + 0.15 * apertureW, 0.05));
-
-  return core + stray + lobe + apert;
-}
-
-vec3 march(vec3 ro, vec3 rd) {
+vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
   if (uMediaCount < 0.5 || uLightCount < 0.5) return vec3(0.0);
 
   float tEnter = 1e9;
@@ -328,16 +241,21 @@ vec3 march(vec3 ro, vec3 rd) {
   float tMax = tExit;
   if (tMax <= tMin) return vec3(0.0);
 
-  float stepSize = max(uStepSize, 0.02);
-  int steps = int(min((tMax - tMin) / stepSize, uMaxSteps));
-  float jitter = hash(rd * (uTime + 1.7)) * stepSize;
+  float baseStep = max(uStepSize, 0.02);
+  int maxSteps = int(uMaxSteps);
+  float jitter = hash(rd * (uTime + 1.7)) * baseStep;
   vec3 col = vec3(0.0);
   float T = 1.0;
+  float t = tMin + jitter;
+  int i = 0;
 
-  for (int i = 0; i < 256; i++) {
-    if (i >= steps) break;
-    float t = tMin + float(i) * stepSize + jitter;
+  for (int k = 0; k < 512; k++) {
+    if (i >= maxSteps || t >= tMax) break;
     vec3 p = ro + rd * t;
+    if (uUseSceneDepth > 0.5 && sceneZCam > 1e-4) {
+      float z = abs((uView * vec4(p + uCameraPos, 1.0)).z);
+      if (z >= sceneZCam - 0.03) break;
+    }
     float dens;
     vec3 tint;
     float sigmaS;
@@ -345,13 +263,25 @@ vec3 march(vec3 ro, vec3 rd) {
     float spectralExp;
     float mieG;
     sampleMedia(p, dens, tint, sigmaS, sigmaA, spectralExp, mieG);
-    if (dens < uDensityThreshold) continue;
+
+    // Empty-space skip: larger steps when density is negligible
+    float stepSize = baseStep;
+    if (dens < uDensityThreshold) {
+      stepSize = baseStep * 2.5;
+      t += stepSize;
+      i++;
+      continue;
+    }
+
     float sigmaT = sigmaS + sigmaA;
     T *= exp(-sigmaT * dens * stepSize * 0.5);
     if (T < uTransmittanceCut) break;
     float scatter = sigmaS * dens * stepSize;
 
 ${lightEvalInMarch(VOLUMETRIC_LIGHT_SLOTS)}
+
+    t += stepSize;
+    i++;
   }
   return col;
 }
@@ -369,7 +299,12 @@ void main(void) {
   vec3 ro = nearW - uCameraPos;
   vec3 rd = normalize(farW - nearW);
 
-  vec3 vol = march(ro, rd);
+  float sceneZCam = 0.0;
+  if (uUseSceneDepth > 0.5) {
+    sceneZCam = texture2D(uSceneDepth, vUV).r;
+  }
+
+  vec3 vol = march(ro, rd, sceneZCam);
   // HDR linear contribution — tonemap + gamma happen after compose (ACES in DRP).
   gl_FragColor = vec4(vol, 1.0);
 }
@@ -382,6 +317,7 @@ precision highp float;
 varying vec2 vUV;
 uniform sampler2D textureSampler;
 uniform sampler2D volumetricTexture;
+uniform float uTonemapMode; // 0 = ACES, 1 = Reinhard
 
 float acesFilmCurve(float x) {
   float a = 2.51;
@@ -392,7 +328,6 @@ float acesFilmCurve(float x) {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
-// Tonemap luminance only — preserves λ chromaticity (no green→yellow clip).
 vec3 acesLuminance(vec3 hdr) {
   float y = dot(hdr, vec3(0.2126, 0.7152, 0.0722));
   if (y < 1e-8) return vec3(0.0);
@@ -403,11 +338,20 @@ vec3 acesLuminance(vec3 hdr) {
   return mapped;
 }
 
+vec3 reinhardLuminance(vec3 hdr) {
+  float y = dot(hdr, vec3(0.2126, 0.7152, 0.0722));
+  if (y < 1e-8) return vec3(0.0);
+  float mappedY = y / (1.0 + y);
+  vec3 mapped = hdr * (mappedY / y);
+  float peak = max(mapped.r, max(mapped.g, mapped.b));
+  if (peak > 1.0) mapped /= peak;
+  return mapped;
+}
+
 void main(void) {
   vec3 scene = texture2D(textureSampler, vUV).rgb;
   vec3 vol = texture2D(volumetricTexture, vUV).rgb;
-  // Tonemap beam/fog alone (keeps λ hue). Add onto scene — do not re-crush with / (1+y).
-  vec3 volMapped = acesLuminance(vol);
+  vec3 volMapped = uTonemapMode > 0.5 ? reinhardLuminance(vol) : acesLuminance(vol);
   vec3 outc = scene + volMapped;
   gl_FragColor = vec4(outc, 1.0);
 }
@@ -417,7 +361,9 @@ export const VOLUMETRIC_UNIFORMS = [
   'uResolution',
   'uTime',
   'uInvViewProj',
+  'uView',
   'uCameraPos',
+  'uUseSceneDepth',
   'uStepSize',
   'uMaxSteps',
   'uDensityThreshold',
@@ -433,3 +379,5 @@ export const VOLUMETRIC_UNIFORMS = [
   'uMediaNoiseLow1', 'uMediaNoiseHigh1', 'uMediaScatter1', 'uMediaAbsorb1', 'uMediaSpectralExp1',
   'uMediaMieG1',
 ];
+
+export const VOLUMETRIC_SAMPLERS = ['uSceneDepth'];

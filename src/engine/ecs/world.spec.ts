@@ -11,6 +11,8 @@ import { CommandStack } from '../commands/stack';
 import { setLightEmitterCommand } from '../commands/handlers';
 import { buildHierarchyTree } from '../hierarchy/tree';
 import { duplicateEntitySubtree } from '../hierarchy/ops';
+import { createSceneEntity } from '../hierarchy/entity-factory';
+import { defaultLightEmitter } from './components';
 
 describe('world transform', () => {
   it('composes parent and child transforms', () => {
@@ -63,6 +65,33 @@ describe('render pack', () => {
     expect(pack.lights).toHaveLength(1);
     expect(pack.media).toHaveLength(1);
     expect(pack.lights[0].mode).toBe(3);
+  });
+
+  it('packs spotlight and omni into volumetric slots like lasers', () => {
+    const world = createDemoWorld();
+    const spot = createSceneEntity(world, { name: 'Spot', parentId: 'scene_root' });
+    world.add(spot, 'LightEmitter', {
+      ...defaultLightEmitter(),
+      params: {
+        mode: 'spotlight',
+        spot: { innerConeDeg: 12, outerConeDeg: 28, apertureSharpness: 4 },
+      },
+    });
+    const omni = createSceneEntity(world, { name: 'Omni', parentId: 'scene_root' });
+    world.add(omni, 'LightEmitter', {
+      ...defaultLightEmitter(),
+      params: {
+        mode: 'omni_lamp',
+        omni: { softRadiusM: 1.5, falloff: 2 },
+      },
+    });
+    worldTransformSystem(world);
+    const pack = gatherRenderPack(world);
+    const modes = pack.lights.map((l) => l.mode).sort();
+    expect(modes).toContain(0); // omni
+    expect(modes).toContain(1); // spotlight
+    expect(modes).toContain(3); // laser
+    expect(pack.lights.length).toBeGreaterThanOrEqual(3);
   });
 
   it('packs up to MAX_GPU_LIGHTS lasers for volumetric slots', () => {

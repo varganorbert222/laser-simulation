@@ -16,6 +16,8 @@ describe('quality render scale', () => {
     expect(renderScaleForPreset('high')).toBeCloseTo(0.25 + (2 * (0.5 - 0.25)) / 3);
     expect(createQuality('ultra').renderScale).toBeCloseTo(0.5);
     expect(createQuality('medium').antiAliasing).toBe(true);
+    expect(createQuality('medium').theatricalGlow).toBe(false);
+    expect(createQuality('medium').tonemapMode).toBe('aces');
   });
 
   it('clamps and orders min/max from config', () => {

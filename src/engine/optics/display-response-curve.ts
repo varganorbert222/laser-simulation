@@ -31,9 +31,6 @@ export const DISPLAY_SCIENCE_POWER_GAMMA = 0.7;
 /** Luminous product ref: 1 W at V=1 → 1000 mW·V. */
 export const DISPLAY_SCIENCE_LUMINOUS_REF = 1000;
 
-/** @deprecated Theatrical lightsaber HDR at 1 W — kept for older imports. */
-export const DISPLAY_RESPONSE_SABER_HDR = 48;
-
 export interface DisplayResponsePoint {
   /** Log-power parameter in [0, 1] (see sliderTFromPowerW). */
   t: number;
@@ -65,9 +62,10 @@ export function scientificDisplayLuminousToneMap(luminousProduct: number): numbe
   return c * (1 - Math.exp(-raw / Math.max(1e-9, c)));
 }
 
-/** @deprecated Use scientificDisplayLuminousToneMap — alias for callers. */
-export function analyticDisplayLuminousToneMap(luminousProduct: number): number {
-  return scientificDisplayLuminousToneMap(luminousProduct);
+/** Simple Reinhard luminance map for optional display path comparisons. */
+export function reinhardDisplayToneMap(hdrLinear: number): number {
+  const x = Math.max(0, hdrLinear);
+  return x / (1 + x);
 }
 
 export function clampHdr(hdr: number): number {

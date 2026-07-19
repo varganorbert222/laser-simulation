@@ -57,9 +57,14 @@ export class EditorFacade {
   readonly scienceReadout = this.light.scienceReadout;
   readonly quality = this.session.quality;
   readonly antiAliasing = this.session.antiAliasing;
+  readonly theatricalGlow = this.session.theatricalGlow;
+  readonly tonemapMode = this.session.tonemapMode;
   readonly ambientLevel = this.session.ambientLevel;
   readonly responseCurve = this.session.responseCurve;
   readonly powerPresets = this.light.powerPresets;
+  readonly sceneList = this.session.sceneList;
+  readonly activeSceneId = this.session.activeSceneId;
+  readonly activeSceneLabel = this.session.activeSceneLabel;
 
   readonly selectedName = computed(() => {
     this.engine.epoch();
@@ -230,6 +235,14 @@ export class EditorFacade {
     this.session.setAntiAliasing(enabled);
   }
 
+  setTheatricalGlow(enabled: boolean): void {
+    this.session.setTheatricalGlow(enabled);
+  }
+
+  setTonemapMode(mode: 'aces' | 'reinhard'): void {
+    this.session.setTonemapMode(mode);
+  }
+
   setAmbientLevel(ambientLevel: number): void {
     this.session.setAmbientLevel(ambientLevel);
   }
@@ -242,12 +255,28 @@ export class EditorFacade {
     this.session.resetResponseCurve();
   }
 
-  saveScene(): void {
-    this.session.saveScene();
+  saveToLibrary(opts?: { id?: string | null; label?: string; asNew?: boolean }): void {
+    this.session.saveToLibrary(opts);
   }
 
-  loadSceneFile(file: File): Promise<void> {
-    return this.session.loadSceneFile(file);
+  loadFromLibrary(id: string): boolean {
+    return this.session.loadFromLibrary(id);
+  }
+
+  deleteFromLibrary(id: string): void {
+    this.session.deleteFromLibrary(id);
+  }
+
+  renameInLibrary(id: string, label: string): void {
+    this.session.renameInLibrary(id, label);
+  }
+
+  exportSceneFile(filename?: string): void {
+    this.session.exportSceneFile(filename);
+  }
+
+  importSceneFile(file: File): Promise<void> {
+    return this.session.importSceneFile(file);
   }
 
   resetDemo(): void {

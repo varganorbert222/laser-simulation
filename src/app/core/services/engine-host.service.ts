@@ -1,9 +1,8 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import {
   EditHistory,
   StudioRuntime,
   applySelection,
-  createDemoWorld,
   normalizeEditorSelection,
   setTransformCommand,
   setTransformsCommand,
@@ -14,6 +13,7 @@ import {
   type World,
 } from '../../../engine';
 import { BabylonPresenter } from '../../../adapters/babylon';
+import { SceneLibraryService } from '../editor/scene-library.service';
 
 export interface HostSelectOptions {
   mode?: SelectionMode;
@@ -26,7 +26,9 @@ export interface HostSelectOptions {
 
 @Injectable({ providedIn: 'root' })
 export class EngineHostService {
-  readonly world = signal<World>(createDemoWorld());
+  private readonly sceneLibrary = inject(SceneLibraryService);
+
+  readonly world = signal<World>(this.sceneLibrary.resolveStartupWorld());
   readonly epoch = signal(0);
   readonly canUndo = signal(false);
   readonly canRedo = signal(false);

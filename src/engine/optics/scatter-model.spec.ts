@@ -41,9 +41,10 @@ describe('scatter model', () => {
   });
 
   it('Henyey–Greenstein is isotropic at g=0 and forward-peaked for fog g', () => {
-    expect(phaseHG(0, 0)).toBeCloseTo(1, 6);
-    expect(phaseHG(1, 0)).toBeCloseTo(1, 6);
-    expect(phaseHG(-1, 0)).toBeCloseTo(1, 6);
+    const inv4pi = 1 / (4 * Math.PI);
+    expect(phaseHG(0, 0)).toBeCloseTo(inv4pi, 6);
+    expect(phaseHG(1, 0)).toBeCloseTo(inv4pi, 6);
+    expect(phaseHG(-1, 0)).toBeCloseTo(inv4pi, 6);
 
     const g = defaultMieAnisotropy('tyndall', 200);
     expect(g).toBeGreaterThan(0.7);

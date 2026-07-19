@@ -1,11 +1,11 @@
 import {
   Color3,
+  Material,
   Mesh,
   MeshBuilder,
   Quaternion,
   StandardMaterial,
   type AbstractMesh,
-  type Material,
   type Scene,
 } from '@babylonjs/core';
 // Ensure default material shaders are registered (tree-shaken ESM builds).
@@ -15,6 +15,7 @@ import {
   displayRgb,
   laserDotDisplayBrightness,
   SURFACE_MAX_SIMULTANEOUS_LIGHTS,
+  surfaceBrdfWeights,
   wavelengthToRgb,
   type GizmoMode,
   type LightEmitter,
@@ -33,16 +34,29 @@ export class SceneMeshSync {
   private lastGizmoMode: GizmoMode = 'none';
   private lastGizmoEntity: string | null = null;
   private world: World;
+  private onSurfaceMaterial:
+    | ((mat: StandardMaterial, sm: SurfaceMaterial | null) => void)
+    | null = null;
 
   constructor(
     private readonly scene: Scene,
     world: World,
     private readonly onDragStart: (entityId: string) => void,
     private readonly onDragEnd: (entityId: string, transform: Transform) => void,
+    opts?: {
+      onSurfaceMaterial?: (mat: StandardMaterial, sm: SurfaceMaterial | null) => void;
+    },
   ) {
     this.world = world;
     this.floor = new DebugFloor(scene, { extent: 20, step: 1 });
     this.gizmo = new StudioTransformGizmo(scene);
+    this.onSurfaceMaterial = opts?.onSurfaceMaterial ?? null;
+  }
+
+  setSurfaceMaterialHook(
+    hook: (mat: StandardMaterial, sm: SurfaceMaterial | null) => void,
+  ): void {
+    this.onSurfaceMaterial = hook;
   }
 
   setWorld(world: World): void {
@@ -183,6 +197,8 @@ export class SceneMeshSync {
         mat.maxSimultaneousLights = SURFACE_MAX_SIMULTANEOUS_LIGHTS;
         mat.diffuseColor = new Color3(vol.color[0], vol.color[1], vol.color[2]);
         mat.alpha = 0.08;
+        mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+        mat.disableDepthWrite = true;
         mat.wireframe = true;
         box.material = mat;
         box.metadata = { entityId: id };
@@ -239,27 +255,43 @@ export class SceneMeshSync {
     mat.diffuseColor = fallbackDiffuse;
     mat.specularColor = new Color3(0.35, 0.35, 0.35);
     mat.specularPower = 32;
+    this.onSurfaceMaterial?.(mat, null);
     return mat;
   }
 
   /**
    * Educational PBR-ish look on StandardMaterial (avoids PBR shader/plugin issues).
-   * metalness → specular; roughness → specularPower.
+   * Uses surfaceBrdfWeights — same mapping as SurfaceRadiancePlugin.
    */
   private createSurfaceMaterial(name: string, sm: SurfaceMaterial): StandardMaterial {
     const mat = new StandardMaterial(name, this.scene);
     mat.maxSimultaneousLights = SURFACE_MAX_SIMULTANEOUS_LIGHTS;
     this.applySurfaceParams(mat, sm);
+    this.onSurfaceMaterial?.(mat, sm);
     return mat;
   }
 
   private applySurfaceParams(mat: StandardMaterial, sm: SurfaceMaterial): void {
-    const a = sm.albedo;
-    const dielectric = 1 - sm.metalness;
-    mat.diffuseColor = new Color3(a * dielectric, a * dielectric, a * dielectric);
-    const spec = 0.04 * dielectric + a * sm.metalness;
-    mat.specularColor = new Color3(spec, spec, spec);
-    mat.specularPower = 8 + (1 - sm.roughness) * (1 - sm.roughness) * 248;
+    const w = surfaceBrdfWeights(sm);
+    mat.diffuseColor = new Color3(w.diffuseWeight, w.diffuseWeight, w.diffuseWeight);
+    mat.specularColor = new Color3(w.specularWeight, w.specularWeight, w.specularWeight);
+    mat.specularPower = w.shininess;
+    this.applyTransmission(mat, sm.transmission);
+    this.onSurfaceMaterial?.(mat, sm);
+  }
+
+  /** Opaque blocks volumetric beams (depth write); transmission lets beams continue. */
+  private applyTransmission(mat: StandardMaterial, transmission: number): void {
+    const t = Math.min(1, Math.max(0, transmission));
+    if (t > 0.02) {
+      mat.alpha = Math.max(0.1, 1 - t * 0.9);
+      mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
+      mat.disableDepthWrite = false;
+    } else {
+      mat.alpha = 1;
+      mat.transparencyMode = Material.MATERIAL_OPAQUE;
+      mat.disableDepthWrite = false;
+    }
   }
 
   private applyFixtureMaterial(
@@ -295,6 +327,8 @@ export class SceneMeshSync {
       std.diffuseColor = new Color3(0.15, 0.15, 0.15);
       std.specularColor = new Color3(0.2, 0.2, 0.2);
       std.specularPower = 32;
+      this.applyTransmission(std, 0);
+      this.onSurfaceMaterial?.(std, null);
     }
     std.emissiveColor = emissive;
   }

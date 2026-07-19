@@ -3,7 +3,8 @@ import type { World } from '../ecs/world';
 import { getTranslation } from '../math/mat4';
 import type { Vec3 } from '../math/vec3';
 import { sub } from '../math/vec3';
-import { laserBeamDisplayPower } from '../optics/laser-brightness';
+import { beamModelFromEmitter, beamModelToGpuParams } from '../optics/beam-model';
+import { displayLuminousPower } from '../optics/laser-brightness';
 import { mediaSpectralExponent } from '../optics/scatter-model';
 import { normalizeChromaticity } from '../optics/color';
 import { rayleighScatterWeight, wavelengthToRgb } from '../optics/wavelength';
@@ -17,7 +18,7 @@ export const VOLUMETRIC_MEDIA_SLOTS = 2;
 
 /** Hemi + directional env lights that consume Babylon material light slots. */
 export const SURFACE_ENV_LIGHTS = 2;
-/** Spot/Point surface emitters driving specular (aligned with GPU pack). */
+/** Spot / Point / Directional surface emitters driving StandardMaterial specular. */
 export const SURFACE_LIGHT_SLOTS = MAX_GPU_LIGHTS;
 /** `StandardMaterial.maxSimultaneousLights` = env + surface emitters. */
 export const SURFACE_MAX_SIMULTANEOUS_LIGHTS = SURFACE_ENV_LIGHTS + SURFACE_LIGHT_SLOTS;
@@ -27,14 +28,18 @@ export interface GpuLight {
   originCam: Vec3;
   directionCam: Vec3;
   colorRgb: Vec3;
+  /** Educational display luminous scale (V(λ) × power curve). */
   powerDisplay: number;
   scatterWeight: number;
-  mode: number; // 0 omni, 1 spot, 2 parallel, 3 laser
+  /** 0 omni, 1 cone, 2 tube, 3 gaussian */
+  mode: number;
   p0: number;
   p1: number;
   p2: number;
   p3: number;
-  /** [strayLight, internalReflection, apertureSpill] 0–1. */
+  p4: number;
+  p5: number;
+  /** [strayPowerFraction, unused, unused] — GPU uses .x as energy share. */
   spill: Vec3;
 }
 
@@ -75,21 +80,6 @@ function worldToCamera(p: Vec3, camPos: Vec3): Vec3 {
   return sub(p, camPos);
 }
 
-function modeCode(mode: string): number {
-  switch (mode) {
-    case 'omni_lamp':
-      return 0;
-    case 'spotlight':
-      return 1;
-    case 'parallel':
-      return 2;
-    case 'laser':
-      return 3;
-    default:
-      return 3;
-  }
-}
-
 function mediaKind(kind: string): number {
   switch (kind) {
     case 'smoke':
@@ -114,35 +104,8 @@ export function gatherRenderPack(world: World): GatheredFrame {
 
     const pose = lightWorldPose(world, id);
     const color = normalizeChromaticity(wavelengthToRgb(emitter.wavelengthNm));
-    // Intensity only: V(λ) + power curve; Rayleigh via scatterWeight in the shader.
-    const params = emitter.params;
-
-    let p0 = 0;
-    let p1 = 0;
-    let p2 = 0;
-    let p3 = 0;
-
-    switch (params.mode) {
-      case 'omni_lamp':
-        p0 = params.omni.softRadiusM;
-        p1 = params.omni.falloff;
-        break;
-      case 'spotlight':
-        p0 = (params.spot.innerConeDeg * Math.PI) / 180;
-        p1 = (params.spot.outerConeDeg * Math.PI) / 180;
-        p2 = params.spot.apertureSharpness;
-        break;
-      case 'parallel':
-        p0 = params.parallel.beamRadiusM;
-        p1 = params.parallel.residualMrad * 1e-3;
-        break;
-      case 'laser':
-        p0 = params.laser.w0M;
-        p1 = params.laser.parallelness;
-        p2 = emitter.wavelengthNm * 1e-9;
-        p3 = params.laser.probeDistanceM;
-        break;
-    }
+    const beam = beamModelFromEmitter(emitter);
+    const gpu = beamModelToGpuParams(beam);
 
     const env = world.resources.EnvironmentLighting;
     const vision = world.resources.DisplayVision;
@@ -155,18 +118,16 @@ export function gatherRenderPack(world: World): GatheredFrame {
       originCam: worldToCamera(pose.position, camPos),
       directionCam: pose.direction,
       colorRgb: color,
-      powerDisplay: laserBeamDisplayPower(emitter.powerW, emitter.wavelengthNm, brightnessOpts),
+      powerDisplay: displayLuminousPower(emitter.powerW, emitter.wavelengthNm, brightnessOpts),
       scatterWeight: rayleighScatterWeight(emitter.wavelengthNm),
-      mode: modeCode(params.mode),
-      p0,
-      p1,
-      p2,
-      p3,
-      spill: [
-        emitter.spill.strayLight,
-        emitter.spill.internalReflection,
-        emitter.spill.apertureSpill,
-      ],
+      mode: gpu.mode,
+      p0: gpu.p0,
+      p1: gpu.p1,
+      p2: gpu.p2,
+      p3: gpu.p3,
+      p4: gpu.p4,
+      p5: gpu.p5,
+      spill: gpu.spill,
     });
   }
 

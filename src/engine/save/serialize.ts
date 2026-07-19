@@ -28,6 +28,9 @@ function normalizeQuality(q: Quality | (Partial<Quality> & { preset?: Quality['p
     preset,
     renderScale: typeof q.renderScale === 'number' ? q.renderScale : base.renderScale,
     antiAliasing: typeof q.antiAliasing === 'boolean' ? q.antiAliasing : base.antiAliasing,
+    theatricalGlow:
+      typeof q.theatricalGlow === 'boolean' ? q.theatricalGlow : base.theatricalGlow,
+    tonemapMode: q.tonemapMode === 'reinhard' || q.tonemapMode === 'aces' ? q.tonemapMode : base.tonemapMode,
   };
 }
 

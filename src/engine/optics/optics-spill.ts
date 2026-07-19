@@ -1,28 +1,26 @@
 /**
- * Unwanted light leaving the fixture aperture around / under the main beam:
- * stray light, internal reflections, and aperture spill/glow.
- * Educational 0–1 weights for volumetric raymarch secondary lobes.
+ * Residual optical power outside the ideal TEM00 / designed beam.
+ * Models imperfect baffling, scatter in the optics train, and aperture leakage
+ * as a single energy fraction (physically plausible, not three theatrical knobs).
  */
 
 export interface OpticsSpillParams {
   /**
-   * Soft field around/under the focused beam from scatter in the optics
-   * (projector haze, flashlight spill under the hot spot).
+   * Fraction of optical power in residual / stray field (0–1).
+   * Core beam is scaled by (1 − strayPowerFraction) so total power is conserved.
    */
-  strayLight: number;
-  /**
-   * Secondary lobe from internal reflections on lenses / collimator /
-   * mirrors — faint “ground spot” or off-axis field.
-   */
-  internalReflection: number;
-  /**
-   * Glow / leakage at the aperture rim when baffling is imperfect.
-   */
-  apertureSpill: number;
+  strayPowerFraction: number;
 }
 
+/** @deprecated Legacy three-channel spill — migrated into strayPowerFraction. */
+export type LegacyOpticsSpillParams = Partial<OpticsSpillParams> & {
+  strayLight?: number;
+  internalReflection?: number;
+  apertureSpill?: number;
+};
+
 export const OPTICS_SPILL_MIN = 0;
-export const OPTICS_SPILL_MAX = 1;
+export const OPTICS_SPILL_MAX = 0.85;
 
 export function clampSpill01(v: number): number {
   if (!Number.isFinite(v)) return 0;
@@ -30,39 +28,46 @@ export function clampSpill01(v: number): number {
 }
 
 export function defaultOpticsSpill(): OpticsSpillParams {
-  return {
-    strayLight: 0.22,
-    internalReflection: 0.12,
-    apertureSpill: 0.28,
-  };
+  return { strayPowerFraction: 0.08 };
 }
 
-/** Fill missing spill fields when loading older saves. */
+/**
+ * Migrate legacy {strayLight, internalReflection, apertureSpill} → single fraction.
+ * Uses a weighted mean of the three educational channels.
+ */
 export function normalizeOpticsSpill(
-  raw: Partial<OpticsSpillParams> | null | undefined,
+  raw: LegacyOpticsSpillParams | null | undefined,
 ): OpticsSpillParams {
   const d = defaultOpticsSpill();
   if (!raw || typeof raw !== 'object') return d;
-  return {
-    strayLight: clampSpill01(
-      typeof raw.strayLight === 'number' ? raw.strayLight : d.strayLight,
-    ),
-    internalReflection: clampSpill01(
-      typeof raw.internalReflection === 'number'
-        ? raw.internalReflection
-        : d.internalReflection,
-    ),
-    apertureSpill: clampSpill01(
-      typeof raw.apertureSpill === 'number' ? raw.apertureSpill : d.apertureSpill,
-    ),
-  };
+
+  if (typeof raw.strayPowerFraction === 'number' && Number.isFinite(raw.strayPowerFraction)) {
+    return { strayPowerFraction: clampSpill01(raw.strayPowerFraction) };
+  }
+
+  const hasLegacy =
+    typeof raw.strayLight === 'number' ||
+    typeof raw.internalReflection === 'number' ||
+    typeof raw.apertureSpill === 'number';
+  if (!hasLegacy) return d;
+
+  const s = typeof raw.strayLight === 'number' ? Math.max(0, raw.strayLight) : 0;
+  const i = typeof raw.internalReflection === 'number' ? Math.max(0, raw.internalReflection) : 0;
+  const a = typeof raw.apertureSpill === 'number' ? Math.max(0, raw.apertureSpill) : 0;
+  // Map 0–1 educational mix into a modest physical residual (cap at MAX).
+  const mixed = 0.45 * s + 0.25 * i + 0.3 * a;
+  return { strayPowerFraction: clampSpill01(mixed * 0.45) };
 }
 
-/** True when any spill channel contributes visibly. */
 export function hasOpticsSpill(spill: OpticsSpillParams): boolean {
-  return (
-    spill.strayLight > 1e-4 ||
-    spill.internalReflection > 1e-4 ||
-    spill.apertureSpill > 1e-4
-  );
+  return spill.strayPowerFraction > 1e-4;
+}
+
+/**
+ * Pack for GPU: [stray, internal-like, aperture-like] lobe weights derived from
+ * a single fraction (wide / mid / near-aperture residual).
+ */
+export function spillToGpuWeights(spill: OpticsSpillParams): [number, number, number] {
+  const f = clampSpill01(spill.strayPowerFraction);
+  return [f, f * 0.55, f * 0.85];
 }

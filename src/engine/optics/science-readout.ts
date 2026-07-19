@@ -248,32 +248,14 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
   ];
 
   if (hasOpticsSpill(spill)) {
-    quantities.push(
-      {
-        id: 'stray',
-        label: 'Stray light',
-        value: fmt(spill.strayLight, 3),
-        unit: '',
-        kind: 'approximated',
-        note: 'optikai szórt mező a fő nyaláb körül',
-      },
-      {
-        id: 'internal',
-        label: 'Belső reflexió',
-        value: fmt(spill.internalReflection, 3),
-        unit: '',
-        kind: 'approximated',
-        note: 'másodlagos lebeny / fényfolt',
-      },
-      {
-        id: 'aperture',
-        label: 'Aperture spill',
-        value: fmt(spill.apertureSpill, 3),
-        unit: '',
-        kind: 'approximated',
-        note: 'apertúra-széli kiszivárgás',
-      },
-    );
+    quantities.push({
+      id: 'stray',
+      label: 'Stray power fraction',
+      value: fmt(spill.strayPowerFraction, 3),
+      unit: '',
+      kind: 'approximated',
+      note: 'energia-konzisztens residual: core×(1−f), széles lebeny×f',
+    });
   }
 
   let insight =
@@ -357,11 +339,12 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       break;
     }
     case 'laser': {
-      const { w0M, parallelness, probeDistanceM } = input.params.laser;
+      const laser = input.params.laser;
+      const { w0M, m2, probeDistanceM, ellipticRatio, waistOffsetM } = laser;
       const lambdaM = input.wavelengthNm * 1e-9;
-      const zR = rayleighRange(w0M, lambdaM);
-      const wAtZ = beamRadiusAt(w0M, zR, probeDistanceM);
-      const divMrad = divergenceMrad(w0M, lambdaM);
+      const zR = rayleighRange(w0M, lambdaM, m2);
+      const wAtZ = beamRadiusAt(w0M, zR, probeDistanceM - waistOffsetM);
+      const divMrad = divergenceMrad(w0M, lambdaM, m2);
       quantities.push(
         {
           id: 'w0',
@@ -369,6 +352,14 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
           value: fmt(w0M, 4),
           unit: 'm',
           kind: 'calculated',
+        },
+        {
+          id: 'm2',
+          label: 'M²',
+          value: fmt(m2, 3),
+          unit: '',
+          kind: 'calculated',
+          note: 'nyaláb minőség (≥1)',
         },
         {
           id: 'zR',
@@ -390,25 +381,24 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
           value: fmt(divMrad, 3),
           unit: 'mrad',
           kind: 'calculated',
-          note: '≈ λ/(π w₀)',
+          note: '≈ M² λ/(π w₀)',
         },
         {
-          id: 'par',
-          label: 'Párhuzamosság',
-          value: fmt(parallelness, 3),
+          id: 'ellip',
+          label: 'Ellipticitás wy/wx',
+          value: fmt(ellipticRatio, 3),
           unit: '',
-          kind: 'approximated',
-          note: 'vizuális keverés',
+          kind: 'calculated',
         },
       );
       insight =
-        'Lézer: Gauss-nyaláb. Relatív pont fényerő ∝ P·V(λ); relatív nyaláb ∝ P·V(λ)·(550/λ)⁴ ' +
+        'Lézer: Gauss TEM00 (exp(−2r²/w²)), étendue-normált irradiance. Relatív pont fényerő ∝ P·V(λ); relatív nyaláb ∝ P·V(λ)·(550/λ)⁴ ' +
         '(Laser Beam and Dot Relative Brightness). Szem exposure a környezeti fényből. ' +
         (hasOpticsSpill(spill)
           ? 'Stray / belső reflexió / aperture spill a fő nyaláb körül látható mezőt ad.'
           : '');
       formula =
-        'relDot = (P_a·V_a)/(P_b·V_b) · relBeam = relDot·(λ_b/λ_a)⁴ · exposure(ambient)';
+        'E(r)=2P/(πw²)·exp(−2r²/w²) · BRDF(GGX); relDot = (P_a·V_a)/(P_b·V_b)';
       example =
         `Rel. pont ${fmt(relDotPointer, 3)}× / nyaláb ${fmt(relBeamPointer, 3)}× a 5 mW 532 nm pointerhez képest. ` +
         `z = ${fmt(probeDistanceM, 3)} m-nél w ≈ ${fmt(wAtZ * 1e3, 3)} mm.`;
