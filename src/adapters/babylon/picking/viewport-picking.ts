@@ -20,9 +20,11 @@ export function bindViewportPicking(
     if (gizmo.isHovered || gizmo.isDragging) return;
 
     const pick = scene.pick(scene.pointerX, scene.pointerY);
-    const entityId = (pick?.hit && pick.pickedMesh?.metadata?.entityId) as string | undefined;
+    const rawId = pick?.hit ? pick.pickedMesh?.metadata?.entityId : undefined;
+    // Only accept real ECS string ids — non-string metadata must not reach applySelection.
+    const entityId = typeof rawId === 'string' ? rawId : null;
     const ev = info.event as PointerEvent;
-    onPick(entityId ?? null, {
+    onPick(entityId, {
       ctrlKey: ev.ctrlKey,
       metaKey: ev.metaKey,
       shiftKey: ev.shiftKey,

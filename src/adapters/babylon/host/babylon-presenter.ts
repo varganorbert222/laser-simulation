@@ -164,7 +164,7 @@ export class BabylonPresenter implements FramePresenter {
       this.scene,
       this.meshes.gizmo,
       () => this.world.resources.PresentationMode === 'edit',
-      (id) => this.options.onPick?.(id),
+      (id, mods) => this.options.onPick?.(id, mods),
     ).dispose;
 
     this.meshes.applyPresentationMode();

@@ -106,8 +106,12 @@ export function applySelection(
     return;
   }
 
-  // EntityId[]
-  const ids = [...new Set(target.filter(Boolean))];
+  // EntityId[] (or unexpected pick payload — never call .filter on non-arrays)
+  if (!Array.isArray(target)) {
+    writeSelection(world, { entityId: null, entityIds: [] });
+    return;
+  }
+  const ids = [...new Set(target.filter((id): id is string => typeof id === 'string' && !!id))];
   if (ids.length === 0) {
     writeSelection(world, { entityId: null, entityIds: [] });
     return;
