@@ -27,9 +27,8 @@ describe('radiance-field GLSL parity', () => {
   it('volumetric fragment supports additive multi-media Rayleigh+Mie', () => {
     expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSR');
     expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSM');
-    // Cap at 2 GPU media slots (8× dual-FBM froze browsers on load).
-    expect(VOLUMETRIC_FRAGMENT).toContain('uMediaCenter1');
-    expect(VOLUMETRIC_FRAGMENT).not.toContain('uMediaCenter7');
+    // Exp-A: 8 GPU media slots (isolation vs freeze).
+    expect(VOLUMETRIC_FRAGMENT).toContain('uMediaCenter7');
     // Dual-channel in-scatter (not a single binary phase pick at the light loop).
     expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSR * specR');
     expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSM * specM');

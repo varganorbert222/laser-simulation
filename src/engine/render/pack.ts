@@ -3,7 +3,10 @@ import type { World } from '../ecs/world';
 import { getTranslation } from '../math/mat4';
 import type { Vec3 } from '../math/vec3';
 import { normalize, sub } from '../math/vec3';
-import { beamModelFromEmitter, beamModelToGpuParams } from '../optics/beam-model';
+import {
+  beamModelFromEmitter,
+  beamModelToGpuParams,
+} from '../optics/beam-model';
 import {
   displayLuminousPower,
   physicalLuminousScale,
@@ -31,18 +34,19 @@ import {
 } from '../optics/smoke-plume';
 
 export const MAX_GPU_LIGHTS = 8;
-/** Max MediaVolume entities packed per frame. */
+/** Max MediaVolume entities packed per frame (matches shader slots for Exp-A). */
 export const MAX_GPU_MEDIA = 4;
 /**
- * Shader media slots kept at 2 — 8× dual-FBM freezes browsers on load/compile.
- * Binder uploads only the first VOLUMETRIC_MEDIA_SLOTS of the packed list.
+ * GPU media slot count for volumetric shader generation / binder upload.
+ * Exp-A isolation: 8 (was 2 on stable). Plugin still unwired; single-FBM sample.
  */
 export const VOLUMETRIC_LIGHT_SLOTS = MAX_GPU_LIGHTS;
-export const VOLUMETRIC_MEDIA_SLOTS = 2;
+export const VOLUMETRIC_MEDIA_SLOTS = 4;
 
 export const SURFACE_ENV_LIGHTS = 2;
 export const SURFACE_LIGHT_SLOTS = MAX_GPU_LIGHTS;
-export const SURFACE_MAX_SIMULTANEOUS_LIGHTS = SURFACE_ENV_LIGHTS + SURFACE_LIGHT_SLOTS;
+export const SURFACE_MAX_SIMULTANEOUS_LIGHTS =
+  SURFACE_ENV_LIGHTS + SURFACE_LIGHT_SLOTS;
 
 export interface GpuLight {
   originCam: Vec3;
@@ -144,7 +148,8 @@ function gpuLayerKind(layer: string): number {
 }
 
 function gpuScatterModel(vol: { layer: string; scatterModel: string }): number {
-  if (vol.layer === 'outdoor' || vol.layer === 'interior') return GPU_SCATTER_MODEL_CLIMATE;
+  if (vol.layer === 'outdoor' || vol.layer === 'interior')
+    return GPU_SCATTER_MODEL_CLIMATE;
   return vol.scatterModel === 'tyndall'
     ? GPU_SCATTER_MODEL_TYNDALL
     : GPU_SCATTER_MODEL_RAYLEIGH;
@@ -183,7 +188,11 @@ export function gatherRenderPack(world: World): GatheredFrame {
       originCam: worldToCamera(pose.position, camPos),
       directionCam: pose.direction,
       colorRgb: color,
-      powerDisplay: displayLuminousPower(emitter.powerW, emitter.wavelengthNm, brightnessOpts),
+      powerDisplay: displayLuminousPower(
+        emitter.powerW,
+        emitter.wavelengthNm,
+        brightnessOpts,
+      ),
       powerLinear: physicalLuminousScale(emitter.powerW, emitter.wavelengthNm, {
         ambientLevel: env.ambientLevel,
       }),
@@ -251,7 +260,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
     });
   }
 
-  // Prefer particulate → insulating interior → outdoor so the 2 GPU slots stay useful.
+  // Prefer particulate → insulating interior → outdoor for early GPU slots.
   media.sort((a, b) => mediaGpuPriority(a) - mediaGpuPriority(b));
 
   const q = world.resources.Quality;
