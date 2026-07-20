@@ -34,19 +34,16 @@ import {
 } from '../optics/smoke-plume';
 
 export const MAX_GPU_LIGHTS = 8;
-/** Max MediaVolume entities packed per frame (matches shader slots for Exp-A). */
+/** Max MediaVolume entities packed per frame (keep equal to VOLUMETRIC_MEDIA_SLOTS). */
 export const MAX_GPU_MEDIA = 4;
-/**
- * GPU media slot count for volumetric shader generation / binder upload.
- * Exp-A isolation: 8 (was 2 on stable). Plugin still unwired; single-FBM sample.
- */
+/** GPU media slots for volumetric shader / binder (4 = stable; 8 froze). */
 export const VOLUMETRIC_LIGHT_SLOTS = MAX_GPU_LIGHTS;
 export const VOLUMETRIC_MEDIA_SLOTS = 4;
 
 export const SURFACE_ENV_LIGHTS = 2;
 export const SURFACE_LIGHT_SLOTS = MAX_GPU_LIGHTS;
-export const SURFACE_MAX_SIMULTANEOUS_LIGHTS =
-  SURFACE_ENV_LIGHTS + SURFACE_LIGHT_SLOTS;
+/** Env hemi/sun only — emitters use SurfaceRadiancePlugin, not Babylon lights. */
+export const SURFACE_MAX_SIMULTANEOUS_LIGHTS = SURFACE_ENV_LIGHTS;
 
 export interface GpuLight {
   originCam: Vec3;

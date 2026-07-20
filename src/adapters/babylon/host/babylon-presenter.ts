@@ -136,8 +136,8 @@ export class BabylonPresenter implements FramePresenter {
       (id, t) => this.options.onTransformDragEnd?.(id, t),
     );
     this.lights = new SurfaceLightSync(this.scene);
-    // Surface spots: Babylon Point/Spot → StandardMaterial.
-    // SurfaceRadiancePlugin stays in-tree but unwired (ground × BeamModel×GGX×8 freezes).
+    // Exp-B: SurfaceRadiancePlugin on every StandardMaterial (including ground).
+    this.meshes.setSurfaceMaterialHook((mat, sm) => this.lights.attachMaterial(mat, sm));
     this.meshes.setWorld(this.world);
     // Low-res volumetric RTT + native compose PP (Babylon multi-pass pattern).
     // StudioPipeline (bloom/FXAA) attaches after so the scene RT stays native.

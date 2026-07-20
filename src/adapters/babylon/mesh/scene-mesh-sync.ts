@@ -261,7 +261,7 @@ export class SceneMeshSync {
 
   /**
    * Educational PBR-ish look on StandardMaterial for env lights (hemi/sun).
-   * Emitter spots/specular come from Babylon Point/Spot via SurfaceLightSync.
+   * Emitter laser spots use SurfaceRadiancePlugin (BeamModel × GGX), not Phong specular.
    */
   private createSurfaceMaterial(name: string, sm: SurfaceMaterial): StandardMaterial {
     const mat = new StandardMaterial(name, this.scene);

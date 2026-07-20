@@ -129,7 +129,7 @@ export const hu = {
   hintFixtureSurface:
     'A theatrical glow a ház anyagából (albedó, metalness, érdesség) és a teljesítményből számolódik, ha a theatrical glow be van kapcsolva.',
   hintSurfaceMaterial:
-    'Felületi spot: Babylon Point/Spot a StandardMaterialen (diffuse + specular). A BeamModel a volumetrikus nyalábra vonatkozik.',
+    'Optikai spot: BeamModel (TEM₀₀/w₀/M²/aberráció) × Cook–Torrance GGX a SurfaceRadiancePluginben — nem Babylon StandardMaterial specular.',
   hintTransmission:
     'Áteresztés 0 = átlátszatlan (a volumetrikus nyaláb megáll a felületen). 1 ≈ üveg: a nyaláb áthalad.',
   derivedPresentation: 'Számított megjelenés',
@@ -389,7 +389,7 @@ export const en = {
   hintFixtureSurface:
     'Theatrical glow is derived from housing material (albedo, metalness, roughness) and source power when theatrical glow is enabled.',
   hintSurfaceMaterial:
-    'Surface spot: Babylon Point/Spot on StandardMaterial (diffuse + specular). BeamModel drives the volumetric beam.',
+    'Optical spot: BeamModel (TEM₀₀/w₀/M²/aberrations) × Cook–Torrance GGX in SurfaceRadiancePlugin — not Babylon StandardMaterial specular.',
   hintTransmission:
     'Transmission 0 = opaque (volumetric beam stops at the surface). 1 ≈ glass: the beam continues through.',
   derivedPresentation: 'Derived presentation',
