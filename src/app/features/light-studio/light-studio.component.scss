@@ -156,6 +156,34 @@ button.ghost {
   touch-action: none;
 }
 
+.shader-warmup {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  pointer-events: none;
+  background: rgba(7, 9, 11, 0.72);
+  color: #d8d2c4;
+  text-align: center;
+}
+
+.shader-warmup-title {
+  margin: 0;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.shader-warmup-count {
+  margin: 0;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ls-muted);
+}
+
 .hint {
   position: absolute;
   left: 0.75rem;

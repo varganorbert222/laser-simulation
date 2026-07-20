@@ -35,6 +35,10 @@ export class EngineHostService {
   readonly undoLabel = signal<string | null>(null);
   readonly redoLabel = signal<string | null>(null);
   readonly cameraPose = signal<CameraPose | null>(null);
+  /** True while the Babylon host warms up / waits for shader compile before the render loop. */
+  readonly shadersCompiling = signal(false);
+  readonly shaderCompileReady = signal(0);
+  readonly shaderCompileTotal = signal(0);
 
   readonly history = new EditHistory(() => this.syncHistorySignals());
   private runtime: StudioRuntime | null = null;
@@ -43,6 +47,9 @@ export class EngineHostService {
   attach(canvas: HTMLCanvasElement): BabylonPresenter {
     this.disposeHost();
     const world = this.world();
+    this.shadersCompiling.set(true);
+    this.shaderCompileReady.set(0);
+    this.shaderCompileTotal.set(0);
     this.runtime = new StudioRuntime(world);
     this.presenter = new BabylonPresenter({
       canvas,
@@ -52,6 +59,11 @@ export class EngineHostService {
       onTransformDragEnd: (entityId, transform) => this.applyGizmoTransform(entityId, transform),
       onFrame: (pose) => this.cameraPose.set(pose),
       onTick: (dt) => this.runtime?.tick(dt),
+      onShaderCompileStatus: (status) => {
+        this.shadersCompiling.set(status.compiling);
+        this.shaderCompileReady.set(status.ready);
+        this.shaderCompileTotal.set(status.total);
+      },
     });
     this.runtime.setPresenter(this.presenter);
     this.tickEpoch();
@@ -70,6 +82,9 @@ export class EngineHostService {
     this.runtime?.dispose();
     this.runtime = null;
     this.presenter = null;
+    this.shadersCompiling.set(false);
+    this.shaderCompileReady.set(0);
+    this.shaderCompileTotal.set(0);
   }
 
   replaceWorld(world: World): void {

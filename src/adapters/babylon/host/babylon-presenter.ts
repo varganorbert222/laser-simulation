@@ -7,6 +7,8 @@ import {
   HemisphericLight,
   Scene,
   Vector3,
+  type AbstractMesh,
+  type Material,
 } from '@babylonjs/core';
 import '@babylonjs/core/Engines/engine.js';
 import '@babylonjs/core/Materials/standardMaterial.js';
@@ -37,6 +39,13 @@ import { bindViewportPicking } from '../picking/viewport-picking';
 import { StudioPipeline } from '../postfx/studio-pipeline';
 import { VolumetricBinder } from '../volumetrics/volumetric-binder';
 
+/** Approximate shader warmup progress (WebGL has no native % for parallel compile). */
+export interface ShaderCompileStatus {
+  compiling: boolean;
+  ready: number;
+  total: number;
+}
+
 export interface BabylonPresenterOptions {
   canvas: HTMLCanvasElement;
   world: World;
@@ -47,6 +56,8 @@ export interface BabylonPresenterOptions {
   onFrame?: (pose: CameraPose) => void;
   /** Invoked each RAF with dt; should call StudioRuntime.tick(dt). */
   onTick?: (dt: number) => void;
+  /** Fired while shaders warm up (before the first render loop) and once when ready. */
+  onShaderCompileStatus?: (status: ShaderCompileStatus) => void;
 }
 
 /**
@@ -68,6 +79,7 @@ export class BabylonPresenter implements FramePresenter {
   private readonly canvas: HTMLCanvasElement;
   private world: World;
   private disposed = false;
+  private renderLoopStarted = false;
   private pickingDispose: (() => void) | null = null;
   private canvasResizeObserver: ResizeObserver | null = null;
   private readonly onContextMenu = (e: Event) => e.preventDefault();
@@ -169,6 +181,24 @@ export class BabylonPresenter implements FramePresenter {
 
     this.meshes.applyPresentationMode();
 
+    // Canvas CSS size changes on panel split / layout, not only on window resize.
+    this.canvasResizeObserver = new ResizeObserver(() => this.onResize());
+    this.canvasResizeObserver.observe(this.canvas);
+    window.addEventListener('resize', this.onResize);
+    this.resize();
+
+    // Defer the render loop until materials + volumetric effects finish compiling.
+    // Refresh freezes are mostly WebGL parallel shader compile/link spikes.
+    void this.warmupShadersThenStartLoop();
+  }
+
+  private emitCompileStatus(status: ShaderCompileStatus): void {
+    this.options.onShaderCompileStatus?.(status);
+  }
+
+  private startRenderLoop(): void {
+    if (this.disposed || this.renderLoopStarted) return;
+    this.renderLoopStarted = true;
     this.engine.runRenderLoop(() => {
       if (this.disposed) return;
       const dt = this.engine.getDeltaTime() / 1000;
@@ -180,12 +210,91 @@ export class BabylonPresenter implements FramePresenter {
       }
       this.options.onFrame?.(this.getCameraPose());
     });
+  }
 
-    // Canvas CSS size changes on panel split / layout, not only on window resize.
-    this.canvasResizeObserver = new ResizeObserver(() => this.onResize());
-    this.canvasResizeObserver.observe(this.canvas);
-    window.addEventListener('resize', this.onResize);
-    this.resize();
+  /**
+   * Pre-compile scene materials and wait for volumetric / compose effects.
+   * Progress is ready/total units only — WebGL parallel compile has no native %.
+   */
+  private async warmupShadersThenStartLoop(): Promise<void> {
+    this.emitCompileStatus({ compiling: true, ready: 0, total: 0 });
+    // Build meshes/materials before forcing compilation.
+    this.sync(this.world);
+
+    const materialJobs: { mesh: AbstractMesh; mat: Material }[] = [];
+    for (const mesh of this.scene.meshes) {
+      const mat = mesh.material;
+      if (!mat || mesh.name.startsWith('__')) continue;
+      materialJobs.push({ mesh, mat });
+    }
+
+    // +1 volumetric raymarch, +1 compose post-process.
+    const total = materialJobs.length + 2;
+    let ready = 0;
+    const bump = (): void => {
+      ready = Math.min(total, ready + 1);
+      this.emitCompileStatus({ compiling: true, ready, total });
+    };
+    this.emitCompileStatus({ compiling: true, ready: 0, total });
+
+    await Promise.all(
+      materialJobs.map(({ mesh, mat }) =>
+        mat
+          .forceCompilationAsync(mesh)
+          .then(() => bump())
+          .catch(() => bump()),
+      ),
+    );
+    if (this.disposed) return;
+
+    await this.waitVolumetricShaders(bump);
+    if (this.disposed) return;
+
+    // Scene-level readiness (textures / remaining effects).
+    try {
+      await this.scene.whenReadyAsync();
+    } catch {
+      /* ignore — still start the loop */
+    }
+    if (this.disposed) return;
+
+    this.emitCompileStatus({ compiling: false, ready: total, total });
+    this.startRenderLoop();
+  }
+
+  /** Poll raymarch + compose readiness; bump once per unit as each becomes ready. */
+  private waitVolumetricShaders(onUnitReady: () => void, timeoutMs = 120_000): Promise<void> {
+    return new Promise((resolve) => {
+      const started = performance.now();
+      let rayDone = false;
+      let composeDone = false;
+      const step = (): void => {
+        if (this.disposed) {
+          resolve();
+          return;
+        }
+        if (!rayDone && this.volumetrics.isRaymarchReady()) {
+          rayDone = true;
+          onUnitReady();
+        }
+        if (!composeDone && this.volumetrics.isComposeReady()) {
+          composeDone = true;
+          onUnitReady();
+        }
+        if (rayDone && composeDone) {
+          resolve();
+          return;
+        }
+        if (performance.now() - started > timeoutMs) {
+          if (!rayDone) onUnitReady();
+          if (!composeDone) onUnitReady();
+          resolve();
+          return;
+        }
+        requestAnimationFrame(step);
+      };
+      step();
+    });
   }
 
   setWorld(world: World): void {

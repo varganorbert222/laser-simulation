@@ -236,6 +236,16 @@
 
     <main class="viewport-wrap">
       <canvas #viewport class="viewport"></canvas>
+      @if (engine.shadersCompiling()) {
+        <div class="shader-warmup" role="status" aria-live="polite">
+          <p class="shader-warmup-title">{{ i18n.t('shaderCompiling') }}</p>
+          @if (engine.shaderCompileTotal() > 0) {
+            <p class="shader-warmup-count">
+              {{ engine.shaderCompileReady() }} / {{ engine.shaderCompileTotal() }}
+            </p>
+          }
+        </div>
+      }
       @if (editor.isEditMode()) {
         <app-viewport-axes />
       }

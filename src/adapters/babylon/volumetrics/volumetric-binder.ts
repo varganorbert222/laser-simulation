@@ -143,6 +143,22 @@ export class VolumetricBinder {
     this._sceneDepth = texture;
   }
 
+  /** True when the low-res raymarch effect is compiled. */
+  isRaymarchReady(): boolean {
+    if (!this.volumetricEffect.isReady()) return false;
+    return !!this.volumetricEffect.effect?.isReady();
+  }
+
+  /** True when the native compose post-process effect is compiled. */
+  isComposeReady(): boolean {
+    return this.compose.isReady();
+  }
+
+  /** True when raymarch + compose shaders are compiled and linkable. */
+  areShadersReady(): boolean {
+    return this.isRaymarchReady() && this.isComposeReady();
+  }
+
   /** Raymarch into the low-res RTT (call once per frame before scene.render). */
   renderPass(): void {
     if (!this._world || !this._camera) return;

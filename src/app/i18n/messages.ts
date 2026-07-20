@@ -256,6 +256,7 @@ export const hu = {
   tipSmokeEmission: 'Kibocsátás-szorzó (0–3): a plumé sűrűségét skálázza.',
   tipSmokeCone: 'Spray kúp félnyílásszöge fokban — keskenyebb = koncentráltabb sugar.',
   tipSmokePlumeLength: 'Lágy tengelymenti kifutás hossza méterben (a nozzle irányában).',
+  shaderCompiling: 'Shader-ek fordítása…',
 } as const;
 
 export const en = {
@@ -516,6 +517,7 @@ export const en = {
   tipSmokeEmission: 'Emission multiplier (0–3): scales plume density.',
   tipSmokeCone: 'Spray cone half-angle in degrees — narrower = tighter jet.',
   tipSmokePlumeLength: 'Soft axial falloff length in metres along the nozzle.',
+  shaderCompiling: 'Compiling shaders…',
 } as const;
 
 export type LocaleKey = keyof typeof hu;
