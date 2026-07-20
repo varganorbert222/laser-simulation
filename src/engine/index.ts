@@ -42,6 +42,7 @@ export * from './optics/scatter-model';
 export * from './optics/atmosphere-climate';
 export * from './optics/media-optical-presets';
 export * from './optics/smoke-plume';
+export * from './optics/volumetric-shadow';
 export * from './optics/optics-spill';
 export * from './optics/optics-residual';
 export * from './optics/surface-material';

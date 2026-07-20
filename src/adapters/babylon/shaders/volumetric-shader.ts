@@ -202,8 +202,78 @@ function mediaIntersectUnion(slots: number): string {
 }
 
 /**
+ * Homogeneous AABB chord optical depth for light→medium shadowing.
+ * No secondary march / FBM — nested sampleMedia previously froze shader compile.
+ * Occupancy ≈ smoothstep(low, high, 0.5); plume evaluated at chord midpoint.
+ */
+function mediaChordOpticalDepthAccum(slots: number): string {
+  const pass1: string[] = [];
+  const pass2: string[] = [];
+  for (let i = 0; i < slots; i++) {
+    pass1.push(`  if (uMediaCount > ${i}.5 && uMediaInsulating${i} > 0.5) {
+    float teS${i}; float txS${i};
+    if (intersectBox(p, dir, uMediaCenter${i}, uMediaHalfExt${i}, teS${i}, txS${i})) {
+      float t0${i} = max(teS${i}, 0.0);
+      float t1${i} = min(txS${i}, dist);
+      if (t1${i} > t0${i}) {
+        float volI${i} = uMediaHalfExt${i}.x * uMediaHalfExt${i}.y * uMediaHalfExt${i}.z;
+        if (volI${i} < bestVol) {
+          bestVol = volI${i};
+          hasInterior = 1.0;
+          vec3 midI${i} = p + dir * (0.5 * (t0${i} + t1${i}));
+          vec3 localI${i} = midI${i} - uMediaCenter${i};
+          float plumeI${i} = plumeEnvelope(localI${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
+          float lowI${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
+          float highI${i} = max(uMediaNoiseHigh${i}, lowI${i} + 0.001);
+          float occI${i} = smoothstep(lowI${i}, highI${i}, 0.5);
+          float dI${i} = max(uMediaDensity${i}, 0.0) * plumeI${i} * occI${i};
+          float sigmaI${i} = (max(uMediaScatter${i}, 0.0) + max(uMediaScatterMie${i}, 0.0) + max(uMediaAbsorb${i}, 0.0)) * dI${i};
+          intTau = sigmaI${i} * (t1${i} - t0${i});
+        }
+      }
+    }
+  }`);
+
+    pass2.push(`  if (uMediaCount > ${i}.5) {
+    float teP${i}; float txP${i};
+    if (intersectBox(p, dir, uMediaCenter${i}, uMediaHalfExt${i}, teP${i}, txP${i})) {
+      float t0p${i} = max(teP${i}, 0.0);
+      float t1p${i} = min(txP${i}, dist);
+      if (t1p${i} > t0p${i}) {
+        vec3 midP${i} = p + dir * (0.5 * (t0p${i} + t1p${i}));
+        vec3 localP${i} = midP${i} - uMediaCenter${i};
+        float plumeP${i} = plumeEnvelope(localP${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
+        float lowP${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
+        float highP${i} = max(uMediaNoiseHigh${i}, lowP${i} + 0.001);
+        float occP${i} = smoothstep(lowP${i}, highP${i}, 0.5);
+        float dP${i} = max(uMediaDensity${i}, 0.0) * plumeP${i} * occP${i};
+        float sigmaP${i} = (max(uMediaScatter${i}, 0.0) + max(uMediaScatterMie${i}, 0.0) + max(uMediaAbsorb${i}, 0.0)) * dP${i};
+        float tauP${i} = sigmaP${i} * (t1p${i} - t0p${i});
+        float kind${i} = uMediaLayerKind${i};
+        if (kind${i} > 1.5) {
+          tau += tauP${i};
+        } else if (kind${i} < 0.5 && uMediaInsulating${i} < 0.5 && hasInterior < 0.5) {
+          tau += tauP${i};
+        }
+      }
+    }
+  }`);
+  }
+
+  return `  float hasInterior = 0.0;
+  float bestVol = 1e30;
+  float intTau = 0.0;
+  float tau = 0.0;
+${pass1.join('\n')}
+${pass2.join('\n')}
+  if (hasInterior > 0.5) tau += intTau;
+  return tau;
+`;
+}
+
+/**
  * Dual-channel in-scatter: Rayleigh (λ⁻⁴, phaseRayleigh) + Mie (λ⁻ⁿ, HG).
- * Both can fire in the same step when atmosphere and smoke overlap.
+ * Multiplies by light→medium transmittance (chord Beer–Lambert self-shadow).
  * Adds isotropic multiple-scatter fill so the medium glows around the beam.
  */
 function lightEvalInMarch(slots: number): string {
@@ -216,21 +286,23 @@ function lightEvalInMarch(slots: number): string {
         uLightP4${i}, uLightP5${i}, uLightSpill${i}
       );
       if (Li > 1e-8) {
-        vec3 incident${i} = uLightMode${i} < 0.5
-          ? normalize(p - uLightOrigin${i})
-          : normalize(uLightDir${i});
-        vec3 viewDir${i} = normalize(-rd);
-        float cosTheta${i} = clamp(dot(incident${i}, viewDir${i}), -1.0, 1.0);
-        float phaseR${i} = phaseRayleigh(cosTheta${i});
-        float phaseM${i} = phaseHG(cosTheta${i}, mieG);
-        float specR${i} = spectralScatterFactor(uLightScatter${i}, 4.0);
-        float specM${i} = spectralScatterFactor(uLightScatter${i}, spectralExpM);
-        // Single-scatter anisotropic lobe
-        float inScatter${i} = (sigmaSR * specR${i} * phaseR${i}
-          + sigmaSM * specM${i} * phaseM${i}) * stepSize;
-        // Multiple-scatter approx: isotropic re-radiation ∝ ω₀ · σ_s · (1/4π)
-        float ms${i} = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
-        col += tint * uLightColor${i} * Li * T * uLightPower${i} * (inScatter${i} + ms${i});
+        float shadowT${i} = lightMediaTransmittance(p, uLightOrigin${i});
+        if (shadowT${i} > 1e-5) {
+          vec3 incident${i} = uLightMode${i} < 0.5
+            ? normalize(p - uLightOrigin${i})
+            : normalize(uLightDir${i});
+          vec3 viewDir${i} = normalize(-rd);
+          float cosTheta${i} = clamp(dot(incident${i}, viewDir${i}), -1.0, 1.0);
+          float phaseR${i} = phaseRayleigh(cosTheta${i});
+          float phaseM${i} = phaseHG(cosTheta${i}, mieG);
+          float specR${i} = spectralScatterFactor(uLightScatter${i}, 4.0);
+          float specM${i} = spectralScatterFactor(uLightScatter${i}, spectralExpM);
+          float inScatter${i} = (sigmaSR * specR${i} * phaseR${i}
+            + sigmaSM * specM${i} * phaseM${i}) * stepSize;
+          float ms${i} = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
+          col += tint * uLightColor${i} * Li * T * uLightPower${i}
+            * shadowT${i} * (inScatter${i} + ms${i});
+        }
       }
     }`);
   }
@@ -349,6 +421,31 @@ bool intersectBox(vec3 ro, vec3 rd, vec3 center, vec3 halfSize, out float tEnter
   tEnter = max(max(tsmaller.x, tsmaller.y), tsmaller.z);
   tExit = min(min(tbigger.x, tbigger.y), tbigger.z);
   return tExit > max(tEnter, 0.0);
+}
+
+/**
+ * Optical depth τ along segment p → p+dir*dist through layered media AABBs.
+ * Homogeneous per-volume chord (no FBM / no nested march).
+ */
+float mediaOpticalDepthAlongSegment(vec3 p, vec3 dir, float dist) {
+${mediaChordOpticalDepthAccum(VOLUMETRIC_MEDIA_SLOTS)}
+}
+
+/**
+ * Beer–Lambert transmittance from sample point → light (volumetric self-shadow).
+ */
+float lightMediaTransmittance(vec3 p, vec3 lightOrigin) {
+  vec3 delta = lightOrigin - p;
+  float dist = length(delta);
+  if (dist < 1e-4) return 1.0;
+  return exp(-mediaOpticalDepthAlongSegment(p, delta / dist, dist));
+}
+
+/** Soft sun transmittance through a limited path toward the sun. */
+float sunMediaTransmittance(vec3 p, vec3 sunDir) {
+  vec3 dir = normalize(sunDir);
+  float pathLen = 12.0;
+  return exp(-mediaOpticalDepthAlongSegment(p, dir, pathLen));
 }
 
 /**
@@ -487,13 +584,14 @@ ${mediaIntersectUnion(VOLUMETRIC_MEDIA_SLOTS)}
     // --- Environment illuminates the medium (clouds / fog in sunlight) ---
     if (sigmaS > 1e-10 && envEnergy > 1e-8) {
       vec3 viewDir = normalize(-rd);
-      // Hemi: near-isotropic skylight
+      // Hemi: near-isotropic skylight (no hard self-shadow)
       col += tint * uEnvHemi * sigmaS * INV_4PI * stepSize * T;
-      // Sun: directional with regime-weighted phase
+      // Sun: directional with regime-weighted phase + soft media shadow
       float cosSun = clamp(dot(normalize(uEnvSunDir), viewDir), -1.0, 1.0);
       float phaseSun = (sigmaSR * phaseRayleigh(cosSun) + sigmaSM * phaseHG(cosSun, mieG))
         / max(sigmaS, 1e-10);
-      col += tint * uEnvSun * sigmaS * phaseSun * stepSize * T;
+      float sunT = sunMediaTransmittance(p, uEnvSunDir);
+      col += tint * uEnvSun * sigmaS * phaseSun * stepSize * T * sunT;
     }
 
 ${lightEvalInMarch(VOLUMETRIC_LIGHT_SLOTS)}
