@@ -3,6 +3,7 @@ import { DecimalPipe } from '@angular/common';
 import {
   clampSpill01,
   formatPowerW,
+  normalizeLaserParams,
   normalizeOpticsSpill,
   POWER_UNITS,
   powerFromUnit,
@@ -126,6 +127,11 @@ export class LightEmitterSectionComponent {
     return p.mode === 'laser' ? p.laser.astigmatism : 0;
   }
 
+  laserProbeDistance(): number {
+    const p = this.light().params;
+    return p.mode === 'laser' ? p.laser.probeDistanceM : 5;
+  }
+
   onLaserW0(value: string): void {
     this.onLaserParam('w0M', value);
   }
@@ -136,6 +142,7 @@ export class LightEmitterSectionComponent {
       | 'm2'
       | 'ellipticRatio'
       | 'waistOffsetM'
+      | 'probeDistanceM'
       | 'topHatMix'
       | 'sphericalAberration'
       | 'coma'
@@ -146,8 +153,9 @@ export class LightEmitterSectionComponent {
     if (light.params.mode !== 'laser') return;
     const n = Number(value);
     if (!Number.isFinite(n)) return;
+    const laser = normalizeLaserParams({ ...light.params.laser, [key]: n });
     this.editor.updateLight(
-      { params: { mode: 'laser', laser: { ...light.params.laser, [key]: n } } },
+      { params: { mode: 'laser', laser } },
       { coalesce: true },
     );
   }

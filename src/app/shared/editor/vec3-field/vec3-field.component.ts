@@ -5,7 +5,7 @@ import type { Vec3Editable } from '../../../../engine';
   selector: 'app-vec3-field',
   standalone: true,
   template: `
-    <div class="vec3">
+    <div class="vec3" [attr.title]="tooltip || null">
       <span class="title">{{ label }}</span>
       <label
         >{{ axes[0] }}
@@ -49,6 +49,9 @@ import type { Vec3Editable } from '../../../../engine';
       gap: 0.35rem;
       align-items: center;
     }
+    .vec3[title] {
+      cursor: help;
+    }
     .title {
       font-size: 0.75rem;
       color: var(--ls-muted);
@@ -75,6 +78,8 @@ import type { Vec3Editable } from '../../../../engine';
 })
 export class Vec3FieldComponent {
   @Input({ required: true }) label!: string;
+  /** Native browser tooltip explaining the control. */
+  @Input() tooltip = '';
   @Input({ required: true }) value!: Vec3Editable;
   @Input() step = 0.1;
   @Input() decimals = 3;

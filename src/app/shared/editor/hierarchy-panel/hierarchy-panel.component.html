@@ -24,6 +24,14 @@
         <button type="button" class="root-add-btn" title="Új objektum" (click)="onAddRoot($event)">
           +
         </button>
+        <button
+          type="button"
+          class="root-add-btn"
+          title="Füstszóró"
+          (click)="onAddSmokeRoot($event)"
+        >
+          💨
+        </button>
       }
     </div>
   </div>
@@ -111,6 +119,7 @@
       (click)="$event.stopPropagation()"
     >
       <button type="button" (click)="onContextPick('add')">Új gyerek</button>
+      <button type="button" (click)="onContextPick('addSmoke')">Füstszóró</button>
       <button type="button" (click)="onContextPick('rename')">Átnevezés</button>
       <div class="context-menu-separator" role="separator"></div>
       <button

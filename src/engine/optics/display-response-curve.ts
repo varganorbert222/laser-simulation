@@ -4,12 +4,12 @@
  * X: log optical power 1 mW … 500 kW (same map as the power slider).
  * Y: linear HDR intensity 0 … HDR_CEILING (before volumetric ACES).
  *
- * Evaluation input is luminous product P(mW)·V_mix(λ); at V=1 this equals
+ * Evaluation input is luminous product P(mW)·V(λ)·exposure; at V=1 this equals
  * power in mW, so t = sliderTFromPowerW(luminous/1000).
  *
- * Default = scientific (CIE V(λ)-weighted luminous product + Stevens γ≈0.7),
- * matching Laser Beam and Dot Relative Brightness Comparison — not a theatrical
- * “lightsaber” exaggeration.
+ * Default = scientific Weber–Fechner (perceived ∝ log radiance) over CIE V(λ)
+ * luminous product. Physical irradiance in BeamModel stays ∝ P; this curve is
+ * only the display scalar. Beam radius is NOT grown with power (étendue).
  */
 import { POWER_W_MAX, clampPowerW, powerWFromSliderT, sliderTFromPowerW } from './power';
 
@@ -17,16 +17,22 @@ import { POWER_W_MAX, clampPowerW, powerWFromSliderT, sliderTFromPowerW } from '
 export const DISPLAY_RESPONSE_HDR_MAX = 96;
 
 /**
- * HDR scale at luminous ref (1 W @ V≈1) for the scientific default curve.
- * Absolute display units; ACES + fog still shape the final look.
+ * Weber–Fechner reference: luminous product (mW·V) where log argument is ~1+.
+ * 1 ≡ 1 mW at V=1.
  */
-export const DISPLAY_SCIENCE_HDR_AT_REF = 16;
+export const DISPLAY_LUMINOUS_LOG_REF = 1;
+
+/** Upper luminous product for the log map (500 kW at V=1). */
+export const DISPLAY_LUMINOUS_LOG_MAX = POWER_W_MAX * 1000;
 
 /**
- * Stevens-like exponent on luminous ratio (research / display literature ≈ 0.7).
- * Applied to P·V_mix — preserves wavelength ordering from CIE V(λ).
+ * @deprecated Kept for save/UI compatibility; scientific map is Weber–Fechner log.
+ * Stevens γ was the previous default and crushed multi-kW into the soft ceiling.
  */
-export const DISPLAY_SCIENCE_POWER_GAMMA = 0.7;
+export const DISPLAY_SCIENCE_POWER_GAMMA = 1;
+
+/** @deprecated HDR at 1 W under the old Stevens map — unused by Weber–Fechner. */
+export const DISPLAY_SCIENCE_HDR_AT_REF = 16;
 
 /** Luminous product ref: 1 W at V=1 → 1000 mW·V. */
 export const DISPLAY_SCIENCE_LUMINOUS_REF = 1000;
@@ -47,19 +53,24 @@ export const DISPLAY_RESPONSE_POINT_MAX = 12;
 
 /** Powers (W) used to seed the default scientific curve. */
 const DEFAULT_SAMPLE_POWERS_W = [
-  0.001, 0.005, 0.05, 0.1, 1, 1_000, 100_000, 500_000,
+  0.001, 0.005, 0.05, 0.1, 1, 10, 1_000, 100_000, 500_000,
 ] as const;
 
 /**
- * Scientific display map: HDR ∝ (P·V / ref)^γ with soft GPU ceiling.
- * Same luminous product as relative dot brightness; γ≈0.7 for perceived growth.
+ * Scientific display map (Weber–Fechner):
+ *   perceived ∝ log₁₀(1 + L / L_ref)
+ * mapped so 1 mW·V … 500 kW·V span the HDR range evenly in log decades.
+ *
+ * Each decade of power gets a similar HDR step — so 1 W → 10 W → 1 kW stays
+ * visibly distinct (unlike the old Stevens^0.7 + soft ceil that flattened >1 W).
  */
 export function scientificDisplayLuminousToneMap(luminousProduct: number): number {
-  const x = Math.max(0, luminousProduct) / DISPLAY_SCIENCE_LUMINOUS_REF;
-  const raw = DISPLAY_SCIENCE_HDR_AT_REF * Math.pow(x, DISPLAY_SCIENCE_POWER_GAMMA);
-  const c = DISPLAY_RESPONSE_HDR_MAX;
-  // Soft asymptote → ceiling (multi-kW still climbs; no hard plateau at 1 W).
-  return c * (1 - Math.exp(-raw / Math.max(1e-9, c)));
+  const L = Math.max(0, luminousProduct);
+  if (L <= 0) return 0;
+  const num = Math.log10(1 + L / DISPLAY_LUMINOUS_LOG_REF);
+  const den = Math.log10(1 + DISPLAY_LUMINOUS_LOG_MAX / DISPLAY_LUMINOUS_LOG_REF);
+  const t = Math.min(1, Math.max(0, num / Math.max(den, 1e-12)));
+  return DISPLAY_RESPONSE_HDR_MAX * t;
 }
 
 /** Simple Reinhard luminance map for optional display path comparisons. */
@@ -115,8 +126,8 @@ export function normalizeDisplayResponseCurve(
 }
 
 /**
- * Default = current scientific model (CIE V-weighted luminous + γ=0.7).
- * “Alapgörbe” / reset restores this — not the theatrical lightsaber curve.
+ * Default = Weber–Fechner log map of CIE V-weighted luminous product.
+ * “Alapgörbe” / reset restores this — not a theatrical lightsaber curve.
  */
 export function createDefaultDisplayResponseCurve(): DisplayResponseCurve {
   const points: DisplayResponsePoint[] = DEFAULT_SAMPLE_POWERS_W.map((powerW) => {

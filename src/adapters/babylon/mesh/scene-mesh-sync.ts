@@ -260,8 +260,8 @@ export class SceneMeshSync {
   }
 
   /**
-   * Educational PBR-ish look on StandardMaterial (avoids PBR shader/plugin issues).
-   * Uses surfaceBrdfWeights — same mapping as SurfaceRadiancePlugin.
+   * Educational PBR-ish look on StandardMaterial for env lights (hemi/sun).
+   * Emitter spots/specular come from Babylon Point/Spot via SurfaceLightSync.
    */
   private createSurfaceMaterial(name: string, sm: SurfaceMaterial): StandardMaterial {
     const mat = new StandardMaterial(name, this.scene);

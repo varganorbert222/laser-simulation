@@ -1,5 +1,8 @@
 import { radianceFieldGlslFunctions } from '../../../engine/optics/beam-model';
-import { VOLUMETRIC_LIGHT_SLOTS } from '../../../engine/render/pack';
+import {
+  VOLUMETRIC_LIGHT_SLOTS,
+  VOLUMETRIC_MEDIA_SLOTS,
+} from '../../../engine/render/pack';
 
 function lightUniformDecls(slots: number): string {
   const lines: string[] = [];
@@ -15,6 +18,194 @@ function lightUniformDecls(slots: number): string {
   return lines.join('\n');
 }
 
+function mediaUniformDecls(slots: number): string {
+  const lines: string[] = [];
+  for (let i = 0; i < slots; i++) {
+    lines.push(
+      `uniform vec3 uMediaCenter${i}; uniform vec3 uMediaHalfExt${i}; uniform vec3 uMediaColor${i};`,
+      `uniform float uMediaDensity${i}; uniform float uMediaFbmScale${i}; uniform float uMediaFbmTime${i};`,
+      `uniform float uMediaNoiseLow${i}; uniform float uMediaNoiseHigh${i};`,
+      `uniform float uMediaScatter${i}; uniform float uMediaScatterMie${i}; uniform float uMediaAbsorb${i};`,
+      `uniform float uMediaSpectralExp${i}; uniform float uMediaMieG${i};`,
+      `uniform float uMediaScatterModel${i}; uniform float uMediaTurbulence${i};`,
+      `uniform float uMediaLayerKind${i}; uniform float uMediaInsulating${i};`,
+      `uniform float uMediaEmission${i}; uniform float uMediaConeCos${i}; uniform float uMediaPlumeLen${i};`,
+      `uniform vec3 uMediaPlumeDir${i};`,
+    );
+  }
+  return lines.join('\n');
+}
+
+function mediaUniformNames(slots: number): string[] {
+  const names: string[] = ['uMediaCount'];
+  for (let i = 0; i < slots; i++) {
+    names.push(
+      `uMediaCenter${i}`,
+      `uMediaHalfExt${i}`,
+      `uMediaColor${i}`,
+      `uMediaDensity${i}`,
+      `uMediaFbmScale${i}`,
+      `uMediaFbmTime${i}`,
+      `uMediaNoiseLow${i}`,
+      `uMediaNoiseHigh${i}`,
+      `uMediaScatter${i}`,
+      `uMediaScatterMie${i}`,
+      `uMediaAbsorb${i}`,
+      `uMediaSpectralExp${i}`,
+      `uMediaMieG${i}`,
+      `uMediaScatterModel${i}`,
+      `uMediaTurbulence${i}`,
+      `uMediaLayerKind${i}`,
+      `uMediaInsulating${i}`,
+      `uMediaEmission${i}`,
+      `uMediaConeCos${i}`,
+      `uMediaPlumeLen${i}`,
+      `uMediaPlumeDir${i}`,
+    );
+  }
+  return names;
+}
+
+/**
+ * Layered multi-media sample — one FBM per slot (never dual-pass).
+ * Insulating climate → pick innermost AABB; particulate always additive;
+ * outdoor climate only when no insulating interior covers the point.
+ */
+function mediaSampleAccum(slots: number): string {
+  const bodies: string[] = [];
+  for (let i = 0; i < slots; i++) {
+    bodies.push(`  if (uMediaCount > ${i}.5) {
+    vec3 local${i} = pCam - uMediaCenter${i};
+    if (!any(greaterThan(abs(local${i}), uMediaHalfExt${i}))) {
+      float field${i} = fbm(local${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
+      float low${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
+      float high${i} = max(uMediaNoiseHigh${i}, low${i} + 0.001);
+      float plume${i} = plumeEnvelope(local${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
+      float fill${i} = smoothstep(low${i}, high${i}, field${i}) * uMediaDensity${i} * plume${i};
+      float turb${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
+      float shimmer${i} = 1.0 + turb${i} * (noise(local${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
+      float d${i} = fill${i} * shimmer${i};
+      if (d${i} > 1e-8) {
+        float kind${i} = uMediaLayerKind${i};
+        float sa${i} = max(uMediaAbsorb${i}, 0.0) * d${i};
+        if (uMediaInsulating${i} > 0.5) {
+          float vol${i} = uMediaHalfExt${i}.x * uMediaHalfExt${i}.y * uMediaHalfExt${i}.z;
+          if (vol${i} < bestVol) {
+            bestVol = vol${i};
+            hasInterior = 1.0;
+            float ssRI${i} = max(uMediaScatter${i}, 0.0) * d${i};
+            float ssMI${i} = max(uMediaScatterMie${i}, 0.0) * d${i};
+            intDens = d${i};
+            intSigmaSR = ssRI${i};
+            intSigmaSM = ssMI${i};
+            intSigmaA = sa${i};
+            float wTintI${i} = ssRI${i} + ssMI${i} + sa${i} * 0.25;
+            intTint = uMediaColor${i} * wTintI${i};
+            intTintW = wTintI${i};
+            intSpecExpM = uMediaSpectralExp${i} * ssMI${i};
+            intMieG = clamp(uMediaMieG${i}, -0.95, 0.95) * ssMI${i};
+            intMieW = ssMI${i};
+          }
+        } else if (kind${i} > 1.5) {
+          float ssMP${i} = max(uMediaScatter${i}, 0.0) * d${i};
+          dens += d${i};
+          sigmaA += sa${i};
+          sigmaSM += ssMP${i};
+          float wTintP${i} = ssMP${i} + sa${i} * 0.25;
+          tintAccum += uMediaColor${i} * wTintP${i};
+          tintWeight += wTintP${i};
+          if (ssMP${i} > 1e-12) {
+            spectralExpMAccum += uMediaSpectralExp${i} * ssMP${i};
+            mieGAccum += clamp(uMediaMieG${i}, -0.95, 0.95) * ssMP${i};
+            mieWeight += ssMP${i};
+          }
+        } else if (kind${i} < 0.5) {
+          float ssRO${i} = max(uMediaScatter${i}, 0.0) * d${i};
+          float ssMO${i} = max(uMediaScatterMie${i}, 0.0) * d${i};
+          outDens = d${i};
+          outSigmaA = sa${i};
+          outSigmaSR = ssRO${i};
+          outSigmaSM = ssMO${i};
+          float wTintO${i} = ssRO${i} + ssMO${i} + sa${i} * 0.25;
+          outTint = uMediaColor${i} * wTintO${i};
+          outTintW = wTintO${i};
+          outSpecExpM = uMediaSpectralExp${i} * ssMO${i};
+          outMieG = clamp(uMediaMieG${i}, -0.95, 0.95) * ssMO${i};
+          outMieW = ssMO${i};
+          hasOutdoor = 1.0;
+        }
+      }
+    }
+  }`);
+  }
+
+  const preamble = `  float hasInterior = 0.0;
+  float hasOutdoor = 0.0;
+  float bestVol = 1e30;
+  float intDens = 0.0;
+  float intSigmaSR = 0.0;
+  float intSigmaSM = 0.0;
+  float intSigmaA = 0.0;
+  vec3 intTint = vec3(0.0);
+  float intTintW = 0.0;
+  float intSpecExpM = 0.0;
+  float intMieG = 0.0;
+  float intMieW = 0.0;
+  float outDens = 0.0;
+  float outSigmaSR = 0.0;
+  float outSigmaSM = 0.0;
+  float outSigmaA = 0.0;
+  vec3 outTint = vec3(0.0);
+  float outTintW = 0.0;
+  float outSpecExpM = 0.0;
+  float outMieG = 0.0;
+  float outMieW = 0.0;
+`;
+
+  const epilogue = `  if (hasInterior > 0.5) {
+    dens += intDens;
+    sigmaSR += intSigmaSR;
+    sigmaSM += intSigmaSM;
+    sigmaA += intSigmaA;
+    tintAccum += intTint;
+    tintWeight += intTintW;
+    if (intMieW > 1e-12) {
+      spectralExpMAccum += intSpecExpM;
+      mieGAccum += intMieG;
+      mieWeight += intMieW;
+    }
+  } else if (hasOutdoor > 0.5) {
+    dens += outDens;
+    sigmaSR += outSigmaSR;
+    sigmaSM += outSigmaSM;
+    sigmaA += outSigmaA;
+    tintAccum += outTint;
+    tintWeight += outTintW;
+    if (outMieW > 1e-12) {
+      spectralExpMAccum += outSpecExpM;
+      mieGAccum += outMieG;
+      mieWeight += outMieW;
+    }
+  }`;
+
+  return [preamble, ...bodies, epilogue].join('\n');
+}
+
+function mediaIntersectUnion(slots: number): string {
+  const blocks: string[] = [];
+  for (let i = 0; i < slots; i++) {
+    blocks.push(`  if (uMediaCount > ${i}.5 && intersectBox(ro, rd, uMediaCenter${i}, uMediaHalfExt${i}, te, tx)) {
+    anyHit = true; tEnter = min(tEnter, te); tExit = max(tExit, tx);
+  }`);
+  }
+  return blocks.join('\n');
+}
+
+/**
+ * Dual-channel in-scatter: Rayleigh (λ⁻⁴, phaseRayleigh) + Mie (λ⁻ⁿ, HG).
+ * Both can fire in the same step when atmosphere and smoke overlap.
+ * Adds isotropic multiple-scatter fill so the medium glows around the beam.
+ */
 function lightEvalInMarch(slots: number): string {
   const blocks: string[] = [];
   for (let i = 0; i < slots; i++) {
@@ -25,15 +216,21 @@ function lightEvalInMarch(slots: number): string {
         uLightP4${i}, uLightP5${i}, uLightSpill${i}
       );
       if (Li > 1e-8) {
-        float spec${i} = spectralScatterFactor(uLightScatter${i}, spectralExp);
         vec3 incident${i} = uLightMode${i} < 0.5
           ? normalize(p - uLightOrigin${i})
           : normalize(uLightDir${i});
         vec3 viewDir${i} = normalize(-rd);
         float cosTheta${i} = clamp(dot(incident${i}, viewDir${i}), -1.0, 1.0);
-        // Full media HG phase (absolute); no mode-dependent theatrical blend.
-        float mie${i} = phaseHG(cosTheta${i}, mieG);
-        col += tint * uLightColor${i} * Li * scatter * T * uLightPower${i} * (0.5 + spec${i}) * mie${i};
+        float phaseR${i} = phaseRayleigh(cosTheta${i});
+        float phaseM${i} = phaseHG(cosTheta${i}, mieG);
+        float specR${i} = spectralScatterFactor(uLightScatter${i}, 4.0);
+        float specM${i} = spectralScatterFactor(uLightScatter${i}, spectralExpM);
+        // Single-scatter anisotropic lobe
+        float inScatter${i} = (sigmaSR * specR${i} * phaseR${i}
+          + sigmaSM * specM${i} * phaseM${i}) * stepSize;
+        // Multiple-scatter approx: isotropic re-radiation ∝ ω₀ · σ_s · (1/4π)
+        float ms${i} = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
+        col += tint * uLightColor${i} * Li * T * uLightPower${i} * (inScatter${i} + ms${i});
       }
     }`);
   }
@@ -80,21 +277,17 @@ uniform float uMaxSteps;
 uniform float uDensityThreshold;
 uniform float uTransmittanceCut;
 
+/** Environment irradiance → media in-scatter (cloud / fog lighting). */
+uniform vec3 uEnvHemi;
+uniform vec3 uEnvSun;
+uniform vec3 uEnvSunDir;
+uniform float uVolumeMultiScatter;
+
 uniform float uLightCount;
 ${lightUniformDecls(VOLUMETRIC_LIGHT_SLOTS)}
 
 uniform float uMediaCount;
-uniform vec3 uMediaCenter0; uniform vec3 uMediaHalfExt0; uniform vec3 uMediaColor0;
-uniform float uMediaDensity0; uniform float uMediaFbmScale0; uniform float uMediaFbmTime0;
-uniform float uMediaNoiseLow0; uniform float uMediaNoiseHigh0;
-uniform float uMediaScatter0; uniform float uMediaAbsorb0; uniform float uMediaSpectralExp0;
-uniform float uMediaMieG0;
-
-uniform vec3 uMediaCenter1; uniform vec3 uMediaHalfExt1; uniform vec3 uMediaColor1;
-uniform float uMediaDensity1; uniform float uMediaFbmScale1; uniform float uMediaFbmTime1;
-uniform float uMediaNoiseLow1; uniform float uMediaNoiseHigh1;
-uniform float uMediaScatter1; uniform float uMediaAbsorb1; uniform float uMediaSpectralExp1;
-uniform float uMediaMieG1;
+${mediaUniformDecls(VOLUMETRIC_MEDIA_SLOTS)}
 
 float hash(vec3 p) {
   p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
@@ -132,6 +325,19 @@ float fbm(vec3 p) {
   return v;
 }
 
+float plumeEnvelope(vec3 localPos, vec3 plumeDir, float coneCos, float lengthM, float emissionRate) {
+  if (coneCos < 0.0) return 1.0;
+  if (emissionRate <= 0.0) return 0.0;
+  float along = dot(localPos, plumeDir);
+  if (along <= 1e-5) return 0.0;
+  float dist = max(length(localPos), 1e-6);
+  float cosTheta = along / dist;
+  float coneMask = smoothstep(coneCos - 0.08, min(1.0, coneCos + 0.04), cosTheta);
+  float len = max(lengthM, 0.25);
+  float axial = 1.0 - smoothstep(len * 0.55, len, along);
+  return max(emissionRate, 0.0) * coneMask * axial;
+}
+
 bool intersectBox(vec3 ro, vec3 rd, vec3 center, vec3 halfSize, out float tEnter, out float tExit) {
   vec3 boxMin = center - halfSize;
   vec3 boxMax = center + halfSize;
@@ -145,56 +351,45 @@ bool intersectBox(vec3 ro, vec3 rd, vec3 center, vec3 halfSize, out float tEnter
   return tExit > max(tEnter, 0.0);
 }
 
+/**
+ * Layered multi-media optical rates at p.
+ * dens     — sum of local fills (empty-space skip / UI)
+ * sigmaSR  — Σ σ_s·ρ for climate Rayleigh (outdoor / interior)
+ * sigmaSM  — Σ σ_s·ρ for Mie (climate Mie + particulate)
+ * sigmaA   — Σ σ_a·ρ (active layers)
+ * spectralExpM / mieG — Mie-weighted averages
+ * Interior insulating climate replaces outdoor inside its AABB.
+ */
 void sampleMedia(
   vec3 pCam,
   out float dens,
   out vec3 tint,
-  out float sigmaS,
+  out float sigmaSR,
+  out float sigmaSM,
   out float sigmaA,
-  out float spectralExp,
+  out float spectralExpM,
   out float mieG
 ) {
   dens = 0.0;
   tint = vec3(1.0);
-  sigmaS = 0.9;
-  sigmaA = 0.2;
-  // Default Tyndall-like (weak λ dependence) if no media hit.
-  spectralExp = 0.2;
+  sigmaSR = 0.0;
+  sigmaSM = 0.0;
+  sigmaA = 0.0;
+  spectralExpM = 0.2;
   mieG = 0.0;
 
-  if (uMediaCount > 0.5) {
-    vec3 local = pCam - uMediaCenter0;
-    if (!any(greaterThan(abs(local), uMediaHalfExt0))) {
-      float field = fbm(local * uMediaFbmScale0 + vec3(0.0, uTime * uMediaFbmTime0, 0.0));
-      float low = min(uMediaNoiseLow0, uMediaNoiseHigh0 - 0.001);
-      float high = max(uMediaNoiseHigh0, low + 0.001);
-      float d = smoothstep(low, high, field) * uMediaDensity0;
-      if (d >= dens) {
-        dens = d;
-        tint = uMediaColor0;
-        sigmaS = max(uMediaScatter0, 0.0);
-        sigmaA = max(uMediaAbsorb0, 0.0);
-        spectralExp = uMediaSpectralExp0;
-        mieG = clamp(uMediaMieG0, -0.95, 0.95);
-      }
-    }
-  }
-  if (uMediaCount > 1.5) {
-    vec3 local = pCam - uMediaCenter1;
-    if (!any(greaterThan(abs(local), uMediaHalfExt1))) {
-      float field = fbm(local * uMediaFbmScale1 + vec3(0.0, uTime * uMediaFbmTime1, 0.0));
-      float low = min(uMediaNoiseLow1, uMediaNoiseHigh1 - 0.001);
-      float high = max(uMediaNoiseHigh1, low + 0.001);
-      float d = smoothstep(low, high, field) * uMediaDensity1;
-      if (d >= dens) {
-        dens = d;
-        tint = uMediaColor1;
-        sigmaS = max(uMediaScatter1, 0.0);
-        sigmaA = max(uMediaAbsorb1, 0.0);
-        spectralExp = uMediaSpectralExp1;
-        mieG = clamp(uMediaMieG1, -0.95, 0.95);
-      }
-    }
+  vec3 tintAccum = vec3(0.0);
+  float tintWeight = 0.0;
+  float spectralExpMAccum = 0.0;
+  float mieGAccum = 0.0;
+  float mieWeight = 0.0;
+
+${mediaSampleAccum(VOLUMETRIC_MEDIA_SLOTS)}
+
+  if (tintWeight > 1e-8) tint = tintAccum / tintWeight;
+  if (mieWeight > 1e-8) {
+    spectralExpM = spectralExpMAccum / mieWeight;
+    mieG = clamp(mieGAccum / mieWeight, -0.95, 0.95);
   }
 }
 
@@ -210,8 +405,16 @@ float spectralScatterFactor(float rayleighWeight, float exponent) {
 }
 
 /**
+ * Classical Rayleigh phase (absolute: ∫p dΩ = 1): p(μ)=(3/16π)(1+μ²).
+ */
+float phaseRayleigh(float cosTheta) {
+  float mu = clamp(cosTheta, -1.0, 1.0);
+  return 0.0596831036 * (1.0 + mu * mu); // 3/(16π)
+}
+
+/**
  * Henyey–Greenstein phase (absolute: ∫p dΩ = 1; g=0 → 1/(4π)).
- * Forward Mie (g→1): bright looking into the beam, dark from behind.
+ * Mild forward Mie (g≈0.5): brighter looking into the beam, still visible from behind/side.
  */
 float phaseHG(float cosTheta, float g) {
   float g2 = g * g;
@@ -219,22 +422,23 @@ float phaseHG(float cosTheta, float g) {
   return ((1.0 - g2) / denom) * 0.0795774715; // 1/(4π)
 }
 
+const float INV_4PI = 0.0795774715;
+
 /* Shared with surface plugin — CPU twin: engine/optics/beam-model.ts evalRadianceField */
 ${radianceFieldGlslFunctions()}
 
 vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
-  if (uMediaCount < 0.5 || uLightCount < 0.5) return vec3(0.0);
+  // Media required; lights optional if environment irradiance lights the volume.
+  if (uMediaCount < 0.5) return vec3(0.0);
+  float envEnergy = max(uEnvHemi.r + uEnvHemi.g + uEnvHemi.b, 0.0)
+    + max(uEnvSun.r + uEnvSun.g + uEnvSun.b, 0.0);
+  if (uLightCount < 0.5 && envEnergy < 1e-6) return vec3(0.0);
 
   float tEnter = 1e9;
   float tExit = -1e9;
   bool anyHit = false;
   float te; float tx;
-  if (uMediaCount > 0.5 && intersectBox(ro, rd, uMediaCenter0, uMediaHalfExt0, te, tx)) {
-    anyHit = true; tEnter = min(tEnter, te); tExit = max(tExit, tx);
-  }
-  if (uMediaCount > 1.5 && intersectBox(ro, rd, uMediaCenter1, uMediaHalfExt1, te, tx)) {
-    anyHit = true; tEnter = min(tEnter, te); tExit = max(tExit, tx);
-  }
+${mediaIntersectUnion(VOLUMETRIC_MEDIA_SLOTS)}
   if (!anyHit) return vec3(0.0);
 
   float tMin = max(0.0, tEnter);
@@ -258,11 +462,12 @@ vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
     }
     float dens;
     vec3 tint;
-    float sigmaS;
+    float sigmaSR;
+    float sigmaSM;
     float sigmaA;
-    float spectralExp;
+    float spectralExpM;
     float mieG;
-    sampleMedia(p, dens, tint, sigmaS, sigmaA, spectralExp, mieG);
+    sampleMedia(p, dens, tint, sigmaSR, sigmaSM, sigmaA, spectralExpM, mieG);
 
     // Empty-space skip: larger steps when density is negligible
     float stepSize = baseStep;
@@ -273,10 +478,23 @@ vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
       continue;
     }
 
+    float sigmaS = sigmaSR + sigmaSM;
     float sigmaT = sigmaS + sigmaA;
-    T *= exp(-sigmaT * dens * stepSize * 0.5);
+    float omega0 = sigmaS / max(sigmaT, 1e-6);
+    T *= exp(-sigmaT * stepSize * 0.5);
     if (T < uTransmittanceCut) break;
-    float scatter = sigmaS * dens * stepSize;
+
+    // --- Environment illuminates the medium (clouds / fog in sunlight) ---
+    if (sigmaS > 1e-10 && envEnergy > 1e-8) {
+      vec3 viewDir = normalize(-rd);
+      // Hemi: near-isotropic skylight
+      col += tint * uEnvHemi * sigmaS * INV_4PI * stepSize * T;
+      // Sun: directional with regime-weighted phase
+      float cosSun = clamp(dot(normalize(uEnvSunDir), viewDir), -1.0, 1.0);
+      float phaseSun = (sigmaSR * phaseRayleigh(cosSun) + sigmaSM * phaseHG(cosSun, mieG))
+        / max(sigmaS, 1e-10);
+      col += tint * uEnvSun * sigmaS * phaseSun * stepSize * T;
+    }
 
 ${lightEvalInMarch(VOLUMETRIC_LIGHT_SLOTS)}
 
@@ -368,16 +586,12 @@ export const VOLUMETRIC_UNIFORMS = [
   'uMaxSteps',
   'uDensityThreshold',
   'uTransmittanceCut',
+  'uEnvHemi',
+  'uEnvSun',
+  'uEnvSunDir',
+  'uVolumeMultiScatter',
   ...lightUniformNames(VOLUMETRIC_LIGHT_SLOTS),
-  'uMediaCount',
-  'uMediaCenter0', 'uMediaHalfExt0', 'uMediaColor0',
-  'uMediaDensity0', 'uMediaFbmScale0', 'uMediaFbmTime0',
-  'uMediaNoiseLow0', 'uMediaNoiseHigh0', 'uMediaScatter0', 'uMediaAbsorb0', 'uMediaSpectralExp0',
-  'uMediaMieG0',
-  'uMediaCenter1', 'uMediaHalfExt1', 'uMediaColor1',
-  'uMediaDensity1', 'uMediaFbmScale1', 'uMediaFbmTime1',
-  'uMediaNoiseLow1', 'uMediaNoiseHigh1', 'uMediaScatter1', 'uMediaAbsorb1', 'uMediaSpectralExp1',
-  'uMediaMieG1',
+  ...mediaUniformNames(VOLUMETRIC_MEDIA_SLOTS),
 ];
 
 export const VOLUMETRIC_SAMPLERS = ['uSceneDepth'];

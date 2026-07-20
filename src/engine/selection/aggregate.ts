@@ -33,6 +33,7 @@ const ALL_COMPONENTS: readonly ComponentName[] = [
   'SurfaceMaterial',
   'LightEmitter',
   'MediaVolume',
+  'SmokeEmitter',
   'Selectable',
   'ViewportHidden',
   'EditorFlags',
@@ -54,6 +55,7 @@ export function sharedUserComponents(
     'Name',
     'Transform',
     ...USER_ADDABLE_COMPONENTS,
+    'SmokeEmitter',
     'ViewportHidden',
     'EditorFlags',
   ];

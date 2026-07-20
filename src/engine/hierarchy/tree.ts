@@ -6,6 +6,7 @@ export type HierarchyKind =
   | 'empty'
   | 'light'
   | 'media'
+  | 'smoke'
   | 'environment'
   | 'entity';
 
@@ -117,12 +118,14 @@ export function entityKind(world: World, id: EntityId): HierarchyKind {
   const flags = world.get(id, 'EditorFlags');
   if (flags?.isSceneRoot) return 'scene';
   if (world.has(id, 'LightEmitter')) return 'light';
+  if (world.has(id, 'SmokeEmitter')) return 'smoke';
   if (world.has(id, 'MediaVolume')) return 'media';
   if (world.has(id, 'EnvironmentPiece')) return 'environment';
   if (
     world.has(id, 'Transform') &&
     !world.has(id, 'LightEmitter') &&
     !world.has(id, 'MediaVolume') &&
+    !world.has(id, 'SmokeEmitter') &&
     !world.has(id, 'EnvironmentPiece')
   ) {
     return 'empty';

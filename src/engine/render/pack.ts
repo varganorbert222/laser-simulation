@@ -2,36 +2,57 @@ import { lightWorldPose } from '../ecs/systems/world-transform';
 import type { World } from '../ecs/world';
 import { getTranslation } from '../math/mat4';
 import type { Vec3 } from '../math/vec3';
-import { sub } from '../math/vec3';
+import { normalize, sub } from '../math/vec3';
 import { beamModelFromEmitter, beamModelToGpuParams } from '../optics/beam-model';
-import { displayLuminousPower } from '../optics/laser-brightness';
+import {
+  displayLuminousPower,
+  physicalLuminousScale,
+} from '../optics/laser-brightness';
 import { mediaSpectralExponent } from '../optics/scatter-model';
+import {
+  GPU_LAYER_INTERIOR,
+  GPU_LAYER_OUTDOOR,
+  GPU_LAYER_PARTICULATE,
+  GPU_SCATTER_MODEL_CLIMATE,
+  GPU_SCATTER_MODEL_RAYLEIGH,
+  GPU_SCATTER_MODEL_TYNDALL,
+} from '../optics/atmosphere-climate';
+import { isClimatePreset } from '../optics/media-optical-presets';
+import {
+  environmentSunDirUnit,
+  environmentVolumetricHemiRgb,
+  environmentVolumetricSunRgb,
+} from '../optics/environment-lighting';
 import { normalizeChromaticity } from '../optics/color';
 import { rayleighScatterWeight, wavelengthToRgb } from '../optics/wavelength';
+import {
+  PLUME_DISABLED_CONE_COS,
+  coneCosFromHalfAngleDeg,
+} from '../optics/smoke-plume';
 
 export const MAX_GPU_LIGHTS = 8;
+/** Max MediaVolume entities packed per frame. */
 export const MAX_GPU_MEDIA = 4;
-
-/** Uniform slots wired in the volumetric fragment shader (must match shader gen). */
+/**
+ * Shader media slots kept at 2 — 8× dual-FBM freezes browsers on load/compile.
+ * Binder uploads only the first VOLUMETRIC_MEDIA_SLOTS of the packed list.
+ */
 export const VOLUMETRIC_LIGHT_SLOTS = MAX_GPU_LIGHTS;
 export const VOLUMETRIC_MEDIA_SLOTS = 2;
 
-/** Hemi + directional env lights that consume Babylon material light slots. */
 export const SURFACE_ENV_LIGHTS = 2;
-/** Spot / Point / Directional surface emitters driving StandardMaterial specular. */
 export const SURFACE_LIGHT_SLOTS = MAX_GPU_LIGHTS;
-/** `StandardMaterial.maxSimultaneousLights` = env + surface emitters. */
 export const SURFACE_MAX_SIMULTANEOUS_LIGHTS = SURFACE_ENV_LIGHTS + SURFACE_LIGHT_SLOTS;
 
-/** Fixed GPU light struct — camera-relative positions. */
 export interface GpuLight {
   originCam: Vec3;
   directionCam: Vec3;
   colorRgb: Vec3;
-  /** Educational display luminous scale (V(λ) × power curve). */
+  /** Surface/UI Weber–Fechner display scale. */
   powerDisplay: number;
+  /** Linear P·V·exposure scale for volumetric in-scatter. */
+  powerLinear: number;
   scatterWeight: number;
-  /** 0 omni, 1 cone, 2 tube, 3 gaussian */
   mode: number;
   p0: number;
   p1: number;
@@ -39,7 +60,6 @@ export interface GpuLight {
   p3: number;
   p4: number;
   p5: number;
-  /** [strayPowerFraction, unused, unused] — GPU uses .x as energy share. */
   spill: Vec3;
 }
 
@@ -53,14 +73,26 @@ export interface GpuMedia {
   noiseThresholdLow: number;
   noiseThresholdHigh: number;
   scatter: number;
+  scatterMie: number;
   absorption: number;
-  kind: number; // 0 fog, 1 smoke, 2 dust
-  /** Spectral exponent n in σ_s ∝ λ⁻ⁿ (4 = Rayleigh, ~0 = Tyndall). */
+  /** Legacy kind index (debug). */
+  kind: number;
   spectralExponent: number;
-  /** 0 = rayleigh, 1 = tyndall (UI / debug). */
+  /** 0 Rayleigh, 1 Tyndall, 2 climate dual. */
   scatterModel: number;
-  /** Henyey–Greenstein Mie anisotropy g. */
   mieAnisotropy: number;
+  turbulence: number;
+  /** 0 outdoor, 1 interior, 2 particulate. */
+  layerKind: number;
+  /** 1 = insulating interior climate. */
+  insulating: number;
+  /** Plume emission multiplier (1 + coneCos&lt;0 = uniform AABB). */
+  emissionRate: number;
+  /** Nozzle direction in camera/world space (unit). */
+  plumeDirCam: Vec3;
+  /** cos(half-angle); &lt;0 disables plume envelope. */
+  coneCos: number;
+  plumeLengthM: number;
 }
 
 export interface GatheredFrame {
@@ -74,24 +106,57 @@ export interface GatheredFrame {
     densityThreshold: number;
     transmittanceCut: number;
   };
+  env: {
+    hemiRgb: Vec3;
+    sunRgb: Vec3;
+    sunDirCam: Vec3;
+    multiScatter: number;
+  };
 }
 
 function worldToCamera(p: Vec3, camPos: Vec3): Vec3 {
   return sub(p, camPos);
 }
 
-function mediaKind(kind: string): number {
-  switch (kind) {
-    case 'smoke':
-      return 1;
-    case 'dust':
-      return 2;
-    default:
-      return 0;
-  }
+function mediaKindIndex(kind: string): number {
+  const map: Record<string, number> = {
+    fog: 0,
+    smoke: 1,
+    dust: 2,
+    clearNight: 3,
+    clearDay: 4,
+    spring: 5,
+    summerHumid: 6,
+    autumnMist: 7,
+    winterDry: 8,
+    room: 9,
+    lab: 10,
+    hall: 11,
+    haze: 12,
+  };
+  return map[kind] ?? 0;
 }
 
-/** Gather serializable lights/media into camera-relative GPU packs. */
+function gpuLayerKind(layer: string): number {
+  if (layer === 'interior') return GPU_LAYER_INTERIOR;
+  if (layer === 'particulate') return GPU_LAYER_PARTICULATE;
+  return GPU_LAYER_OUTDOOR;
+}
+
+function gpuScatterModel(vol: { layer: string; scatterModel: string }): number {
+  if (vol.layer === 'outdoor' || vol.layer === 'interior') return GPU_SCATTER_MODEL_CLIMATE;
+  return vol.scatterModel === 'tyndall'
+    ? GPU_SCATTER_MODEL_TYNDALL
+    : GPU_SCATTER_MODEL_RAYLEIGH;
+}
+
+/** Lower = earlier GPU slot (binder only uploads VOLUMETRIC_MEDIA_SLOTS). */
+function mediaGpuPriority(m: GpuMedia): number {
+  if (m.layerKind === GPU_LAYER_PARTICULATE) return 0;
+  if (m.insulating > 0.5) return 1;
+  return 2;
+}
+
 export function gatherRenderPack(world: World): GatheredFrame {
   const camPos = world.resources.Camera.position;
   const lights: GpuLight[] = [];
@@ -119,6 +184,9 @@ export function gatherRenderPack(world: World): GatheredFrame {
       directionCam: pose.direction,
       colorRgb: color,
       powerDisplay: displayLuminousPower(emitter.powerW, emitter.wavelengthNm, brightnessOpts),
+      powerLinear: physicalLuminousScale(emitter.powerW, emitter.wavelengthNm, {
+        ambientLevel: env.ambientLevel,
+      }),
       scatterWeight: rayleighScatterWeight(emitter.wavelengthNm),
       mode: gpu.mode,
       p0: gpu.p0,
@@ -141,6 +209,19 @@ export function gatherRenderPack(world: World): GatheredFrame {
       ? getTranslation(xform.matrix)
       : (transform?.position ?? ([0, 0, 0] as Vec3));
 
+    const climate = isClimatePreset(vol.preset ?? vol.kind);
+    const smoke = world.get(id, 'SmokeEmitter');
+    let emissionRate = 1;
+    let coneCos = PLUME_DISABLED_CONE_COS;
+    let plumeLengthM = 4;
+    let plumeDirCam: Vec3 = [0, 0, 1];
+    if (smoke) {
+      emissionRate = smoke.enabled ? smoke.emissionRate : 0;
+      coneCos = coneCosFromHalfAngleDeg(smoke.coneAngleDeg);
+      plumeLengthM = smoke.plumeLengthM;
+      plumeDirCam = lightWorldPose(world, id).direction;
+    }
+
     media.push({
       centerCam: worldToCamera(center, camPos),
       halfExtents: vol.halfExtents,
@@ -151,15 +232,32 @@ export function gatherRenderPack(world: World): GatheredFrame {
       noiseThresholdLow: vol.noiseThresholdLow,
       noiseThresholdHigh: vol.noiseThresholdHigh,
       scatter: vol.scatter,
+      scatterMie: climate ? vol.scatterMie : 0,
       absorption: vol.absorption,
-      kind: mediaKind(vol.kind),
-      spectralExponent: mediaSpectralExponent(vol.scatterModel, vol.particleSizeNm),
-      scatterModel: vol.scatterModel === 'tyndall' ? 1 : 0,
+      kind: mediaKindIndex(vol.preset ?? vol.kind),
+      spectralExponent: mediaSpectralExponent(
+        climate ? 'tyndall' : vol.scatterModel,
+        vol.particleSizeNm,
+      ),
+      scatterModel: gpuScatterModel(vol),
       mieAnisotropy: vol.mieAnisotropy,
+      turbulence: climate ? vol.turbulence : 0,
+      layerKind: gpuLayerKind(vol.layer),
+      insulating: vol.insulating ? 1 : 0,
+      emissionRate,
+      plumeDirCam,
+      coneCos,
+      plumeLengthM,
     });
   }
 
+  // Prefer particulate → insulating interior → outdoor so the 2 GPU slots stay useful.
+  media.sort((a, b) => mediaGpuPriority(a) - mediaGpuPriority(b));
+
   const q = world.resources.Quality;
+  const envRes = world.resources.EnvironmentLighting;
+  const sunDirCam = normalize(environmentSunDirUnit() as Vec3);
+
   return {
     lights,
     media,
@@ -170,6 +268,12 @@ export function gatherRenderPack(world: World): GatheredFrame {
       maxSteps: q.maxSteps,
       densityThreshold: q.densityThreshold,
       transmittanceCut: q.transmittanceCut,
+    },
+    env: {
+      hemiRgb: environmentVolumetricHemiRgb(envRes.ambientLevel),
+      sunRgb: environmentVolumetricSunRgb(envRes.ambientLevel),
+      sunDirCam,
+      multiScatter: envRes.volumeMultiScatter,
     },
   };
 }

@@ -3,6 +3,7 @@ import {
   buildHierarchyTree,
   captureEntityForest,
   createEmptyEntityCommand,
+  createSmokeEmitterCommand,
   deleteEntitiesCommand,
   duplicateEntitiesCommand,
   pasteEntityCommand,
@@ -88,8 +89,22 @@ export class HierarchyEditorService {
     this.engine.commitApplied(cmd);
   }
 
+  addSmokeEmitter(parentId: string | null = null): void {
+    const world = this.engine.world();
+    const sceneRoot =
+      world.allEntities().find((id) => world.get(id, 'EditorFlags')?.isSceneRoot) ?? null;
+    const parent = parentId ?? sceneRoot;
+    const cmd = createSmokeEmitterCommand(world, 'Füstszóró', parent);
+    this.engine.commitApplied(cmd);
+  }
+
   addBelow(parentId: string): void {
     const cmd = createEmptyEntityCommand(this.engine.world(), 'Üres objektum', parentId);
+    this.engine.commitApplied(cmd);
+  }
+
+  addSmokeEmitterBelow(parentId: string): void {
+    const cmd = createSmokeEmitterCommand(this.engine.world(), 'Füstszóró', parentId);
     this.engine.commitApplied(cmd);
   }
 

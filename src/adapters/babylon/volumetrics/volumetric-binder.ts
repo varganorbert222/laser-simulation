@@ -215,6 +215,11 @@ export class VolumetricBinder {
     effect.setFloat('uDensityThreshold', pack.quality.densityThreshold);
     effect.setFloat('uTransmittanceCut', pack.quality.transmittanceCut);
 
+    effect.setVector3('uEnvHemi', new Vector3(...pack.env.hemiRgb));
+    effect.setVector3('uEnvSun', new Vector3(...pack.env.sunRgb));
+    effect.setVector3('uEnvSunDir', new Vector3(...pack.env.sunDirCam));
+    effect.setFloat('uVolumeMultiScatter', pack.env.multiScatter);
+
     for (let i = 0; i < VOLUMETRIC_LIGHT_SLOTS; i++) {
       this.setLightUniforms(effect, pack, i);
     }
@@ -248,7 +253,7 @@ export class VolumetricBinder {
     effect.setVector3(`uLightOrigin${s}`, new Vector3(...L.originCam));
     effect.setVector3(`uLightDir${s}`, new Vector3(...L.directionCam));
     effect.setVector3(`uLightColor${s}`, new Vector3(...L.colorRgb));
-    effect.setFloat(`uLightPower${s}`, L.powerDisplay);
+    effect.setFloat(`uLightPower${s}`, L.powerLinear);
     effect.setFloat(`uLightScatter${s}`, L.scatterWeight);
     effect.setFloat(`uLightMode${s}`, L.mode);
     effect.setFloat(`uLightP0${s}`, L.p0);
@@ -272,10 +277,19 @@ export class VolumetricBinder {
       effect.setFloat(`uMediaFbmTime${s}`, 0);
       effect.setFloat(`uMediaNoiseLow${s}`, 0.2);
       effect.setFloat(`uMediaNoiseHigh${s}`, 0.8);
-      effect.setFloat(`uMediaScatter${s}`, 0.9);
-      effect.setFloat(`uMediaAbsorb${s}`, 0.2);
-      effect.setFloat(`uMediaSpectralExp${s}`, 0.2);
-      effect.setFloat(`uMediaMieG${s}`, 0);
+      effect.setFloat(`uMediaScatter${s}`, 0.0257);
+      effect.setFloat(`uMediaScatterMie${s}`, 0);
+      effect.setFloat(`uMediaAbsorb${s}`, 0.0003);
+      effect.setFloat(`uMediaSpectralExp${s}`, 0.05);
+      effect.setFloat(`uMediaMieG${s}`, 0.55);
+      effect.setFloat(`uMediaScatterModel${s}`, 1);
+      effect.setFloat(`uMediaTurbulence${s}`, 0);
+      effect.setFloat(`uMediaLayerKind${s}`, 0);
+      effect.setFloat(`uMediaInsulating${s}`, 0);
+      effect.setFloat(`uMediaEmission${s}`, 1);
+      effect.setFloat(`uMediaConeCos${s}`, -1);
+      effect.setFloat(`uMediaPlumeLen${s}`, 4);
+      effect.setVector3(`uMediaPlumeDir${s}`, new Vector3(0, 0, 1));
       return;
     }
     effect.setVector3(`uMediaCenter${s}`, new Vector3(...M.centerCam));
@@ -287,9 +301,18 @@ export class VolumetricBinder {
     effect.setFloat(`uMediaNoiseLow${s}`, M.noiseThresholdLow);
     effect.setFloat(`uMediaNoiseHigh${s}`, M.noiseThresholdHigh);
     effect.setFloat(`uMediaScatter${s}`, M.scatter);
+    effect.setFloat(`uMediaScatterMie${s}`, M.scatterMie);
     effect.setFloat(`uMediaAbsorb${s}`, M.absorption);
     effect.setFloat(`uMediaSpectralExp${s}`, M.spectralExponent);
     effect.setFloat(`uMediaMieG${s}`, M.mieAnisotropy);
+    effect.setFloat(`uMediaScatterModel${s}`, M.scatterModel);
+    effect.setFloat(`uMediaTurbulence${s}`, M.turbulence);
+    effect.setFloat(`uMediaLayerKind${s}`, M.layerKind);
+    effect.setFloat(`uMediaInsulating${s}`, M.insulating);
+    effect.setFloat(`uMediaEmission${s}`, M.emissionRate);
+    effect.setFloat(`uMediaConeCos${s}`, M.coneCos);
+    effect.setFloat(`uMediaPlumeLen${s}`, M.plumeLengthM);
+    effect.setVector3(`uMediaPlumeDir${s}`, new Vector3(...M.plumeDirCam));
   }
 }
 

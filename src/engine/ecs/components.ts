@@ -19,12 +19,36 @@ import {
 import { clampPowerW } from '../optics/power';
 import {
   clampMieAnisotropy,
-  clampParticleSizeNm,
+  clampParticleSizeForModel,
   defaultMieAnisotropy,
   defaultParticleSizeNm,
   isScatterModel,
   type ScatterModel,
 } from '../optics/scatter-model';
+import {
+  defaultMediaVolumeForKind,
+  isClimatePreset,
+  isMediaKind,
+  opticalFieldsForMediaKind,
+  opticalFieldsFromClimate,
+  resolveMediaPresetId,
+  scatterModelForMediaKind,
+  type MediaKind,
+  type MediaLayer,
+  type MediaPresetId,
+} from '../optics/media-optical-presets';
+import {
+  clampRelativeHumidity,
+  clampTemperatureC,
+} from '../optics/atmosphere-climate';
+import {
+  SMOKE_CONE_ANGLE_DEG_MAX,
+  SMOKE_CONE_ANGLE_DEG_MIN,
+  SMOKE_EMISSION_RATE_MAX,
+  SMOKE_EMISSION_RATE_MIN,
+  SMOKE_PLUME_LENGTH_M_MAX,
+  SMOKE_PLUME_LENGTH_M_MIN,
+} from '../optics/smoke-plume';
 
 export type { ScatterModel } from '../optics/scatter-model';
 export type { OpticsSpillParams } from '../optics/optics-spill';
@@ -32,6 +56,7 @@ export type {
   SurfaceFinishPreset,
   SurfaceMaterial,
 } from '../optics/surface-material';
+export type { MediaKind, MediaLayer, MediaPresetId } from '../optics/media-optical-presets';
 
 export type EntityId = string;
 
@@ -93,40 +118,54 @@ export interface LightEmitter {
   spill: OpticsSpillParams;
 }
 
-export type MediaKind = 'fog' | 'smoke' | 'dust';
-
 export interface MediaVolume {
+  /** Preset identity (legacy field name `kind`). */
   kind: MediaKind;
-  /** Base extinction / scatter density scale. */
+  preset: MediaPresetId;
+  layer: MediaLayer;
+  /** Interior climates exclude outdoor climate inside their AABB. */
+  insulating: boolean;
+  /**
+   * Dimensionless concentration multiplier (1 = literature σ at reference fill).
+   * Local fill = density × FBM noise.
+   */
   density: number;
   /** Fog tint RGB (0–1), multiplies scattered light in volume. */
   color: Vec3;
   /** AABB half-size in world metres (before entity scale). */
   halfExtents: Vec3;
-  /** FBM spatial frequency. */
   fbmScale: number;
-  /** FBM scroll speed along Y. */
   fbmTimeScale: number;
-  /** Noise soft-threshold low (smoothstep edge0). */
   noiseThresholdLow: number;
-  /** Noise soft-threshold high (smoothstep edge1). */
   noiseThresholdHigh: number;
-  /** Volume scatter coefficient σ_s. */
+  /**
+   * Volume scatter coefficient σ_s [m⁻¹].
+   * Particulate: Tyndall channel. Climate: Rayleigh channel.
+   */
   scatter: number;
-  /** Volume absorption coefficient σ_a (σ_t ≈ scatter + absorption). */
+  /** Dual-channel Mie σ_s [m⁻¹] for climate layers. */
+  scatterMie: number;
   absorption: number;
-  /**
-   * Scatter regime: Tyndall (colloidal beam cone, weak λ dependence) or
-   * Rayleigh (molecular, ∝ λ⁻⁴).
-   */
   scatterModel: ScatterModel;
-  /** Characteristic particle diameter (nm) — educational; drives mild Tyndall blend. */
   particleSizeNm: number;
-  /**
-   * Mie / Henyey–Greenstein anisotropy g (−1…+1).
-   * Forward scattering (g→1) makes the beam bright looking into it, dark from behind.
-   */
   mieAnisotropy: number;
+  relativeHumidity: number;
+  temperatureC: number;
+  turbulence: number;
+}
+
+/**
+ * Fog machine / smoke emitter — pairs with MediaVolume (particulate) on the same entity.
+ * Nozzle = local +Z (same convention as LightEmitter).
+ */
+export interface SmokeEmitter {
+  enabled: boolean;
+  /** Multiplies plume density (0 = off). Typical 0–3. */
+  emissionRate: number;
+  /** Spray cone half-angle in degrees. */
+  coneAngleDeg: number;
+  /** Soft axial falloff length (m). */
+  plumeLengthM: number;
 }
 
 export interface Selectable {
@@ -155,6 +194,7 @@ export interface ComponentMap {
   SurfaceMaterial: SurfaceMaterial;
   LightEmitter: LightEmitter;
   MediaVolume: MediaVolume;
+  SmokeEmitter: SmokeEmitter;
   Selectable: Selectable;
   ViewportHidden: ViewportHidden;
   EditorFlags: EditorFlags;
@@ -183,6 +223,7 @@ export const SERIALIZABLE_COMPONENTS: readonly ComponentName[] = [
   'SurfaceMaterial',
   'LightEmitter',
   'MediaVolume',
+  'SmokeEmitter',
   'Selectable',
   'ViewportHidden',
   'EditorFlags',
@@ -214,21 +255,45 @@ export function defaultLightEmitter(): LightEmitter {
 }
 
 export function defaultMediaVolume(): MediaVolume {
+  return defaultMediaVolumeForKind('fog');
+}
+
+export function defaultSmokeEmitter(): SmokeEmitter {
   return {
-    kind: 'fog',
-    density: 0.7,
-    color: [0.85, 0.9, 1],
-    halfExtents: [4, 2, 4],
-    fbmScale: 0.45,
-    fbmTimeScale: 0.15,
-    noiseThresholdLow: 0.2,
-    noiseThresholdHigh: 0.8,
-    scatter: 0.9,
-    absorption: 0.2,
-    // Fog / haze / smoke are colloidal → Tyndall (white-ish beam cone).
-    scatterModel: 'tyndall',
-    particleSizeNm: defaultParticleSizeNm('tyndall'),
-    mieAnisotropy: defaultMieAnisotropy('tyndall', defaultParticleSizeNm('tyndall')),
+    enabled: true,
+    emissionRate: 1,
+    coneAngleDeg: 25,
+    plumeLengthM: 4,
+  };
+}
+
+function clampSmokeEmissionRate(v: number): number {
+  if (!Number.isFinite(v)) return 1;
+  return Math.min(SMOKE_EMISSION_RATE_MAX, Math.max(SMOKE_EMISSION_RATE_MIN, v));
+}
+
+function clampSmokeConeAngleDeg(v: number): number {
+  if (!Number.isFinite(v)) return 25;
+  return Math.min(SMOKE_CONE_ANGLE_DEG_MAX, Math.max(SMOKE_CONE_ANGLE_DEG_MIN, v));
+}
+
+function clampSmokePlumeLengthM(v: number): number {
+  if (!Number.isFinite(v)) return 4;
+  return Math.min(SMOKE_PLUME_LENGTH_M_MAX, Math.max(SMOKE_PLUME_LENGTH_M_MIN, v));
+}
+
+export function normalizeSmokeEmitter(
+  raw: Partial<SmokeEmitter> & Record<string, unknown>,
+): SmokeEmitter {
+  const d = defaultSmokeEmitter();
+  return {
+    enabled: typeof raw.enabled === 'boolean' ? raw.enabled : d.enabled,
+    emissionRate:
+      typeof raw.emissionRate === 'number' ? clampSmokeEmissionRate(raw.emissionRate) : d.emissionRate,
+    coneAngleDeg:
+      typeof raw.coneAngleDeg === 'number' ? clampSmokeConeAngleDeg(raw.coneAngleDeg) : d.coneAngleDeg,
+    plumeLengthM:
+      typeof raw.plumeLengthM === 'number' ? clampSmokePlumeLengthM(raw.plumeLengthM) : d.plumeLengthM,
   };
 }
 
@@ -299,7 +364,7 @@ function normalizeModeParams(
   return raw;
 }
 
-/** Fill missing fields when loading older saves. */
+/** Fill missing fields when loading older saves. Migrates legacy kinds → presets. */
 export function normalizeMediaVolume(
   raw: Partial<MediaVolume> & Record<string, unknown>,
 ): MediaVolume {
@@ -312,32 +377,95 @@ export function normalizeMediaVolume(
     Array.isArray(raw.color) && raw.color.length === 3
       ? ([raw.color[0], raw.color[1], raw.color[2]] as Vec3)
       : d.color;
-  const kind =
-    raw.kind === 'smoke' || raw.kind === 'dust' || raw.kind === 'fog' ? raw.kind : d.kind;
-  const scatterModel = isScatterModel(raw.scatterModel) ? raw.scatterModel : d.scatterModel;
-  const particleSizeNm = clampParticleSizeNm(
-    typeof raw.particleSizeNm === 'number' ? raw.particleSizeNm : defaultParticleSizeNm(scatterModel),
+
+  let kind: MediaKind = d.kind;
+  if (isMediaKind(raw.kind) || typeof raw.kind === 'string') {
+    kind = resolveMediaPresetId(raw.kind);
+  } else if (typeof raw.preset === 'string') {
+    kind = resolveMediaPresetId(raw.preset);
+  } else if (isScatterModel(raw.scatterModel)) {
+    kind = raw.scatterModel === 'rayleigh' ? 'clearNight' : 'fog';
+  }
+
+  const scatterModel = scatterModelForMediaKind(kind);
+  const relativeHumidity = clampRelativeHumidity(
+    typeof raw.relativeHumidity === 'number' ? raw.relativeHumidity : d.relativeHumidity,
   );
+  const temperatureC = clampTemperatureC(
+    typeof raw.temperatureC === 'number' ? raw.temperatureC : d.temperatureC,
+  );
+  const density = typeof raw.density === 'number' ? raw.density : d.density;
+
+  if (isClimatePreset(kind)) {
+    const climate = opticalFieldsFromClimate(kind, relativeHumidity, temperatureC, density);
+    return {
+      ...climate,
+      kind: climate.preset,
+      halfExtents: half,
+      color:
+        Array.isArray(raw.color) && raw.color.length === 3
+          ? color
+          : ([climate.color[0], climate.color[1], climate.color[2]] as Vec3),
+      fbmScale: typeof raw.fbmScale === 'number' ? raw.fbmScale : climate.fbmScale,
+      fbmTimeScale: typeof raw.fbmTimeScale === 'number' ? raw.fbmTimeScale : climate.fbmTimeScale,
+      noiseThresholdLow:
+        typeof raw.noiseThresholdLow === 'number'
+          ? raw.noiseThresholdLow
+          : climate.noiseThresholdLow,
+      noiseThresholdHigh:
+        typeof raw.noiseThresholdHigh === 'number'
+          ? raw.noiseThresholdHigh
+          : climate.noiseThresholdHigh,
+      insulating:
+        typeof raw.insulating === 'boolean' ? raw.insulating : climate.insulating,
+    };
+  }
+
+  const fromPreset = opticalFieldsForMediaKind(kind);
+  // Preserve explicit Rayleigh override on particulate presets (UI scatter-model toggle).
+  const effectiveModel =
+    isScatterModel(raw.scatterModel) && raw.scatterModel === 'rayleigh'
+      ? 'rayleigh'
+      : scatterModel;
+  const particleSizeNm = clampParticleSizeForModel(
+    effectiveModel,
+    typeof raw.particleSizeNm === 'number'
+      ? raw.particleSizeNm
+      : defaultParticleSizeNm(effectiveModel),
+  );
+  const mieAnisotropy = clampMieAnisotropy(
+    typeof raw.mieAnisotropy === 'number'
+      ? raw.mieAnisotropy
+      : defaultMieAnisotropy(effectiveModel, particleSizeNm),
+  );
+
   return {
-    kind,
-    density: typeof raw.density === 'number' ? raw.density : d.density,
+    kind: fromPreset.preset,
+    preset: fromPreset.preset,
+    layer: fromPreset.layer,
+    insulating: typeof raw.insulating === 'boolean' ? raw.insulating : false,
+    density,
     color,
     halfExtents: half,
-    fbmScale: typeof raw.fbmScale === 'number' ? raw.fbmScale : d.fbmScale,
-    fbmTimeScale: typeof raw.fbmTimeScale === 'number' ? raw.fbmTimeScale : d.fbmTimeScale,
+    fbmScale: typeof raw.fbmScale === 'number' ? raw.fbmScale : fromPreset.fbmScale,
+    fbmTimeScale: typeof raw.fbmTimeScale === 'number' ? raw.fbmTimeScale : fromPreset.fbmTimeScale,
     noiseThresholdLow:
-      typeof raw.noiseThresholdLow === 'number' ? raw.noiseThresholdLow : d.noiseThresholdLow,
+      typeof raw.noiseThresholdLow === 'number'
+        ? raw.noiseThresholdLow
+        : fromPreset.noiseThresholdLow,
     noiseThresholdHigh:
-      typeof raw.noiseThresholdHigh === 'number' ? raw.noiseThresholdHigh : d.noiseThresholdHigh,
-    scatter: typeof raw.scatter === 'number' ? raw.scatter : d.scatter,
-    absorption: typeof raw.absorption === 'number' ? raw.absorption : d.absorption,
-    scatterModel,
+      typeof raw.noiseThresholdHigh === 'number'
+        ? raw.noiseThresholdHigh
+        : fromPreset.noiseThresholdHigh,
+    scatter: typeof raw.scatter === 'number' ? raw.scatter : fromPreset.scatter,
+    scatterMie: 0,
+    absorption: typeof raw.absorption === 'number' ? raw.absorption : fromPreset.absorption,
+    scatterModel: effectiveModel,
     particleSizeNm,
-    mieAnisotropy: clampMieAnisotropy(
-      typeof raw.mieAnisotropy === 'number'
-        ? raw.mieAnisotropy
-        : defaultMieAnisotropy(scatterModel, particleSizeNm),
-    ),
+    mieAnisotropy,
+    relativeHumidity,
+    temperatureC,
+    turbulence: 0,
   };
 }
 

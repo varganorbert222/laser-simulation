@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
 import type { GizmoMode, Vec3Editable } from '../../../../engine';
+import { I18nService } from '../../../i18n/i18n.service';
 import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 
 @Component({
@@ -10,6 +11,8 @@ import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
   styleUrl: './transform-inspector.component.scss',
 })
 export class TransformInspectorComponent {
+  readonly i18n = inject(I18nService);
+
   @Input({ required: true }) position!: Vec3Editable;
   @Input({ required: true }) rotationDeg!: Vec3Editable;
   @Input({ required: true }) scale!: Vec3Editable;

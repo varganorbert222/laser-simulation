@@ -20,8 +20,8 @@ describe('science readout relative brightness', () => {
     expect(ids).toContain('relBeamPointer');
 
     const self = { powerW: 0.005, wavelengthNm: 650 };
-    const expectedDot = relativeDotBrightness(self, RELATIVE_BRIGHTNESS_REF_POINTER, 0);
-    const expectedBeam = relativeBeamBrightness(self, RELATIVE_BRIGHTNESS_REF_POINTER, 0);
+    const expectedDot = relativeDotBrightness(self, RELATIVE_BRIGHTNESS_REF_POINTER, 0.38);
+    const expectedBeam = relativeBeamBrightness(self, RELATIVE_BRIGHTNESS_REF_POINTER, 0.38);
     const qDot = readout.quantities.find((q) => q.id === 'relDotPointer')!;
     const qBeam = readout.quantities.find((q) => q.id === 'relBeamPointer')!;
     expect(Number(qDot.value)).toBeCloseTo(expectedDot, 2);

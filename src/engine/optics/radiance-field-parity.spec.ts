@@ -23,4 +23,22 @@ describe('radiance-field GLSL parity', () => {
     expect(VOLUMETRIC_FRAGMENT).not.toContain('float evalLightWithSpill(');
     expect(VOLUMETRIC_FRAGMENT).not.toContain('float evalLight(');
   });
+
+  it('volumetric fragment supports additive multi-media Rayleigh+Mie', () => {
+    expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSR');
+    expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSM');
+    // Cap at 2 GPU media slots (8× dual-FBM froze browsers on load).
+    expect(VOLUMETRIC_FRAGMENT).toContain('uMediaCenter1');
+    expect(VOLUMETRIC_FRAGMENT).not.toContain('uMediaCenter7');
+    // Dual-channel in-scatter (not a single binary phase pick at the light loop).
+    expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSR * specR');
+    expect(VOLUMETRIC_FRAGMENT).toContain('sigmaSM * specM');
+  });
+
+  it('volumetric fragment lights media from environment + multi-scatter', () => {
+    expect(VOLUMETRIC_FRAGMENT).toContain('uEnvHemi');
+    expect(VOLUMETRIC_FRAGMENT).toContain('uEnvSun');
+    expect(VOLUMETRIC_FRAGMENT).toContain('uVolumeMultiScatter');
+    expect(VOLUMETRIC_FRAGMENT).toContain('omega0');
+  });
 });

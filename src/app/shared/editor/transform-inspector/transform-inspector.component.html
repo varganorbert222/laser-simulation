@@ -6,6 +6,7 @@
         <button
           type="button"
           [class.active]="gizmoMode === 'position'"
+          [attr.title]="i18n.t('tipPosition')"
           (click)="gizmoModeChange.emit('position')"
         >
           Move
@@ -13,6 +14,7 @@
         <button
           type="button"
           [class.active]="gizmoMode === 'rotation'"
+          [attr.title]="i18n.t('tipRotation')"
           (click)="gizmoModeChange.emit('rotation')"
         >
           Rotate
@@ -20,6 +22,7 @@
         <button
           type="button"
           [class.active]="gizmoMode === 'scale'"
+          [attr.title]="i18n.t('tipScale')"
           (click)="gizmoModeChange.emit('scale')"
         >
           Scale
@@ -30,6 +33,7 @@
   <p class="hint">Helyi pozíció, Euler forgatás (°), skála — szülőhöz képest.</p>
   <app-vec3-field
     label="Position (m)"
+    [tooltip]="i18n.t('tipPosition')"
     [value]="position"
     [readonly]="readonly || positionMixed"
     [step]="0.1"
@@ -39,6 +43,7 @@
   />
   <app-vec3-field
     label="Rotation Euler (°)"
+    [tooltip]="i18n.t('tipRotation')"
     [value]="rotationDeg"
     [readonly]="readonly || rotationMixed"
     [step]="1"
@@ -49,6 +54,7 @@
   />
   <app-vec3-field
     label="Scale"
+    [tooltip]="i18n.t('tipScale')"
     [value]="scale"
     [readonly]="readonly || scaleMixed"
     [step]="0.05"

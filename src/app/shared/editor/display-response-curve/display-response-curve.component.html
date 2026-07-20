@@ -1,5 +1,5 @@
 <section class="vision-panel">
-  <label class="ambient">
+  <label class="ambient" [attr.title]="i18n.t('tipEnvironmentAmbient')">
     <span>{{ i18n.t('environmentAmbient') }} · {{ i18n.t('eyeExposure') }} {{ exposureLabel }}</span>
     <input
       type="range"
@@ -22,6 +22,7 @@
   <canvas
     #canvas
     class="curve-canvas"
+    [attr.title]="i18n.t('tipDisplayCurve')"
     (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)"
     (pointerup)="onPointerUp($event)"

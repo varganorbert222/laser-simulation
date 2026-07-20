@@ -4,7 +4,7 @@
     @if (editor.selectionCount() > 1) {
       <p class="meta multi">{{ editor.selectionCount() }} {{ i18n.t('multiSelectionLabel') }}</p>
     }
-    <label>
+    <label [attr.title]="i18n.t('tipObjectName')">
       Név
       <input
         type="text"
@@ -42,7 +42,7 @@
       @for (c of editor.selectedComponents(); track c) {
         <li>
           <span>{{ c }}</span>
-          @if (c === 'LightEmitter' || c === 'MediaVolume' || c === 'EnvironmentPiece' || c === 'FixtureRef' || c === 'SurfaceMaterial') {
+          @if (c === 'LightEmitter' || c === 'MediaVolume' || c === 'SmokeEmitter' || c === 'EnvironmentPiece' || c === 'FixtureRef' || c === 'SurfaceMaterial') {
             <button
               type="button"
               class="tiny"
@@ -56,7 +56,7 @@
       }
     </ul>
     @if (editor.isEditMode()) {
-      <label class="add-comp">
+      <label class="add-comp" [attr.title]="i18n.t('tipAddComponent')">
         Hozzáadás
         <select (change)="addComponent($any($event.target).value); $any($event.target).value = ''">
           <option value="">—</option>
@@ -83,6 +83,15 @@
     }
     <fieldset class="merge-section" [disabled]="editor.selectedSurfaceMaterialMixed()">
       <app-surface-material-section [material]="material" />
+    </fieldset>
+  }
+
+  @if (editor.selectedSmoke(); as smoke) {
+    @if (editor.selectedSmokeMixed()) {
+      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+    }
+    <fieldset class="merge-section" [disabled]="editor.selectedSmokeMixed()">
+      <app-smoke-emitter-section [smoke]="smoke" />
     </fieldset>
   }
 
