@@ -21,8 +21,6 @@ import {
 })
 export class SpectralColorFieldComponent {
   @Input({ required: true }) label!: string;
-  /** Native browser tooltip explaining the control. */
-  @Input() tooltip = '';
   @Input({ required: true }) wavelengthNm!: number;
   @Input() readonly = false;
   @Output() wavelengthChange = new EventEmitter<number>();

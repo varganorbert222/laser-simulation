@@ -29,10 +29,6 @@ label {
   gap: 0.35rem;
   font-size: 0.8rem;
   color: var(--ls-muted);
-
-  &[title] {
-    cursor: help;
-  }
 }
 
 input[type='range'],
@@ -56,11 +52,6 @@ input[type='range'] {
 .value {
   color: var(--ls-text);
   font-variant-numeric: tabular-nums;
-
-  &.readonly {
-    opacity: 0.95;
-    padding: 0.15rem 0;
-  }
 }
 
 .hint {

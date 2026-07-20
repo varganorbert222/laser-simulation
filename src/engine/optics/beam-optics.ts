@@ -64,17 +64,10 @@ export function aberrationRadiusScale(
   return sphStretch * comaShift;
 }
 
-/** Top-hat soft mix into density-normalized profile (matches GLSL rfGaussianCore). */
-export function topHatMixProfile(
-  gaussianDens: number,
-  rNorm: number,
-  mix: number,
-  wx: number,
-  wy: number,
-): number {
+/** Top-hat soft mix: flattens the core while keeping soft edges. */
+export function topHatMixProfile(gaussian: number, rNorm: number, mix: number): number {
   const m = Math.min(1, Math.max(0, mix));
-  if (m < 1e-5) return gaussianDens;
-  const topHatShape = rNorm < 1 ? 1 : Math.exp(-4 * (rNorm - 1) * (rNorm - 1));
-  const topHatDens = (topHatShape * (2 / Math.PI)) / Math.max(wx * wy, 1e-10);
-  return gaussianDens * (1 - m) + topHatDens * m;
+  if (m < 1e-5) return gaussian;
+  const flat = rNorm < 1 ? 1 : Math.exp(-4 * (rNorm - 1) * (rNorm - 1));
+  return gaussian * (1 - m) + flat * m;
 }

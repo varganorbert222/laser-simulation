@@ -21,7 +21,6 @@ import {
 import { normalizeLaserParams, type LaserParams } from './modes';
 import type { OpticsSpillParams } from './optics-spill';
 import { defaultOpticsSpill, normalizeOpticsSpill, spillToGpuWeights } from './optics-spill';
-import { evalResidualDensity, residualFieldGlsl } from './optics-residual';
 import type { SurfaceMaterial } from './surface-material';
 
 export type BeamKind = 'omni' | 'cone' | 'tube' | 'gaussian';
@@ -104,10 +103,9 @@ export function beamModelFromEmitter(emitter: LightEmitter): BeamModel {
 }
 
 /**
- * Pack BeamModel into GPU p0–p5 + spill slots.
- * gaussian: p0=w0, p1=m2, p2=lambda, p3=ellipticRatio, p4=waistOffset,
- *           p5=packUnitPair(topHat, sph), spill.y=packUnitPair(coma, astig).
- * Pair packing stays ≤9999 so float32 cannot collapse aberration digits.
+ * Pack BeamModel into GPU p0–p5 slots.
+ * gaussian: p0=w0, p1=m2, p2=lambda, p3=ellipticRatio,
+ *           p4=waistOffset, p5=pack(topHat,sph,coma,astig) as float bits via decimals.
  */
 export function beamModelToGpuParams(model: BeamModel): {
   mode: number;
@@ -119,10 +117,10 @@ export function beamModelToGpuParams(model: BeamModel): {
   p5: number;
   spill: [number, number, number];
 } {
-  const spillBase: [number, number, number] = spillToGpuWeights(model.spill);
+  const spill: [number, number, number] = spillToGpuWeights(model.spill);
   switch (model.kind) {
     case 'omni':
-      return { mode: 0, p0: model.softRadiusM, p1: model.falloff, p2: 0, p3: 0, p4: 0, p5: 0, spill: spillBase };
+      return { mode: 0, p0: model.softRadiusM, p1: model.falloff, p2: 0, p3: 0, p4: 0, p5: 0, spill };
     case 'cone':
       return {
         mode: 1,
@@ -132,12 +130,18 @@ export function beamModelToGpuParams(model: BeamModel): {
         p3: 0,
         p4: 0,
         p5: 0,
-        spill: spillBase,
+        spill,
       };
     case 'tube':
-      return { mode: 2, p0: model.radiusM, p1: model.residualRad, p2: 0, p3: 0, p4: 0, p5: 0, spill: spillBase };
+      return { mode: 2, p0: model.radiusM, p1: model.residualRad, p2: 0, p3: 0, p4: 0, p5: 0, spill };
     case 'gaussian': {
       const L = model.laser;
+      // Pack 4× [0,1] into one float: tttt.ssssccccaaaa style via base-100 encoding.
+      const p5 =
+        Math.floor(L.topHatMix * 99) * 1e6 +
+        Math.floor(L.sphericalAberration * 99) * 1e4 +
+        Math.floor(L.coma * 99) * 1e2 +
+        Math.floor(L.astigmatism * 99);
       return {
         mode: 3,
         p0: L.w0M,
@@ -145,50 +149,30 @@ export function beamModelToGpuParams(model: BeamModel): {
         p2: model.lambdaM,
         p3: L.ellipticRatio,
         p4: L.waistOffsetM,
-        p5: packUnitPair(L.topHatMix, L.sphericalAberration),
-        spill: [spillBase[0], packUnitPair(L.coma, L.astigmatism), 0],
+        p5,
+        spill,
       };
     }
   }
 }
 
-/** Quantize two [0,1] values into one float32-safe integer 0…9999. */
-export function packUnitPair(a: number, b: number): number {
-  const qa = Math.floor(Math.min(1, Math.max(0, a)) * 99 + 1e-8);
-  const qb = Math.floor(Math.min(1, Math.max(0, b)) * 99 + 1e-8);
-  return qa * 100 + qb;
-}
-
-export function unpackUnitPair(packed: number): [number, number] {
-  const v = Math.max(0, Math.floor(packed + 1e-6));
-  const hi = Math.min(99, Math.floor(v / 100));
-  const lo = Math.min(99, v % 100);
-  return [hi / 99, lo / 99];
-}
-
-/** Unpack laser profile packs (p5 + spill.y). */
-export function unpackLaserProfilePack(
-  p5: number,
-  spillY: number,
-): {
-  topHatMix: number;
-  sphericalAberration: number;
-  coma: number;
-  astigmatism: number;
-} {
-  const [topHatMix, sphericalAberration] = unpackUnitPair(p5);
-  const [coma, astigmatism] = unpackUnitPair(spillY);
-  return { topHatMix, sphericalAberration, coma, astigmatism };
-}
-
-/** @deprecated Use unpackLaserProfilePack(p5, spillY). */
 export function unpackLaserAberrationP5(p5: number): {
   topHatMix: number;
   sphericalAberration: number;
   coma: number;
   astigmatism: number;
 } {
-  return unpackLaserProfilePack(p5, 0);
+  const v = Math.max(0, Math.floor(p5));
+  const topHatMix = Math.floor(v / 1e6) / 99;
+  const sphericalAberration = (Math.floor(v / 1e4) % 100) / 99;
+  const coma = (Math.floor(v / 1e2) % 100) / 99;
+  const astigmatism = (v % 100) / 99;
+  return {
+    topHatMix: Math.min(1, topHatMix),
+    sphericalAberration: Math.min(1, sphericalAberration),
+    coma: Math.min(1, coma),
+    astigmatism: Math.min(1, astigmatism),
+  };
 }
 
 export interface RadianceSample {
@@ -263,31 +247,21 @@ function evalGaussianCore(laser: LaserParams, lambdaM: number, sample: RadianceS
   let x = dot3(off, u);
   let y = dot3(off, v);
 
-  // Coma: asymmetric shift (comet-like spot) along local u.
+  // Coma: asymmetric shift along u
   if (laser.coma > 1e-4) {
     const r0 = Math.hypot(x, y);
-    x += laser.coma * 0.28 * r0 * Math.sign(x || 1);
+    x += laser.coma * 0.15 * r0 * Math.sign(x || 1);
   }
 
   const waists = propagateLaserWaists(laser, lambdaM, t);
   const r = Math.hypot(x, y);
   const rNorm = r / Math.max(Math.sqrt(waists.wx * waists.wy), 1e-6);
-  const scale = aberrationRadiusScale(
-    rNorm,
-    laser.sphericalAberration,
-    laser.coma,
-    x / (Math.abs(x) + Math.abs(y) + 1e-6),
-  );
+  const scale = aberrationRadiusScale(rNorm, laser.sphericalAberration, laser.coma, x / (Math.abs(x) + Math.abs(y) + 1e-6));
   const xs = x * scale;
   const ys = y * scale;
 
   let dens = gaussianTem00DensityElliptic(xs, ys, waists.wx, waists.wy);
-  // Spherical aberration: soft outer skirt (educational 1/(1+k r²)).
-  if (laser.sphericalAberration > 1e-4) {
-    const soft = 1 / (1 + laser.sphericalAberration * 2.2 * rNorm * rNorm);
-    dens *= soft;
-  }
-  dens = topHatMixProfile(dens, rNorm, laser.topHatMix, waists.wx, waists.wy);
+  dens = topHatMixProfile(dens, rNorm, laser.topHatMix);
   return dens * DISPLAY_RADIANCE_SCALE;
 }
 
@@ -346,6 +320,7 @@ function evalSpillOnly(model: BeamModel, sample: RadianceSample, _core: number):
   if (model.kind === 'omni') {
     const dist = len3(op);
     const softR = model.softRadiusM * (1.8 + f);
+    // Wide isotropic residual — étendue-ish 1/r² soft falloff
     return (f * scale) / (dist * dist * (1 + Math.pow(dist / softR, 2)));
   }
 
@@ -353,7 +328,7 @@ function evalSpillOnly(model: BeamModel, sample: RadianceSample, _core: number):
   const t = dot3(op, d);
   if (t < 0) {
     const rb = len3(op);
-    // Backward aperture / housing leakage
+    // Backward aperture leakage
     return f * 0.35 * Math.exp(-(rb * rb) / 0.04) * scale;
   }
   const closest: [number, number, number] = [
@@ -361,10 +336,7 @@ function evalSpillOnly(model: BeamModel, sample: RadianceSample, _core: number):
     sample.origin[1] + d[1] * t,
     sample.origin[2] + d[2] * t,
   ];
-  const off = sub3(sample.point, closest);
-  const { u, v } = beamBasis(d);
-  const x = dot3(off, u);
-  const y = dot3(off, v);
+  const r = len3(sub3(sample.point, closest));
 
   let brCore = 0.02;
   if (model.kind === 'gaussian') {
@@ -376,8 +348,10 @@ function evalSpillOnly(model: BeamModel, sample: RadianceSample, _core: number):
     brCore = Math.max(Math.tan(model.outerRad) * t * 0.35, 0.08);
   }
 
-  // Ghosts + halo + edge + flare streak (optics-train residual).
-  return f * evalResidualDensity(x, y, brCore, t) * scale;
+  // Wide residual lobe (~3–6× core radius), density-normalized so f is meaningful power share.
+  const brStray = brCore * (3.2 + 4 * f);
+  const dens = gaussianTem00Density(r, brStray) * Math.exp(-0.03 * t);
+  return f * dens * scale;
 }
 
 function smoothstep(edge0: number, edge1: number, x: number): number {
@@ -450,12 +424,10 @@ export function radianceFieldGlslFunctions(): string {
   return `
 const float RF_DISPLAY_SCALE = 1e-3;
 
-float rfUnpackPairHi(float packed) {
-  return floor(mod(floor(packed + 1e-6), 10000.0) / 100.0) / 99.0;
-}
-float rfUnpackPairLo(float packed) {
-  return mod(floor(packed + 1e-6), 100.0) / 99.0;
-}
+float rfUnpackTopHat(float p5) { return floor(p5 / 1e6) / 99.0; }
+float rfUnpackSph(float p5) { return mod(floor(p5 / 1e4), 100.0) / 99.0; }
+float rfUnpackComa(float p5) { return mod(floor(p5 / 1e2), 100.0) / 99.0; }
+float rfUnpackAstig(float p5) { return mod(p5, 100.0) / 99.0; }
 
 void rfBeamBasis(vec3 d, out vec3 u, out vec3 v) {
   vec3 ax = abs(d.x) < 0.9 ? vec3(1.0, 0.0, 0.0) : vec3(0.0, 1.0, 0.0);
@@ -469,11 +441,9 @@ float rfTem00Elliptic(float x, float y, float wx, float wy) {
   return (2.0 / 3.14159265) / (ax * ay) * exp(-2.0 * ((x * x) / (ax * ax) + (y * y) / (ay * ay)));
 }
 
-${residualFieldGlsl()}
-
 float rfGaussianCore(
   vec3 pCam, vec3 o, vec3 dIn,
-  float w0, float m2, float lambdaM, float elliptic, float waistOff, float p5, float pAb
+  float w0, float m2, float lambdaM, float elliptic, float waistOff, float p5
 ) {
   vec3 d = normalize(dIn);
   vec3 op = pCam - o;
@@ -487,14 +457,14 @@ float rfGaussianCore(
   float x = dot(off, u);
   float y = dot(off, v);
 
-  float topHat = clamp(rfUnpackPairHi(p5), 0.0, 1.0);
-  float sph = clamp(rfUnpackPairLo(p5), 0.0, 1.0);
-  float coma = clamp(rfUnpackPairHi(pAb), 0.0, 1.0);
-  float astig = clamp(rfUnpackPairLo(pAb), 0.0, 1.0);
+  float topHat = clamp(rfUnpackTopHat(p5), 0.0, 1.0);
+  float sph = clamp(rfUnpackSph(p5), 0.0, 1.0);
+  float coma = clamp(rfUnpackComa(p5), 0.0, 1.0);
+  float astig = clamp(rfUnpackAstig(p5), 0.0, 1.0);
 
   if (coma > 1e-4) {
     float r0 = length(vec2(x, y));
-    x += coma * 0.28 * r0 * sign(x == 0.0 ? 1.0 : x);
+    x += coma * 0.15 * r0 * sign(x == 0.0 ? 1.0 : x);
   }
 
   float w0x = max(w0, 1e-4);
@@ -516,9 +486,6 @@ float rfGaussianCore(
   float comaShift = 1.0 + coma * 0.35 * max(comaAxis, 0.0) * rNorm;
   float scale = sphStretch * comaShift;
   float dens = rfTem00Elliptic(x * scale, y * scale, wx, wy);
-  if (sph > 1e-4) {
-    dens *= 1.0 / (1.0 + sph * 2.2 * rNorm * rNorm);
-  }
   if (topHat > 1e-5) {
     // Avoid identifier "flat" — reserved interpolation qualifier in GLSL ES 3.
     float topHatShape = rNorm < 1.0 ? 1.0 : exp(-4.0 * (rNorm - 1.0) * (rNorm - 1.0));
@@ -528,10 +495,7 @@ float rfGaussianCore(
   return dens * RF_DISPLAY_SCALE;
 }
 
-float rfEvalCore(
-  vec3 pCam, vec3 o, vec3 dIn, float mode,
-  float p0, float p1, float p2, float p3, float p4, float p5, vec3 spill
-) {
+float rfEvalCore(vec3 pCam, vec3 o, vec3 dIn, float mode, float p0, float p1, float p2, float p3, float p4, float p5) {
   vec3 d = normalize(dIn);
   vec3 op = pCam - o;
 
@@ -566,18 +530,16 @@ float rfEvalCore(
     return (2.0 / 3.14159265) / (br * br) * exp(-2.0 * (r * r) / (br * br)) * RF_DISPLAY_SCALE;
   }
 
-  return rfGaussianCore(
-    pCam, o, dIn, max(p0, 1e-4), max(p1, 1.0), max(p2, 1e-9), max(p3, 0.2), p4, p5, spill.y
-  );
+  return rfGaussianCore(pCam, o, dIn, max(p0, 1e-4), max(p1, 1.0), max(p2, 1e-9), max(p3, 0.2), p4, p5);
 }
 
 float rfEvalRadianceField(
   vec3 pCam, vec3 o, vec3 dIn, float mode,
   float p0, float p1, float p2, float p3, float p4, float p5, vec3 spill
 ) {
-  // spill.x = strayPowerFraction; spill.y = packUnitPair(coma, astig) for gaussian.
+  // spill.x = strayPowerFraction (energy share outside designed core).
   float f = clamp(max(spill.x, 0.0), 0.0, 0.85);
-  float coreRaw = rfEvalCore(pCam, o, dIn, mode, p0, p1, p2, p3, p4, p5, spill);
+  float coreRaw = rfEvalCore(pCam, o, dIn, mode, p0, p1, p2, p3, p4, p5);
   float core = coreRaw * (1.0 - f);
   if (f < 1e-5) return core;
 
@@ -595,29 +557,13 @@ float rfEvalRadianceField(
     float rb = length(op);
     return core + f * 0.35 * exp(-(rb * rb) / 0.04) * RF_DISPLAY_SCALE;
   }
-  vec3 closest = o + d * t;
-  vec3 off = pCam - closest;
-  vec3 u; vec3 v;
-  rfBeamBasis(d, u, v);
-  float bx = dot(off, u);
-  float by = dot(off, v);
+  float r = length(pCam - (o + d * t));
 
   float brCore = 0.02;
   if (mode >= 2.5) {
-    // Geometric-mean waist — same as CPU evalSpillOnly (not peak-inverted).
-    float w0x = max(p0, 1e-4);
-    float w0y = max(w0x * max(p3, 0.2), 1e-4);
-    float m = clamp(max(p1, 1.0), 1.0, 50.0);
-    float lambdaM = max(p2, 1e-12);
-    float astig = clamp(rfUnpackPairLo(spill.y), 0.0, 1.0);
-    float zRX = 3.14159265 * w0x * w0x / (m * lambdaM);
-    float zRY = 3.14159265 * w0y * w0y / (m * lambdaM);
-    float delta = astig * 0.5 * max(zRX, zRY);
-    float zx = t - p4 - delta;
-    float zy = t - p4 + delta;
-    float wx = w0x * sqrt(1.0 + (zx / max(zRX, 1e-6)) * (zx / max(zRX, 1e-6)));
-    float wy = w0y * sqrt(1.0 + (zy / max(zRY, 1e-6)) * (zy / max(zRY, 1e-6)));
-    brCore = sqrt(max(wx * wy, 1e-10));
+    float dens = rfGaussianCore(pCam, o, dIn, max(p0, 1e-4), max(p1, 1.0), max(p2, 1e-9), max(p3, 0.2), p4, p5);
+    float peak = dens / max(RF_DISPLAY_SCALE, 1e-12);
+    brCore = sqrt(max(2.0 / (3.14159265 * max(peak, 1e-6)), 1e-8));
   } else if (mode >= 1.5) {
     brCore = max(p0 + p1 * t, 0.01);
   } else {
@@ -625,8 +571,11 @@ float rfEvalRadianceField(
     brCore = max(tan(outer) * t * 0.35, 0.08);
   }
 
-  // Ghosts / halo / edge / flare — same residual as CPU optics-residual.ts
-  return core + f * rfResidualDensity(bx, by, brCore, t) * RF_DISPLAY_SCALE;
+  float brStray = brCore * (3.2 + 4.0 * f);
+  float dens = (2.0 / 3.14159265) / max(brStray * brStray, 1e-10)
+    * exp(-2.0 * (r * r) / max(brStray * brStray, 1e-10))
+    * exp(-0.03 * t);
+  return core + f * dens * RF_DISPLAY_SCALE;
 }
 `;
 }

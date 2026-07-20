@@ -9,7 +9,6 @@ import {
   beamModeCode,
   evalRadianceField,
   surfaceBrdfWeights,
-  unpackLaserProfilePack,
   zeroSpill,
   type BeamModel,
 } from './beam-model';
@@ -141,55 +140,6 @@ describe('beamModelToGpuParams', () => {
     expect(g.mode).toBe(3);
     expect(g.p1).toBe(2.5);
   });
-
-  it('float32-safe profile pack survives max top-hat + aberrations', () => {
-    const model = beamModelFromEmitter(
-      emitter({
-        params: {
-          mode: 'laser',
-          laser: {
-            ...defaultLaserParams(),
-            topHatMix: 1,
-            sphericalAberration: 1,
-            coma: 1,
-            astigmatism: 1,
-          },
-        },
-      }),
-    );
-    const g = beamModelToGpuParams(model);
-    // Simulate GPU float32 upload/download.
-    const p5f32 = new Float32Array([g.p5])[0]!;
-    const abF32 = new Float32Array([g.spill[1]])[0]!;
-    const u = unpackLaserProfilePack(p5f32, abF32);
-    expect(u.topHatMix).toBeCloseTo(1, 5);
-    expect(u.sphericalAberration).toBeCloseTo(1, 5);
-    expect(u.coma).toBeCloseTo(1, 5);
-    expect(u.astigmatism).toBeCloseTo(1, 5);
-  });
-
-  it('packs mid-scale profile without losing coma/astig', () => {
-    const model = beamModelFromEmitter(
-      emitter({
-        params: {
-          mode: 'laser',
-          laser: {
-            ...defaultLaserParams(),
-            topHatMix: 0.5,
-            sphericalAberration: 0.25,
-            coma: 0.75,
-            astigmatism: 0.1,
-          },
-        },
-      }),
-    );
-    const g = beamModelToGpuParams(model);
-    const u = unpackLaserProfilePack(g.p5, g.spill[1]);
-    expect(u.topHatMix).toBeCloseTo(0.5, 1);
-    expect(u.sphericalAberration).toBeCloseTo(0.25, 1);
-    expect(u.coma).toBeCloseTo(0.75, 1);
-    expect(u.astigmatism).toBeCloseTo(0.1, 1);
-  });
 });
 
 describe('evalRadianceField', () => {
@@ -316,26 +266,11 @@ describe('evalRadianceField', () => {
     const dirty = evalRadianceField(withSpill, sample);
     expect(dirty.core).toBeCloseTo(clean.core * 0.6, 6);
     expect(dirty.spill).toBeGreaterThan(0);
-    // Off-axis residual (ghosts/halo) should exceed a pure TEM00 core.
+    // Off-axis residual should be stronger relative to a pure TEM00 core.
     const off = { origin, direction: dir, point: [0.08, 0, 1] as [number, number, number] };
     expect(evalRadianceField(withSpill, off).total).toBeGreaterThan(
       evalRadianceField(base, off).total,
     );
-  });
-
-  it('residual ghosts raise irradiance outside the core waist', () => {
-    const model: BeamModel = {
-      kind: 'gaussian',
-      laser: { ...defaultLaserParams(), w0M: 0.005, m2: 1 },
-      lambdaM: 532e-9,
-      spill: { strayPowerFraction: 0.35 },
-    };
-    const atGhost = evalRadianceField(model, {
-      origin,
-      direction: dir,
-      point: [0.012, 0, 1],
-    });
-    expect(atGhost.spill).toBeGreaterThan(atGhost.core * 0.05);
   });
 });
 

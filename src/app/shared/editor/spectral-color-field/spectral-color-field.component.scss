@@ -6,10 +6,6 @@
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-
-  &[title] {
-    cursor: help;
-  }
 }
 
 .title {

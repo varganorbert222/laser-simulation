@@ -2,14 +2,12 @@ import type {
   ComponentMap,
   LightEmitter,
   MediaVolume,
-  SmokeEmitter,
 } from '../ecs/components';
 import {
   SERIALIZABLE_COMPONENTS,
   defaultTransform,
   normalizeLightEmitter,
   normalizeMediaVolume,
-  normalizeSmokeEmitter,
 } from '../ecs/components';
 import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, type Quality } from '../ecs/resources';
 import { World, SAVE_SCHEMA_VERSION, type SerializedWorld } from '../ecs/world';
@@ -61,11 +59,6 @@ function normalizeEntityComponents(
   if (next.MediaVolume) {
     next.MediaVolume = normalizeMediaVolume(
       next.MediaVolume as Partial<MediaVolume> & Record<string, unknown>,
-    );
-  }
-  if (next.SmokeEmitter) {
-    next.SmokeEmitter = normalizeSmokeEmitter(
-      next.SmokeEmitter as Partial<SmokeEmitter> & Record<string, unknown>,
     );
   }
   return next;

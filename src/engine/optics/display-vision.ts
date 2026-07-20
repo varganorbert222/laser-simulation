@@ -1,7 +1,7 @@
 /**
  * Global display settings: editable power→HDR curve only.
- * Eye exposure + mesopic V_eff(λ) come from EnvironmentLighting.ambientLevel
- * (bright → photopic V; dark → scotopic V′ / Purkinje) — no mode switch.
+ * Eye exposure comes from EnvironmentLighting.ambientLevel (scene fill), not a
+ * separate photopic/scotopic mode switch.
  */
 import {
   createDefaultDisplayResponseCurve,

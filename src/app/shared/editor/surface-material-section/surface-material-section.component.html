@@ -1,7 +1,7 @@
 <section class="block">
   <h3>{{ i18n.t('surfaceMaterial') }}</h3>
 
-  <label [attr.title]="i18n.t('tipFixtureFinish')">
+  <label>
     {{ i18n.t('fixtureFinish') }}
     <select
       [value]="material().preset"
@@ -14,7 +14,7 @@
       <option value="custom">{{ i18n.t('finishCustom') }}</option>
     </select>
   </label>
-  <label [attr.title]="i18n.t('tipAlbedo')">
+  <label>
     {{ i18n.t('albedo') }}
     <input
       type="range"
@@ -27,7 +27,7 @@
     />
     <span class="value">{{ material().albedo | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipMetalness')">
+  <label>
     {{ i18n.t('metalness') }}
     <input
       type="range"
@@ -40,7 +40,7 @@
     />
     <span class="value">{{ material().metalness | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipRoughness')">
+  <label>
     {{ i18n.t('roughness') }}
     <input
       type="range"
@@ -53,7 +53,7 @@
     />
     <span class="value">{{ material().roughness | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipTransmission')">
+  <label>
     {{ i18n.t('transmission') }}
     <input
       type="range"

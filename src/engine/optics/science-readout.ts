@@ -1,9 +1,8 @@
 import {
+  beamRadiusAt,
   divergenceMrad,
   rayleighRange,
 } from './laser';
-import { propagateLaserWaists } from './beam-optics';
-import { normalizeLaserParams } from './modes';
 import type { ModeParams } from './modes';
 import {
   eyeAdaptationGainFromAmbient,
@@ -196,7 +195,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       value: fmt(beamLuminous, 3),
       unit: 'mW·V·λ⁻⁴',
       kind: 'approximated',
-      note: 'tiszta levegő / Rayleigh: P·V·exposure·(550/λ)⁴ — köd/Mie-ben a march S≈1',
+      note: 'P(mW)·V(λ)·exposure·(550/λ)⁴',
     },
     {
       id: 'relDotPeak',
@@ -212,7 +211,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       value: fmt(relBeamPeak, 3),
       unit: '×',
       kind: 'approximated',
-      note: `vs ${fmt(refPeak.powerW * 1000, 3)} mW @ ${refPeak.wavelengthNm} nm · Rayleigh: pont × (λ_b/λ_a)⁴`,
+      note: `vs ${fmt(refPeak.powerW * 1000, 3)} mW @ ${refPeak.wavelengthNm} nm · pont × (λ_b/λ_a)⁴`,
     },
     {
       id: 'relDotPointer',
@@ -228,7 +227,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       value: fmt(relBeamPointer, 3),
       unit: '×',
       kind: 'approximated',
-      note: 'tiszta levegő / Rayleigh: pontarány × (λ_ref/λ)⁴ — nem köd/Mie',
+      note: 'ködben: pontarány × Rayleigh (λ_ref/λ)⁴',
     },
     {
       id: 'display',
@@ -240,11 +239,11 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
     },
     {
       id: 'scatter',
-      label: 'Szórási súly (w₄)',
+      label: 'Szórási súly',
       value: fmt(scatterWeight, 3),
       unit: '',
       kind: 'approximated',
-      note: 'pack: (550/λ)⁴; a march λ⁻ⁿ-re mapeli (Rayleigh n=4, Tyndall n≈0)',
+      note: '∝ λ⁻ⁿ a közeg modelljétől (Rayleigh n=4, Tyndall n≈0)',
     },
   ];
 
@@ -255,7 +254,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       value: fmt(spill.strayPowerFraction, 3),
       unit: '',
       kind: 'approximated',
-      note: 'f: residual power → ghosts/halo/edge/flare (optics-residual); core×(1−f)',
+      note: 'energia-konzisztens residual: core×(1−f), széles lebeny×f',
     });
   }
 
@@ -340,13 +339,11 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       break;
     }
     case 'laser': {
-      const laser = normalizeLaserParams(input.params.laser);
-      const { w0M, m2, probeDistanceM, ellipticRatio, waistOffsetM, astigmatism, topHatMix } =
-        laser;
+      const laser = input.params.laser;
+      const { w0M, m2, probeDistanceM, ellipticRatio, waistOffsetM } = laser;
       const lambdaM = input.wavelengthNm * 1e-9;
-      const zRX = rayleighRange(w0M, lambdaM, m2);
-      const waists = propagateLaserWaists(laser, lambdaM, probeDistanceM);
-      const wGeom = Math.sqrt(Math.max(waists.wx * waists.wy, 1e-20));
+      const zR = rayleighRange(w0M, lambdaM, m2);
+      const wAtZ = beamRadiusAt(w0M, zR, probeDistanceM - waistOffsetM);
       const divMrad = divergenceMrad(w0M, lambdaM, m2);
       quantities.push(
         {
@@ -366,23 +363,17 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
         },
         {
           id: 'zR',
-          label: 'z_R (x)',
-          value: fmt(zRX, 4),
+          label: 'z_R',
+          value: fmt(zR, 4),
           unit: 'm',
           kind: 'calculated',
         },
         {
           id: 'wZ',
-          label: `√(wx wy) @ z=${fmt(probeDistanceM, 3)} m`,
-          value: fmt(wGeom, 4),
+          label: `w(z=${fmt(probeDistanceM, 3)} m)`,
+          value: fmt(wAtZ, 4),
           unit: 'm',
           kind: 'calculated',
-          note:
-            astigmatism > 1e-4
-              ? `wx=${fmt(waists.wx, 4)} m, wy=${fmt(waists.wy, 4)} m (asztigmatizmus)`
-              : waistOffsetM !== 0
-                ? `waistOffset=${fmt(waistOffsetM, 3)} m`
-                : undefined,
         },
         {
           id: 'div',
@@ -401,10 +392,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
         },
       );
       insight =
-        (topHatMix > 1e-3
-          ? 'Lézer: TEM00 + top-hat keverék; '
-          : 'Lézer: Gauss TEM00 (exp(−2r²/w²)); ') +
-        'étendue-normált irradiance. Relatív pont fényerő ∝ P·V(λ); relatív nyaláb ∝ P·V(λ)·(550/λ)⁴ ' +
+        'Lézer: Gauss TEM00 (exp(−2r²/w²)), étendue-normált irradiance. Relatív pont fényerő ∝ P·V(λ); relatív nyaláb ∝ P·V(λ)·(550/λ)⁴ ' +
         '(Laser Beam and Dot Relative Brightness). Szem exposure a környezeti fényből. ' +
         (hasOpticsSpill(spill)
           ? 'Stray / belső reflexió / aperture spill a fő nyaláb körül látható mezőt ad.'
@@ -413,7 +401,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
         'E(r)=2P/(πw²)·exp(−2r²/w²) · BRDF(GGX); relDot = (P_a·V_a)/(P_b·V_b)';
       example =
         `Rel. pont ${fmt(relDotPointer, 3)}× / nyaláb ${fmt(relBeamPointer, 3)}× a 5 mW 532 nm pointerhez képest. ` +
-        `z = ${fmt(probeDistanceM, 3)} m-nél √(wx wy) ≈ ${fmt(wGeom * 1e3, 3)} mm.`;
+        `z = ${fmt(probeDistanceM, 3)} m-nél w ≈ ${fmt(wAtZ * 1e3, 3)} mm.`;
       if (input.powerW >= 0.005) {
         safetyNote =
           'Oktatási megjegyzés: valódi lézernél szemvédelem kell — ez a szimuláció nem minősítés.';

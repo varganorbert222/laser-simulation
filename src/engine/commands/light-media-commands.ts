@@ -1,4 +1,4 @@
-import type { EntityId, LightEmitter, MediaVolume, SmokeEmitter } from '../ecs/components';
+import type { EntityId, LightEmitter, MediaVolume } from '../ecs/components';
 import type { SurfaceMaterial } from '../optics/surface-material';
 import type { World } from '../ecs/world';
 import type { Command } from './stack';
@@ -44,17 +44,6 @@ export function setMediaVolumeCommand(
 ): Command {
   return snapshotCommand('Közeg', structuredClone(before), structuredClone(after), (v) => {
     world.set(entityId, 'MediaVolume', structuredClone(v));
-  });
-}
-
-export function setSmokeEmitterCommand(
-  world: World,
-  entityId: EntityId,
-  before: SmokeEmitter,
-  after: SmokeEmitter,
-): Command {
-  return snapshotCommand('Füstszóró', structuredClone(before), structuredClone(after), (v) => {
-    world.set(entityId, 'SmokeEmitter', structuredClone(v));
   });
 }
 

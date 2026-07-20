@@ -17,8 +17,6 @@ import {
 })
 export class ColorFieldComponent {
   @Input({ required: true }) label!: string;
-  /** Native browser tooltip explaining the control. */
-  @Input() tooltip = '';
   @Input({ required: true }) rgb!: Rgb01;
   @Input() readonly = false;
   @Output() rgbChange = new EventEmitter<[number, number, number]>();

@@ -19,7 +19,6 @@ export const hu = {
   laserAberrations: 'Aberrációk',
   ellipticRatio: 'Ellipticitás (wy/wx)',
   waistOffset: 'Fókusz / waist eltolás',
-  probeDistance: 'Probe távolság (w(z) readout)',
   topHatMix: 'Multimode top-hat',
   sphericalAberration: 'Gömbi aberráció',
   coma: 'Kóma',
@@ -31,11 +30,11 @@ export const hu = {
   redo: 'Újra',
   wavelength: 'Hullámhossz',
   power: 'Teljesítmény',
-  fogDensity: 'Koncentráció (density)',
+  fogDensity: 'Köd sűrűség',
   calculated: 'Számított',
   approximated: 'Közelített / vizualizált',
   noSelection: 'Válassz egy fényforrást vagy ködöt.',
-  hintFog: 'Köd nélkül a nyaláb alig látszik — válts ködre/füstre, vagy növeld a density-t.',
+  hintFog: 'Köd nélkül a nyaláb alig látszik — növeld a sűrűséget.',
   hintColor: 'A szín a λ → RGB kijelző-leképezés; nem kalibrált kolorimetria.',
   presentationEdit: 'Editor mode',
   presentationPhoto: 'Photo mode',
@@ -47,45 +46,8 @@ export const hu = {
   glowIntensity: 'Glow (emisszív)',
   bloomIntensity: 'Bloom',
   hintGlow: 'A spot, glow és bloom a fény színétől és teljesítményétől is függ.',
-  mediaLayer: 'Réteg',
-  mediaLayerOutdoor: 'Kültér (klíma)',
-  mediaLayerInterior: 'Beltér (szigetelő klíma)',
-  mediaLayerParticulate: 'Részecske (köd / füst)',
-  mediaPreset: 'Preset',
-  mediaPresetClearNight: 'Tiszta éjszaka',
-  mediaPresetClearDay: 'Tiszta nappal',
-  mediaPresetSpring: 'Tavasz',
-  mediaPresetSummerHumid: 'Nyár (párás)',
-  mediaPresetAutumnMist: 'Ősz (ködös)',
-  mediaPresetWinterDry: 'Tél (száraz)',
-  mediaPresetRoom: 'Szoba',
-  mediaPresetLab: 'Labor',
-  mediaPresetHall: 'Előadóterem',
-  mediaPresetFog: 'Köd / párás levegő',
-  mediaPresetSmoke: 'Füst',
-  mediaPresetDust: 'Por',
-  mediaPresetHaze: 'Haze (theatrical)',
-  /** @deprecated legacy keys kept for older UI strings */
   mediaKind: 'Közeg típus',
-  mediaKindFog: 'Köd / párás levegő',
-  mediaKindSmoke: 'Füst / haze',
-  mediaKindDust: 'Por',
-  mediaKindAtmosphere: 'Atmoszféra (tiszta levegő)',
-  mediaKindSpring: 'Tavasz (közepes páratartalom)',
-  mediaKindSummer: 'Nyár (párás levegő)',
-  mediaKindAutumn: 'Ősz (ködös / párás)',
-  mediaKindWinter: 'Tél (száraz levegő)',
-  mediaKindRoom: 'Szoba (por + aeroszol)',
-  relativeHumidity: 'Relatív páratartalom',
-  temperatureC: 'Hőmérséklet',
-  scatterRayleigh: 'Rayleigh σ_s (számított)',
-  scatterMie: 'Mie σ_s (számított)',
-  turbulence: 'Turbulencia (számított)',
-  hintAtmosphereClimate:
-    'Klíma-preset: Rayleigh + Mie. A σ értékek a páratartalomból (RH^1.3) és a hőmérsékletből számítódnak.',
-  hintMediaInsulating:
-    'Szigetelő beltér: a dobozon belül a kültéri klíma nem adódik hozzá — csak a szoba levegője.',
-  mediaColor: 'Közeg szín',
+  mediaColor: 'Köd szín',
   boundingBox: 'Bounding box (félméret)',
   halfExtents: 'Half extents (m)',
   noiseParams: 'Zaj (FBM)',
@@ -94,23 +56,21 @@ export const hu = {
   noiseLow: 'Zaj küszöb low',
   noiseHigh: 'Zaj küszöb high',
   opticalParams: 'Optikai együtthatók',
-  scatter: 'Szórás σ_s',
-  absorption: 'Abszorpció σ_a',
+  scatter: 'Szórás (σ_s)',
+  absorption: 'Abszorpció (σ_a)',
   scatterModel: 'Szórási modell',
   scatterModelTyndall: 'Tyndall (kolloid)',
   scatterModelRayleigh: 'Rayleigh (molekuláris)',
   particleSizeNm: 'Részecskeméret (nm)',
   mieAnisotropy: 'Mie anizotrópia (g)',
   hintScatterModel:
-    'Rayleigh ↔ atmoszféra: λ⁻⁴ + fázis (1+cos²θ). Tyndall ↔ köd/füst/por: gyenge λ-függés + Mie HG. Láthatóság ≈ P×V(λ)×S×fázis×Q.',
+    'Tyndall (10–1000 nm): gyenge színfüggés, fehéres fénykúp (köd, füst, por). Rayleigh (<10 nm): erős λ⁻⁴, kék ég / naplemente.',
   hintMieAnisotropy:
-    'Henyey–Greenstein fázis: g≈0 izotróp; köd/haze preset g≈0.4–0.55 (szemből fényesebb, oldalról/hátulról is látszik). g>0.85 egyetlen szórásnál „megöli” a hátsó nézetet.',
-  hintMediaOptics:
-    'σ_s és σ_a fizikai [m⁻¹] (Beer–Lambert). A density a koncentráció-szorzó (1 = irodalmi referencia). Atmoszféra ≈ 0.1 km⁻¹ — szobában a nyaláb alig látszik; köd/füst kell a show-hoz.',
+    'Henyey–Greenstein fázis: g≈0 izotróp; g≈0.85–0.95 erős előre-szórás (szemből fényes „kard”, hátulról sötét).',
   opticsSpill: 'Optikai residual (stray)',
   strayPowerFraction: 'Stray teljesítményarány',
   hintOpticsSpill:
-    'A tervezett módból kieső energiaarány (0–85%): core×(1−f). A residual ghosts (belső reflexió), Tyndall-halo, apertúra-edge és flare-csík — volumetriában és a felületi spotban is. Aberrációk (kóma/asztigmatizmus/gömb) külön a Lézer optika alatt, a core alakját változtatják.',
+    'A tervezett nyalábon kívüli energia-arány (0–85%). A core × (1−f), a széles residual lebeny kapja az f részt — energia-konzisztens.',
   fixtureSurface: 'Fixture felület (anyag)',
   surfaceMaterial: 'Felület anyag',
   fixtureFinish: 'Felületkezelés',
@@ -129,7 +89,7 @@ export const hu = {
   hintFixtureSurface:
     'A theatrical glow a ház anyagából (albedó, metalness, érdesség) és a teljesítményből számolódik, ha a theatrical glow be van kapcsolva.',
   hintSurfaceMaterial:
-    'Optikai spot: BeamModel (TEM₀₀/w₀/M²/aberráció) × Cook–Torrance GGX a SurfaceRadiancePluginben — nem Babylon StandardMaterial specular.',
+    'Találati spot / specular: Babylon Point (omni) vagy Spot (lámpa/lézer/parallel) → StandardMaterial. A volumetria külön BeamModel.',
   hintTransmission:
     'Áteresztés 0 = átlátszatlan (a volumetrikus nyaláb megáll a felületen). 1 ≈ üveg: a nyaláb áthalad.',
   derivedPresentation: 'Számított megjelenés',
@@ -143,7 +103,7 @@ export const hu = {
   modalClose: 'Bezárás',
   resetCurve: 'Tudományos alapgörbe',
   hintDisplayCurve:
-    'Alapértelmezés: CIE V(λ)·P + Weber–Fechner log (dekádonként egyenletes HDR). A fizikai irradiance ∝ P; a display skála kompresszív. X: log teljesítmény (1 mW–500 kW). Y: HDR ACES előtt (0–96).',
+    'Alapértelmezés: CIE V(λ)·P luminózus termék + Stevens γ≈0.7. X: log teljesítmény (1 mW–500 kW). Y: HDR ACES előtt (0–96). Hullámhossz-arányok: Rel. pont / Rel. nyaláb.',
   curveAxisPower: 'teljesítmény (log)',
   curveAxisHdr: 'HDR',
   toggleVisionPanel: 'Látásgörbe',
@@ -166,96 +126,6 @@ export const hu = {
   sceneDeleteConfirm: 'Biztosan törlöd ezt a jelenetet?',
   sceneUpdated: 'Mentve',
   demoReset: 'Demo',
-
-  // Parameter tooltips (hover on control labels)
-  tipWavelength:
-    'Hullámhossz λ (nm): a fény színe és a fotonenergia. V(λ) és a Rayleigh λ⁻⁴ is ettől függ.',
-  tipPower:
-    'Optikai teljesítmény P (W). A fizikai irradiance ∝ P; a kijelző Weber–Fechner szerint kompresszál.',
-  tipPowerUnit: 'Megjelenítési egység (mW / W / kW) — csak a számmező skálája, a belső érték watt.',
-  tipW0:
-    'TEM₀₀ waist sugár w₀ (m): a nyaláb legszűkebb 1/e² sugara. Kisebb w₀ → nagyobb divergencia.',
-  tipM2:
-    'Nyalábminőség M² (≥1). TEM₀₀ ideál = 1; nagyobb M² → szélesebb, kevésbé fókuszálható nyaláb.',
-  tipEllipticRatio:
-    'Ellipticitás wy/wx. 1 = kör; diódalézereknél gyakran 1.5–3 (elliptikus keresztmetszet).',
-  tipTopHatMix:
-    'Multimode keverék: 0 = tiszta Gauss TEM₀₀, 1 = lapos (top-hat) intenzitásprofil.',
-  tipWaistOffset:
-    'Fókuszsík eltolás a kibocsátóhoz képest (m). Pozitív = a fókusz a nyaláb irányában előrébb van.',
-  tipProbeDistance:
-    'Olvasható távolság a w(z) / √(wx·wy) kiíráshoz (m). Nem változtatja a renderelt nyalábot.',
-  tipSphericalAberration:
-    'Gömbi aberráció (0–1): a peremet lágyítja / nyújtja (oktatási Zernike-szerű hatás).',
-  tipComa: 'Kóma (0–1): üstökös-szerű aszimmetrikus eltolás a keresztmetszetben.',
-  tipAstigmatism:
-    'Asztigmatizmus (0–1): az x és y waist síkok szétválása (diódalézerek tipikus hibája).',
-  tipStrayPowerFraction:
-    'A tervezett módból kieső energiaarány f: core×(1−f). Residual = ghost / halo / edge / flare.',
-  tipMediaLayer:
-    'Réteg: kültéri klíma, szigetelő beltér, vagy additív részecske (köd/füst). A beltér kiszorítja a kültérit a dobozában.',
-  tipMediaPreset:
-    'Paraméter-készlet a választott réteghez (RH/T vagy theatrical σ). Nem új szórási modell.',
-  tipMediaKind:
-    'Közegpreset: fog/smoke/dust (Tyndall) vagy levegő-klíma (Rayleigh+Mie). Beltér szigetel; részecske mindig additív.',
-  tipRelativeHumidity:
-    'Relatív páratartalom RH (0–100%). Mie σ_s ∝ RH^1.3 — párásabb levegő → vastagabb, fényesebb nyaláb.',
-  tipTemperatureC:
-    'Hőmérséklet (°C). Közvetetten enyhe turbulenciát (sűrűség-shimmer) ad; a szórást főleg a RH hajtja.',
-  tipScatterRayleigh: 'Molekuláris Rayleigh σ_s [m⁻¹] — a klímából számolva (read-only).',
-  tipScatterMie: 'Pára / aeroszol Mie σ_s [m⁻¹] — RH és szoba-por alapján (read-only).',
-  tipTurbulence: 'Oktatási turbulencia a hőmérsékletből: enyhe sűrűség-shimmer a raymarchban.',
-  tipFogDensity:
-    'Koncentráció-szorzó: helyi sűrűség = density × FBM. 1 ≈ irodalmi referencia σ.',
-  tipMediaColor: 'Közeg tint (RGB): megszorzódik a szórt fénnyel a volumetriában.',
-  hintMediaLighting:
-    'A közeg a fényforrásoktól és a környezeti fénytől (ég / nap) szóródik: a köd/füst „világít”, mint a napfényes felhő. Többszórás tölti ki a nyaláb körüli pamacsot.',
-  tipHalfExtents: 'AABB félméret méterben (a MediaVolume doboz geometriája).',
-  tipFbmScale: 'FBM térbeli frekvencia: nagyobb = finomabb / sűrűbb ködstruktúra.',
-  tipFbmTimeScale: 'FBM időbeli sodródás sebessége (animált zaj).',
-  tipNoiseLow: 'Zaj soft-threshold alsó éle (smoothstep): alatta üres tér.',
-  tipNoiseHigh: 'Zaj soft-threshold felső éle: felette teljes sűrűség.',
-  tipScatterModel:
-    'Szórási rezsim e közegre: Rayleigh (λ⁻⁴ + 1+cos²θ) vagy Tyndall/Mie (HG). Több közeg egyszerre: σ·ρ összeadódik, a fázisok súlyozva keverednek.',
-  tipParticleSizeNm:
-    'Jellemző részecskeátmérő (nm). Tyndallnál a spektrális n és a Mie g görbéjét hajtja.',
-  tipMieAnisotropy:
-    'Henyey–Greenstein g: előre vs hátsó szórás. Csak Tyndall/Mie; Rayleigh a fázis (1+cos²θ).',
-  tipScatter: 'Térfogati szórási együttható σ_s [m⁻¹] (Beer–Lambert). Átfedő közegeknél összeadódik.',
-  tipAbsorption: 'Térfogati abszorpciós együttható σ_a [m⁻¹]. σ_t ≈ σ_s + σ_a (összes közeg).',
-  tipFixtureFinish: 'Anyagpreset: albedó / metalness / érdesség / áteresztés gyors kitöltése.',
-  tipAlbedo: 'Diffúz visszaverődés (0–1). Sötét anyag → gyengébb spot és glow.',
-  tipMetalness: 'Fémesség (0–1): befolyásolja a Fresnel / specular GGX lebenyt.',
-  tipRoughness: 'Mikrofacet érdesség (0–1): 0 = éles tükörhighlight, 1 = matt.',
-  tipTransmission:
-    'Áteresztés: 0 = átlátszatlan (nyaláb megáll), 1 ≈ üveg (a volumetria áthalad).',
-  tipEnvironmentAmbient:
-    'Környezeti fény / szemadaptáció: sötét → nagyobb exposure + szkotopikus V′ (Purkinje).',
-  tipDisplayCurve:
-    'Szerkeszthető P→HDR görbe. Alap: Weber–Fechner log; a fizikai irradiance ettől független.',
-  tipObjectName: 'Objektum megjelenített neve a hierarchiában.',
-  tipAddComponent: 'Komponens hozzáadása a kijelölt objektumhoz (LightEmitter, MediaVolume, …).',
-  tipPosition: 'Helyi pozíció méterben, a szülőhöz képest.',
-  tipRotation: 'Helyi Euler-forgatás fokban (X, Y, Z).',
-  tipScale: 'Helyi skála (1 = eredeti méret).',
-  tipQuality: 'Render minőség: lépésköz, max lépésszám, sűrűségküszöb a volumetriában.',
-  tipAntiAliasing: 'MSAA / anti-aliasing a nézetporton.',
-  tipTonemapMode: 'HDR → display tonemap: ACES (film) vagy Reinhard.',
-  tipLocale: 'Felület nyelve (HU / EN).',
-  tipCapture: 'Képernyőkép a jelenlegi nézetről.',
-  tipDemoReset: 'Demo jelenet visszatöltése (alap lézer + köd).',
-
-  smokeEmitter: 'Füstszóró',
-  smokeEnabled: 'Bekapcsolva',
-  smokeEmission: 'Kibocsátás',
-  smokeCone: 'Szórási kúp (félnyílásszög)',
-  smokePlumeLength: 'Plumé hossz',
-  hintSmokeEmitter:
-    'A nozzle a helyi +Z tengely. A füst a saját MediaVolume AABB-jén belül töltődik; a lézerek a meglévő volumetrikus szórással interakcióznak.',
-  tipSmokeEnabled: 'Ki / be: kikapcsolva a plumé üres (nincs füst).',
-  tipSmokeEmission: 'Kibocsátás-szorzó (0–3): a plumé sűrűségét skálázza.',
-  tipSmokeCone: 'Spray kúp félnyílásszöge fokban — keskenyebb = koncentráltabb sugar.',
-  tipSmokePlumeLength: 'Lágy tengelymenti kifutás hossza méterben (a nozzle irányában).',
 } as const;
 
 export const en = {
@@ -279,7 +149,6 @@ export const en = {
   laserAberrations: 'Aberrations',
   ellipticRatio: 'Ellipticity (wy/wx)',
   waistOffset: 'Focus / waist offset',
-  probeDistance: 'Probe distance (w(z) readout)',
   topHatMix: 'Multimode top-hat',
   sphericalAberration: 'Spherical aberration',
   coma: 'Coma',
@@ -291,11 +160,11 @@ export const en = {
   redo: 'Redo',
   wavelength: 'Wavelength',
   power: 'Power',
-  fogDensity: 'Concentration (density)',
+  fogDensity: 'Fog density',
   calculated: 'Calculated',
   approximated: 'Approximated / visualized',
   noSelection: 'Select a light or media volume.',
-  hintFog: 'Without fog the beam is nearly invisible — switch to fog/smoke, or raise density.',
+  hintFog: 'Without fog the beam is nearly invisible — raise density.',
   hintColor: 'Color is a display λ → RGB mapping; not calibrated colorimetry.',
   presentationEdit: 'Editor mode',
   presentationPhoto: 'Photo mode',
@@ -307,45 +176,8 @@ export const en = {
   glowIntensity: 'Glow (emissive)',
   bloomIntensity: 'Bloom',
   hintGlow: 'Spot, glow and bloom also follow light color and power.',
-  mediaLayer: 'Layer',
-  mediaLayerOutdoor: 'Outdoor (climate)',
-  mediaLayerInterior: 'Interior (insulating climate)',
-  mediaLayerParticulate: 'Particulate (fog / smoke)',
-  mediaPreset: 'Preset',
-  mediaPresetClearNight: 'Clear night',
-  mediaPresetClearDay: 'Clear day',
-  mediaPresetSpring: 'Spring',
-  mediaPresetSummerHumid: 'Summer (humid)',
-  mediaPresetAutumnMist: 'Autumn (mist)',
-  mediaPresetWinterDry: 'Winter (dry)',
-  mediaPresetRoom: 'Room',
-  mediaPresetLab: 'Lab',
-  mediaPresetHall: 'Hall',
-  mediaPresetFog: 'Fog / mist',
-  mediaPresetSmoke: 'Smoke',
-  mediaPresetDust: 'Dust',
-  mediaPresetHaze: 'Haze (theatrical)',
-  /** @deprecated legacy keys kept for older UI strings */
   mediaKind: 'Media kind',
-  mediaKindFog: 'Fog / mist',
-  mediaKindSmoke: 'Smoke / haze',
-  mediaKindDust: 'Dust',
-  mediaKindAtmosphere: 'Atmosphere (clear air)',
-  mediaKindSpring: 'Spring (moderate humidity)',
-  mediaKindSummer: 'Summer (humid air)',
-  mediaKindAutumn: 'Autumn (misty / humid)',
-  mediaKindWinter: 'Winter (dry air)',
-  mediaKindRoom: 'Room (dust + aerosol)',
-  relativeHumidity: 'Relative humidity',
-  temperatureC: 'Temperature',
-  scatterRayleigh: 'Rayleigh σ_s (derived)',
-  scatterMie: 'Mie σ_s (derived)',
-  turbulence: 'Turbulence (derived)',
-  hintAtmosphereClimate:
-    'Climate preset: Rayleigh + Mie. σ values come from humidity (RH^1.3) and temperature.',
-  hintMediaInsulating:
-    'Insulating interior: outdoor climate is excluded inside this box — only room air applies.',
-  mediaColor: 'Media color',
+  mediaColor: 'Fog color',
   boundingBox: 'Bounding box (half-extent)',
   halfExtents: 'Half extents (m)',
   noiseParams: 'Noise (FBM)',
@@ -354,23 +186,21 @@ export const en = {
   noiseLow: 'Noise threshold low',
   noiseHigh: 'Noise threshold high',
   opticalParams: 'Optical coefficients',
-  scatter: 'Scatter σ_s',
-  absorption: 'Absorption σ_a',
+  scatter: 'Scatter (σ_s)',
+  absorption: 'Absorption (σ_a)',
   scatterModel: 'Scatter model',
   scatterModelTyndall: 'Tyndall (colloidal)',
   scatterModelRayleigh: 'Rayleigh (molecular)',
   particleSizeNm: 'Particle size (nm)',
   mieAnisotropy: 'Mie anisotropy (g)',
   hintScatterModel:
-    'Rayleigh ↔ atmosphere: λ⁻⁴ + phase (1+cos²θ). Tyndall ↔ fog/smoke/dust: weak λ dependence + Mie HG. Visibility ≈ P×V(λ)×S×phase×Q.',
+    'Tyndall (10–1000 nm): weak colour dependence, whitish beam cone (fog, smoke, dust). Rayleigh (<10 nm): strong λ⁻⁴, blue sky / sunset.',
   hintMieAnisotropy:
-    'Henyey–Greenstein phase: g≈0 isotropic; fog/haze presets use g≈0.4–0.55 (brighter into the beam, still visible from side/behind). g>0.85 kills rear view in single scatter.',
-  hintMediaOptics:
-    'σ_s and σ_a are physical [m⁻¹] (Beer–Lambert). Density is a concentration multiplier (1 = literature reference). Atmosphere ≈ 0.1 km⁻¹ — room-scale beams stay faint; use fog/smoke for shows.',
+    'Henyey–Greenstein phase: g≈0 isotropic; g≈0.85–0.95 strong forward scatter (bright looking into the beam, dark from behind).',
   opticsSpill: 'Optical residual (stray)',
   strayPowerFraction: 'Stray power fraction',
   hintOpticsSpill:
-    'Energy fraction leaving the designed mode (0–85%): core×(1−f). Residual = ghosts (internal reflection), Tyndall halo, aperture edge leak and flare streak — in volumetrics and the surface spot. Aberrations (coma/astigmatism/spherical) are separate Laser optics controls that reshape the core.',
+    'Energy fraction outside the designed beam (0–85%). Core × (1−f); the wide residual lobe receives fraction f — energy-conserving.',
   fixtureSurface: 'Fixture surface (material)',
   surfaceMaterial: 'Surface material',
   fixtureFinish: 'Finish',
@@ -389,7 +219,7 @@ export const en = {
   hintFixtureSurface:
     'Theatrical glow is derived from housing material (albedo, metalness, roughness) and source power when theatrical glow is enabled.',
   hintSurfaceMaterial:
-    'Optical spot: BeamModel (TEM₀₀/w₀/M²/aberrations) × Cook–Torrance GGX in SurfaceRadiancePlugin — not Babylon StandardMaterial specular.',
+    'Hit spot / specular: Babylon Point (omni) or Spot (lamp/laser/parallel) → StandardMaterial. Volumetrics use a separate BeamModel.',
   hintTransmission:
     'Transmission 0 = opaque (volumetric beam stops at the surface). 1 ≈ glass: the beam continues through.',
   derivedPresentation: 'Derived presentation',
@@ -403,7 +233,7 @@ export const en = {
   modalClose: 'Close',
   resetCurve: 'Scientific default',
   hintDisplayCurve:
-    'Default: CIE V(λ)·P + Weber–Fechner log (even HDR per decade). Physical irradiance ∝ P; display scale is compressive. X: log power (1 mW–500 kW). Y: HDR before ACES (0–96).',
+    'Default: CIE V(λ)·P luminous product + Stevens γ≈0.7. X: log power (1 mW–500 kW). Y: HDR before ACES (0–96). Wavelength ratios: Rel. dot / Rel. beam.',
   curveAxisPower: 'power (log)',
   curveAxisHdr: 'HDR',
   toggleVisionPanel: 'Vision curve',
@@ -426,96 +256,6 @@ export const en = {
   sceneDeleteConfirm: 'Delete this scene?',
   sceneUpdated: 'Saved',
   demoReset: 'Demo',
-
-  // Parameter tooltips (hover on control labels)
-  tipWavelength:
-    'Wavelength λ (nm): sets color and photon energy. Also drives V(λ) and Rayleigh λ⁻⁴.',
-  tipPower:
-    'Optical power P (W). Physical irradiance ∝ P; the display applies Weber–Fechner compression.',
-  tipPowerUnit: 'Display unit (mW / W / kW) — scales the number field only; internal value is watts.',
-  tipW0:
-    'TEM₀₀ waist radius w₀ (m): narrowest 1/e² radius. Smaller w₀ → larger divergence.',
-  tipM2:
-    'Beam quality M² (≥1). Ideal TEM₀₀ = 1; higher M² → wider, harder-to-focus beam.',
-  tipEllipticRatio:
-    'Ellipticity wy/wx. 1 = circular; diode lasers often 1.5–3 (elliptic cross-section).',
-  tipTopHatMix:
-    'Multimode mix: 0 = pure Gaussian TEM₀₀, 1 = flat-top intensity profile.',
-  tipWaistOffset:
-    'Focus-plane offset from the emitter (m). Positive = focus downstream along the beam.',
-  tipProbeDistance:
-    'Readout distance for w(z) / √(wx·wy) (m). Does not change the rendered beam.',
-  tipSphericalAberration:
-    'Spherical aberration (0–1): softens / stretches the rim (educational Zernike-like).',
-  tipComa: 'Coma (0–1): comet-like asymmetric shift in the transverse plane.',
-  tipAstigmatism:
-    'Astigmatism (0–1): splits x/y waist planes (typical diode-laser defect).',
-  tipStrayPowerFraction:
-    'Energy fraction leaving the designed mode f: core×(1−f). Residual = ghost / halo / edge / flare.',
-  tipMediaLayer:
-    'Layer: outdoor climate, insulating interior, or additive particulate (fog/smoke). Interior replaces outdoor inside its AABB.',
-  tipMediaPreset:
-    'Parameter set for the selected layer (RH/T or theatrical σ). Not a separate scatter model.',
-  tipMediaKind:
-    'Media preset: fog/smoke/dust (Tyndall) or air climate (Rayleigh+Mie). Interior insulates; particulate always adds.',
-  tipRelativeHumidity:
-    'Relative humidity RH (0–100%). Mie σ_s ∝ RH^1.3 — more humid → thicker, brighter beam.',
-  tipTemperatureC:
-    'Temperature (°C). Indirectly adds mild turbulence (density shimmer); scatter is mainly RH-driven.',
-  tipScatterRayleigh: 'Molecular Rayleigh σ_s [m⁻¹] — derived from climate (read-only).',
-  tipScatterMie: 'Humidity / aerosol Mie σ_s [m⁻¹] — from RH and room dust (read-only).',
-  tipTurbulence: 'Educational turbulence from temperature: mild density shimmer in the march.',
-  tipFogDensity:
-    'Concentration multiplier: local density = density × FBM. 1 ≈ literature reference σ.',
-  tipMediaColor: 'Media tint (RGB): multiplies scattered light in the volume.',
-  hintMediaLighting:
-    'Media scatters from emitters and environment (sky / sun): fog/smoke “lights up” like sunlit clouds. Multi-scatter fills the soft glow around the beam.',
-  tipHalfExtents: 'AABB half-size in metres (MediaVolume box geometry).',
-  tipFbmScale: 'FBM spatial frequency: higher = finer / denser fog structure.',
-  tipFbmTimeScale: 'FBM temporal scroll speed (animated noise).',
-  tipNoiseLow: 'Noise soft-threshold low edge (smoothstep): below = empty.',
-  tipNoiseHigh: 'Noise soft-threshold high edge: above = full density.',
-  tipScatterModel:
-    'Scatter regime for this volume: Rayleigh (λ⁻⁴ + 1+cos²θ) or Tyndall/Mie (HG). Multiple volumes add σ·ρ; phases blend by weight.',
-  tipParticleSizeNm:
-    'Characteristic particle diameter (nm). For Tyndall drives spectral n and Mie g curves.',
-  tipMieAnisotropy:
-    'Henyey–Greenstein g: forward vs back scatter. Tyndall/Mie only; Rayleigh uses (1+cos²θ).',
-  tipScatter: 'Volume scattering coefficient σ_s [m⁻¹] (Beer–Lambert). Overlapping volumes add.',
-  tipAbsorption: 'Volume absorption coefficient σ_a [m⁻¹]. σ_t ≈ σ_s + σ_a (all volumes).',
-  tipFixtureFinish: 'Material preset: fills albedo / metalness / roughness / transmission.',
-  tipAlbedo: 'Diffuse reflectance (0–1). Darker materials → weaker spot and glow.',
-  tipMetalness: 'Metalness (0–1): shapes the Fresnel / specular GGX lobe.',
-  tipRoughness: 'Microfacet roughness (0–1): 0 = sharp mirror highlight, 1 = matte.',
-  tipTransmission:
-    'Transmission: 0 = opaque (beam stops), 1 ≈ glass (volumetrics continue through).',
-  tipEnvironmentAmbient:
-    'Environment fill / eye adaptation: dark → higher exposure + scotopic V′ (Purkinje).',
-  tipDisplayCurve:
-    'Editable P→HDR curve. Default: Weber–Fechner log; physical irradiance is independent.',
-  tipObjectName: 'Display name in the hierarchy.',
-  tipAddComponent: 'Add a component to the selected object (LightEmitter, MediaVolume, …).',
-  tipPosition: 'Local position in metres, relative to the parent.',
-  tipRotation: 'Local Euler rotation in degrees (X, Y, Z).',
-  tipScale: 'Local scale (1 = original size).',
-  tipQuality: 'Render quality: step size, max steps, density threshold for volumetrics.',
-  tipAntiAliasing: 'MSAA / anti-aliasing in the viewport.',
-  tipTonemapMode: 'HDR → display tonemap: ACES (filmic) or Reinhard.',
-  tipLocale: 'UI language (HU / EN).',
-  tipCapture: 'Screenshot of the current view.',
-  tipDemoReset: 'Reload the demo scene (default laser + fog).',
-
-  smokeEmitter: 'Smoke emitter',
-  smokeEnabled: 'Enabled',
-  smokeEmission: 'Emission',
-  smokeCone: 'Spray cone (half-angle)',
-  smokePlumeLength: 'Plume length',
-  hintSmokeEmitter:
-    'Nozzle is local +Z. Smoke fills inside this entity’s MediaVolume AABB; lasers interact via the existing volumetric scatter path.',
-  tipSmokeEnabled: 'On / off: when off the plume is empty (no smoke).',
-  tipSmokeEmission: 'Emission multiplier (0–3): scales plume density.',
-  tipSmokeCone: 'Spray cone half-angle in degrees — narrower = tighter jet.',
-  tipSmokePlumeLength: 'Soft axial falloff length in metres along the nozzle.',
 } as const;
 
 export type LocaleKey = keyof typeof hu;

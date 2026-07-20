@@ -8,12 +8,10 @@ import {
   type HierarchyReorderEvent,
   type LightEmitter,
   type MediaVolume,
-  type SmokeEmitter,
   type PresentationMode,
   type QualityPreset,
   type SurfaceMaterial,
   type UserAddableComponent,
-  type ComponentName,
   type Vec3Editable,
   type DisplayResponseCurve,
 } from '../../../engine';
@@ -21,7 +19,6 @@ import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
 import { LightEditorService } from '../editor/light-editor.service';
 import { MediaEditorService } from '../editor/media-editor.service';
-import { SmokeEmitterEditorService } from '../editor/smoke-emitter-editor.service';
 import { SelectionService, type SelectOptions } from '../editor/selection.service';
 import { SessionService } from '../editor/session.service';
 import { SurfaceMaterialEditorService } from '../editor/surface-material-editor.service';
@@ -38,7 +35,6 @@ export class EditorFacade {
   private readonly hierarchy = inject(HierarchyEditorService);
   private readonly light = inject(LightEditorService);
   private readonly media = inject(MediaEditorService);
-  private readonly smoke = inject(SmokeEmitterEditorService);
   private readonly surface = inject(SurfaceMaterialEditorService);
   private readonly transform = inject(TransformEditorService);
   private readonly session = inject(SessionService);
@@ -54,8 +50,6 @@ export class EditorFacade {
   readonly selectedLightMixed = this.light.selectedLightMixed;
   readonly selectedMedia = this.media.selectedMedia;
   readonly selectedMediaMixed = this.media.selectedMediaMixed;
-  readonly selectedSmoke = this.smoke.selectedSmoke;
-  readonly selectedSmokeMixed = this.smoke.selectedSmokeMixed;
   readonly selectedSurfaceMaterial = this.surface.selectedSurfaceMaterial;
   readonly selectedSurfaceMaterialMixed = this.surface.selectedSurfaceMaterialMixed;
   readonly selectedTransform = this.transform.selectedTransform;
@@ -146,16 +140,8 @@ export class EditorFacade {
     this.hierarchy.addEmpty(parentId);
   }
 
-  addSmokeEmitter(parentId: string | null = null): void {
-    this.hierarchy.addSmokeEmitter(parentId);
-  }
-
   addBelow(parentId: string): void {
     this.hierarchy.addBelow(parentId);
-  }
-
-  addSmokeEmitterBelow(parentId: string): void {
-    this.hierarchy.addSmokeEmitterBelow(parentId);
   }
 
   deleteSelected(id?: string | null): void {
@@ -199,14 +185,10 @@ export class EditorFacade {
     this.engine.commitApplied(cmd);
   }
 
-  removeComponent(component: UserAddableComponent | 'SmokeEmitter'): void {
+  removeComponent(component: UserAddableComponent): void {
     const ids = this.selectedIds();
     if (!ids.length) return;
-    const cmd = removeComponentFromSelectionCommand(
-      this.engine.world(),
-      ids,
-      component as ComponentName,
-    );
+    const cmd = removeComponentFromSelectionCommand(this.engine.world(), ids, component);
     this.engine.commitApplied(cmd);
   }
 
@@ -232,10 +214,6 @@ export class EditorFacade {
 
   updateMedia(patch: Partial<MediaVolume>, opts?: { coalesce?: boolean }): void {
     this.media.updateMedia(patch, opts);
-  }
-
-  updateSmoke(patch: Partial<SmokeEmitter>, opts?: { coalesce?: boolean }): void {
-    this.smoke.updateSmoke(patch, opts);
   }
 
   applyTransformFromView(

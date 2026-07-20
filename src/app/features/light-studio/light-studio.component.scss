@@ -97,10 +97,6 @@ button.ghost {
   align-items: center;
   font-size: 0.8rem;
   color: var(--ls-muted);
-
-  &[title] {
-    cursor: help;
-  }
 }
 
 .dock {
