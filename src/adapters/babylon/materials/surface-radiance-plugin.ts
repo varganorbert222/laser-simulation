@@ -75,19 +75,21 @@ function lightEvalLoop(slots: number): string {
         vec3 lightRgb = uSrColor${i};
         float power = uSrPower${i};
 
-        // Local irradiance × Cook–Torrance GGX.
-        // L follows Unity Point / Spot / Directional by beam mode.
+        // Optical irradiance (BeamModel: TEM00 / cone / tube / omni + spill)
+        // × Cook–Torrance GGX (Fresnel V·H, D, G). L = Point/Spot/Directional by mode.
         float Li = rfEvalRadianceField(worldPos, o, dBeam, mode, p0, p1, p2, p3, p4, p5, spill);
         vec3 L = srLightDir(worldPos, o, dBeam, mode);
         float nDotL = max(dot(N, L), 0.0);
-        if (Li > 1e-8 && nDotL > 1e-5) {
+        if (Li > 1e-12 && nDotL > 1e-5) {
           float E = power * Li * nDotL;
           vec3 H = normalize(L + V);
           float nDotH = max(dot(N, H), 0.0);
           float nDotV = max(dot(N, V), 0.0);
           float vDotH = max(dot(V, H), 0.0);
           vec2 lobes = mfEvaluate(nDotL, nDotV, nDotH, vDotH, albedo, metal, rough, absorb);
-          acc += lightRgb * E * (lobes.x + lobes.y);
+          // Diffuse (view-stable) + specular (view-dependent optical highlight)
+          acc += lightRgb * E * lobes.x;
+          acc += lightRgb * E * lobes.y;
         }
       }`);
   }
@@ -122,7 +124,14 @@ function uboEntries(slots: number): Array<{ name: string; size: number; type: st
 }
 
 /**
- * StandardMaterial plugin: BeamModel field × Cook–Torrance GGX BRDF.
+ * StandardMaterial plugin: optical surface BRDF for LightEmitters.
+ *
+ * Not a Babylon Spot/Point specular path. Fragment adds:
+ *   BeamModel irradiance (Gaussian propagation, cone, tube, omni + spill)
+ *   × Cook–Torrance GGX (Schlick F(V·H), GGX D, Smith G)
+ *   with Unity-like L (Point / Spot / Directional by beam mode).
+ *
+ * Env fill still comes from StandardMaterial hemi/sun.
  */
 export class SurfaceRadiancePlugin extends MaterialPluginBase {
   static readonly PLUGIN_NAME = 'SurfaceRadiancePlugin';
@@ -180,11 +189,13 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
   }
 
   setLights(lights: readonly SurfaceRadianceGpuLight[]): void {
-    this._lights.length = 0;
     const n = Math.min(lights.length, MAX_GPU_LIGHTS);
+    const countChanged = n !== this._count;
+    this._lights.length = 0;
     for (let i = 0; i < n; i++) this._lights.push(lights[i]!);
     this._count = n;
-    this.markAllDefinesAsDirty();
+    // Avoid rebuilding the shader every frame — only when light count changes.
+    if (countChanged) this.markAllDefinesAsDirty();
   }
 
   override prepareDefines(defines: Record<string, unknown>): void {
@@ -262,7 +273,9 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
           float rough = clamp(uSrRoughness, 0.04, 1.0);
           float absorb = clamp(uSrAbsorption, 0.0, 1.0);
           ${lightEvalLoop(MAX_GPU_LIGHTS)}
-          return acc;
+          // Soft display compress so GGX peaks stay visible without hard clip.
+          // Mild knee — keep power decades distinguishable after Weber–Fechner.
+          return acc / (vec3(1.0) + acc * 0.18);
         }
         #endif
       `,

@@ -3,7 +3,9 @@ import {
   defaultEnvironmentPiece,
   defaultLightEmitter,
   defaultMediaVolume,
+  defaultSmokeEmitter,
 } from '../ecs/components';
+import { defaultMediaVolumeForKind } from '../optics/media-optical-presets';
 import { defaultSurfaceMaterial } from '../optics/surface-material';
 import type { World } from '../ecs/world';
 import { applySelection } from './selection';
@@ -21,6 +23,7 @@ import {
 import type { HierarchyDropPosition } from '../hierarchy/tree';
 import { restoreWorldFromSerialized } from '../save/serialize';
 import type { Command } from './stack';
+import { vec3 } from '../math/vec3';
 
 function worldMutationCommand(label: string, world: World, mutate: () => void): Command {
   const before = world.cloneSerializable();
@@ -122,6 +125,23 @@ export function createEmptyEntityCommand(
 ): Command {
   return worldMutationCommand('Új objektum', world, () => {
     const id = createSceneEntity(world, { name, parentId });
+    applySelection(world, id);
+  });
+}
+
+/** Fog machine: SmokeEmitter + particulate MediaVolume (smoke preset). */
+export function createSmokeEmitterCommand(
+  world: World,
+  name: string,
+  parentId: EntityId | null,
+): Command {
+  return worldMutationCommand('Füstszóró', world, () => {
+    const id = createSceneEntity(world, { name, parentId });
+    world.add(id, 'MediaVolume', {
+      ...defaultMediaVolumeForKind('smoke'),
+      halfExtents: vec3(2, 1.5, 4),
+    });
+    world.add(id, 'SmokeEmitter', defaultSmokeEmitter());
     applySelection(world, id);
   });
 }

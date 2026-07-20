@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  eyeSensitivity,
   laserBeamLuminousProduct,
   laserDotLuminousProduct,
   photopicLuminousEfficacy,
+  photopicVisionWeight,
   relativeBeamBrightness,
   relativeDotBrightness,
+  scotopicLuminousEfficacy,
 } from './laser-brightness';
 
 describe('laser brightness (photopic + Rayleigh)', () => {
@@ -50,5 +53,20 @@ describe('laser brightness (photopic + Rayleigh)', () => {
     const green = { powerW: 0.005, wavelengthNm: 532 };
     const red = { powerW: 0.005, wavelengthNm: 650 };
     expect(relativeDotBrightness(green, red)).toBeGreaterThan(5);
+  });
+
+  it('default ambient stays fully photopic', () => {
+    expect(photopicVisionWeight(0.38)).toBe(1);
+    expect(eyeSensitivity(555)).toBeCloseTo(photopicLuminousEfficacy(555), 10);
+  });
+
+  it('dark ambient blends toward scotopic (Purkinje: red collapses)', () => {
+    expect(photopicVisionWeight(0)).toBe(0);
+    expect(eyeSensitivity(507, 0)).toBeCloseTo(scotopicLuminousEfficacy(507), 5);
+    const greenDark = laserDotLuminousProduct(0.005, 532, 0);
+    const redDark = laserDotLuminousProduct(0.005, 650, 0);
+    const greenDay = laserDotLuminousProduct(0.005, 532, 0.5);
+    const redDay = laserDotLuminousProduct(0.005, 650, 0.5);
+    expect(greenDark / redDark).toBeGreaterThan(greenDay / redDay);
   });
 });

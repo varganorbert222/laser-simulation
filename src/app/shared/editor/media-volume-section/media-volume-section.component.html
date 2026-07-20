@@ -1,23 +1,35 @@
 <section class="block">
   <h3>MediaVolume</h3>
-  <label>
-    {{ i18n.t('mediaKind') }}
+  <label [attr.title]="i18n.t('tipMediaLayer')">
+    {{ i18n.t('mediaLayer') }}
     <select
-      [value]="media().kind"
+      [value]="media().layer"
       [disabled]="!editor.isEditMode()"
-      (change)="onMediaKind($any($event.target).value)"
+      (change)="onMediaLayer($any($event.target).value)"
     >
-      @for (k of mediaKinds; track k) {
-        <option [value]="k">{{ k }}</option>
+      @for (layer of mediaLayers; track layer) {
+        <option [value]="layer">{{ layerLabel(layer) }}</option>
       }
     </select>
   </label>
-  <label>
+  <label [attr.title]="i18n.t('tipMediaPreset')">
+    {{ i18n.t('mediaPreset') }}
+    <select
+      [value]="activePreset()"
+      [disabled]="!editor.isEditMode()"
+      (change)="onMediaPreset($any($event.target).value)"
+    >
+      @for (p of presetsForCurrentLayer(); track p) {
+        <option [value]="p">{{ presetLabel(p) }}</option>
+      }
+    </select>
+  </label>
+  <label [attr.title]="i18n.t('tipFogDensity')">
     {{ i18n.t('fogDensity') }}
     <input
       type="range"
       min="0"
-      max="1.5"
+      max="3"
       step="0.01"
       [value]="media().density"
       [disabled]="!editor.isEditMode()"
@@ -28,6 +40,7 @@
 
   <app-color-field
     [label]="i18n.t('mediaColor')"
+    [tooltip]="i18n.t('tipMediaColor')"
     [rgb]="media().color"
     [readonly]="!editor.isEditMode()"
     (rgbChange)="onMediaColor($event)"
@@ -36,6 +49,7 @@
   <h4 class="subhead">{{ i18n.t('boundingBox') }}</h4>
   <app-vec3-field
     [label]="i18n.t('halfExtents')"
+    [tooltip]="i18n.t('tipHalfExtents')"
     [value]="halfExtentsVec()"
     [readonly]="!editor.isEditMode()"
     [step]="0.05"
@@ -44,7 +58,7 @@
   />
 
   <h4 class="subhead">{{ i18n.t('noiseParams') }}</h4>
-  <label>
+  <label [attr.title]="i18n.t('tipFbmScale')">
     {{ i18n.t('fbmScale') }}
     <input
       type="range"
@@ -57,7 +71,7 @@
     />
     <span class="value">{{ media().fbmScale | number: '1.2-2' }}</span>
   </label>
-  <label>
+  <label [attr.title]="i18n.t('tipFbmTimeScale')">
     {{ i18n.t('fbmTimeScale') }}
     <input
       type="range"
@@ -70,7 +84,7 @@
     />
     <span class="value">{{ media().fbmTimeScale | number: '1.2-2' }}</span>
   </label>
-  <label>
+  <label [attr.title]="i18n.t('tipNoiseLow')">
     {{ i18n.t('noiseLow') }}
     <input
       type="range"
@@ -83,7 +97,7 @@
     />
     <span class="value">{{ media().noiseThresholdLow | number: '1.2-2' }}</span>
   </label>
-  <label>
+  <label [attr.title]="i18n.t('tipNoiseHigh')">
     {{ i18n.t('noiseHigh') }}
     <input
       type="range"
@@ -98,71 +112,123 @@
   </label>
 
   <h4 class="subhead">{{ i18n.t('opticalParams') }}</h4>
-  <label>
-    {{ i18n.t('scatterModel') }}
-    <select
-      [value]="media().scatterModel"
-      [disabled]="!editor.isEditMode()"
-      (change)="onScatterModel($any($event.target).value)"
-    >
-      @for (m of scatterModels; track m) {
-        <option [value]="m">{{ scatterModelLabel(m) }}</option>
-      }
-    </select>
-  </label>
-  <label>
-    {{ i18n.t('particleSizeNm') }}
-    <input
-      type="range"
-      min="0.1"
-      max="1000"
-      step="0.1"
-      [value]="media().particleSizeNm"
-      [disabled]="!editor.isEditMode()"
-      (input)="onParticleSize($any($event.target).value)"
-    />
-    <span class="value">{{ media().particleSizeNm | number: '1.0-1' }} nm</span>
-  </label>
-  <label>
-    {{ i18n.t('mieAnisotropy') }}
-    <input
-      type="range"
-      min="-0.95"
-      max="0.95"
-      step="0.01"
-      [value]="media().mieAnisotropy"
-      [disabled]="!editor.isEditMode()"
-      (input)="onMieAnisotropy($any($event.target).value)"
-    />
-    <span class="value">{{ media().mieAnisotropy | number: '1.2-2' }}</span>
-  </label>
-  <label>
-    {{ i18n.t('scatter') }}
-    <input
-      type="range"
-      min="0"
-      max="2"
-      step="0.01"
-      [value]="media().scatter"
-      [disabled]="!editor.isEditMode()"
-      (input)="onMediaNumber('scatter', $any($event.target).value)"
-    />
-    <span class="value">{{ media().scatter | number: '1.2-2' }}</span>
-  </label>
-  <label>
-    {{ i18n.t('absorption') }}
-    <input
-      type="range"
-      min="0"
-      max="2"
-      step="0.01"
-      [value]="media().absorption"
-      [disabled]="!editor.isEditMode()"
-      (input)="onMediaNumber('absorption', $any($event.target).value)"
-    />
-    <span class="value">{{ media().absorption | number: '1.2-2' }}</span>
-  </label>
-  <p class="hint">{{ i18n.t('hintScatterModel') }}</p>
-  <p class="hint">{{ i18n.t('hintMieAnisotropy') }}</p>
+
+  @if (isClimateAir()) {
+    <p class="hint">{{ i18n.t('hintAtmosphereClimate') }}</p>
+    @if (media().insulating) {
+      <p class="hint">{{ i18n.t('hintMediaInsulating') }}</p>
+    }
+    <label [attr.title]="i18n.t('tipRelativeHumidity')">
+      {{ i18n.t('relativeHumidity') }}
+      <input
+        type="range"
+        [min]="rhMin"
+        [max]="rhMax"
+        step="0.01"
+        [value]="media().relativeHumidity"
+        [disabled]="!editor.isEditMode()"
+        (input)="onHumidity($any($event.target).value)"
+      />
+      <span class="value">{{ media().relativeHumidity * 100 | number: '1.0-0' }}%</span>
+    </label>
+    <label [attr.title]="i18n.t('tipTemperatureC')">
+      {{ i18n.t('temperatureC') }}
+      <input
+        type="range"
+        [min]="tempMin"
+        [max]="tempMax"
+        step="0.5"
+        [value]="media().temperatureC"
+        [disabled]="!editor.isEditMode()"
+        (input)="onTemperature($any($event.target).value)"
+      />
+      <span class="value">{{ media().temperatureC | number: '1.0-1' }} °C</span>
+    </label>
+    <label [attr.title]="i18n.t('tipScatterRayleigh')">
+      {{ i18n.t('scatterRayleigh') }}
+      <span class="value readonly">{{ media().scatter | number: '1.4-6' }} m⁻¹</span>
+    </label>
+    <label [attr.title]="i18n.t('tipScatterMie')">
+      {{ i18n.t('scatterMie') }}
+      <span class="value readonly">{{ media().scatterMie | number: '1.4-6' }} m⁻¹</span>
+    </label>
+    <label [attr.title]="i18n.t('tipAbsorption')">
+      {{ i18n.t('absorption') }}
+      <span class="value readonly">{{ media().absorption | number: '1.4-6' }} m⁻¹</span>
+    </label>
+    <label [attr.title]="i18n.t('tipTurbulence')">
+      {{ i18n.t('turbulence') }}
+      <span class="value readonly">{{ media().turbulence | number: '1.2-2' }}</span>
+    </label>
+  } @else {
+    <label [attr.title]="i18n.t('tipScatterModel')">
+      {{ i18n.t('scatterModel') }}
+      <select
+        [value]="media().scatterModel"
+        [disabled]="!editor.isEditMode()"
+        (change)="onScatterModel($any($event.target).value)"
+      >
+        @for (m of scatterModels; track m) {
+          <option [value]="m">{{ scatterModelLabel(m) }}</option>
+        }
+      </select>
+    </label>
+    <label [attr.title]="i18n.t('tipParticleSizeNm')">
+      {{ i18n.t('particleSizeNm') }}
+      <input
+        type="range"
+        [min]="particleSizeMin()"
+        [max]="particleSizeMax()"
+        step="0.1"
+        [value]="media().particleSizeNm"
+        [disabled]="!editor.isEditMode()"
+        (input)="onParticleSize($any($event.target).value)"
+      />
+      <span class="value">{{ media().particleSizeNm | number: '1.0-1' }} nm</span>
+    </label>
+    <label [attr.title]="i18n.t('tipMieAnisotropy')">
+      {{ i18n.t('mieAnisotropy') }}
+      <input
+        type="range"
+        min="-0.95"
+        max="0.95"
+        step="0.01"
+        [value]="media().mieAnisotropy"
+        [disabled]="!editor.isEditMode() || isRayleigh()"
+        (input)="onMieAnisotropy($any($event.target).value)"
+      />
+      <span class="value">{{ media().mieAnisotropy | number: '1.2-2' }}</span>
+    </label>
+    <label [attr.title]="i18n.t('tipScatter')">
+      {{ i18n.t('scatter') }}
+      <input
+        type="range"
+        min="0"
+        max="0.5"
+        step="0.0001"
+        [value]="media().scatter"
+        [disabled]="!editor.isEditMode()"
+        (input)="onMediaNumber('scatter', $any($event.target).value)"
+      />
+      <span class="value">{{ media().scatter | number: '1.4-4' }} m⁻¹</span>
+    </label>
+    <label [attr.title]="i18n.t('tipAbsorption')">
+      {{ i18n.t('absorption') }}
+      <input
+        type="range"
+        min="0"
+        max="0.2"
+        step="0.0001"
+        [value]="media().absorption"
+        [disabled]="!editor.isEditMode()"
+        (input)="onMediaNumber('absorption', $any($event.target).value)"
+      />
+      <span class="value">{{ media().absorption | number: '1.4-4' }} m⁻¹</span>
+    </label>
+    <p class="hint">{{ i18n.t('hintMediaOptics') }}</p>
+    <p class="hint">{{ i18n.t('hintScatterModel') }}</p>
+    <p class="hint">{{ i18n.t('hintMieAnisotropy') }}</p>
+  }
   <p class="hint">{{ i18n.t('hintFog') }}</p>
+  <p class="hint">{{ i18n.t('hintMediaLighting') }}</p>
 </section>

@@ -1,18 +1,24 @@
 import { describe, expect, it } from 'vitest';
 import { rayleighScatterWeight } from './wavelength';
 import {
+  clampParticleSizeForModel,
   clampParticleSizeNm,
+  blendPhaseByScatterWeight,
   defaultMieAnisotropy,
   defaultParticleSizeNm,
+  dualChannelInScatter,
   mediaSpectralExponent,
+  phaseForScatterModel,
   phaseHG,
+  phaseRayleigh,
   spectralWeightFromRayleigh,
 } from './scatter-model';
 
 describe('scatter model', () => {
-  it('defaults particle size by regime', () => {
+  it('defaults particle size aligned with media presets', () => {
+    expect(defaultParticleSizeNm('rayleigh')).toBeCloseTo(0.3);
     expect(defaultParticleSizeNm('rayleigh')).toBeLessThan(10);
-    expect(defaultParticleSizeNm('tyndall')).toBeGreaterThanOrEqual(10);
+    expect(defaultParticleSizeNm('tyndall')).toBe(1000);
   });
 
   it('Rayleigh uses λ⁻⁴; Tyndall is nearly flat', () => {
@@ -40,22 +46,73 @@ describe('scatter model', () => {
     expect(clampParticleSizeNm(5000)).toBe(1000);
   });
 
-  it('Henyey–Greenstein is isotropic at g=0 and forward-peaked for fog g', () => {
+  it('clamps particle size by scatter regime', () => {
+    expect(clampParticleSizeForModel('rayleigh', 500)).toBe(10);
+    expect(clampParticleSizeForModel('tyndall', 1)).toBe(10);
+    expect(clampParticleSizeForModel('tyndall', 250)).toBe(250);
+  });
+
+  it('Rayleigh phase is (3/16π)(1+μ²): forward=back, minimum at 90°', () => {
+    const forward = phaseRayleigh(1);
+    const side = phaseRayleigh(0);
+    const back = phaseRayleigh(-1);
+    expect(forward).toBeCloseTo(back, 10);
+    expect(forward).toBeGreaterThan(side);
+    expect(forward).toBeCloseTo((3 / (16 * Math.PI)) * 2, 10);
+    expect(side).toBeCloseTo(3 / (16 * Math.PI), 10);
+  });
+
+  it('phaseForScatterModel branches Rayleigh vs Mie HG', () => {
+    expect(phaseForScatterModel('rayleigh', 0)).toBeCloseTo(phaseRayleigh(0), 10);
+    expect(phaseForScatterModel('tyndall', 0.5, 0.4)).toBeCloseTo(phaseHG(0.5, 0.4), 10);
+  });
+
+  it('dual-channel in-scatter adds Rayleigh and Mie lobes', () => {
+    const w = rayleighScatterWeight(532);
+    const onlyR = dualChannelInScatter(1, 0, 0.5, w, 0.2, 0.5);
+    const onlyM = dualChannelInScatter(0, 1, 0.5, w, 0.2, 0.5);
+    const both = dualChannelInScatter(1, 1, 0.5, w, 0.2, 0.5);
+    expect(onlyR).toBeGreaterThan(0);
+    expect(onlyM).toBeGreaterThan(0);
+    expect(both).toBeCloseTo(onlyR + onlyM, 10);
+  });
+
+  it('blendPhaseByScatterWeight is σ-weighted mean of absolute phases', () => {
+    const mu = 0.7;
+    const g = 0.5;
+    const blended = blendPhaseByScatterWeight(2, 1, mu, g);
+    const expected = (2 * phaseRayleigh(mu) + 1 * phaseHG(mu, g)) / 3;
+    expect(blended).toBeCloseTo(expected, 10);
+  });
+
+  it('Henyey–Greenstein is isotropic at g=0 and mildly forward for fog g', () => {
     const inv4pi = 1 / (4 * Math.PI);
     expect(phaseHG(0, 0)).toBeCloseTo(inv4pi, 6);
     expect(phaseHG(1, 0)).toBeCloseTo(inv4pi, 6);
     expect(phaseHG(-1, 0)).toBeCloseTo(inv4pi, 6);
 
-    const g = defaultMieAnisotropy('tyndall', 200);
-    expect(g).toBeGreaterThan(0.7);
+    const g = defaultMieAnisotropy('tyndall', 1000);
+    expect(g).toBeGreaterThan(0.45);
+    expect(g).toBeLessThan(0.65);
     const forward = phaseHG(1, g);
     const side = phaseHG(0, g);
     const back = phaseHG(-1, g);
     expect(forward).toBeGreaterThan(side);
     expect(side).toBeGreaterThan(back);
+    // Single-scatter must keep rear/side visible (raw water-droplet g≈0.9 would not).
+    expect(forward / back).toBeLessThan(80);
+    expect(side / back).toBeGreaterThan(1.5);
+    expect(side / inv4pi).toBeGreaterThan(0.35);
   });
 
-  it('Rayleigh default Mie g is isotropic', () => {
+  it('smoke-scale particles keep a milder g than fog', () => {
+    const fogG = defaultMieAnisotropy('tyndall', 1000);
+    const smokeG = defaultMieAnisotropy('tyndall', 250);
+    expect(smokeG).toBeLessThan(fogG);
+    expect(smokeG).toBeGreaterThan(0.3);
+  });
+
+  it('Rayleigh default Mie g is isotropic (unused; phaseRayleigh applies)', () => {
     expect(defaultMieAnisotropy('rayleigh')).toBe(0);
   });
 });

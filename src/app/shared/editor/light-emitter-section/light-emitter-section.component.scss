@@ -38,12 +38,20 @@ label {
   gap: 0.35rem;
   font-size: 0.8rem;
   color: var(--ls-muted);
+
+  &[title] {
+    cursor: help;
+  }
 }
 
 .power-block {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+
+  &[title] {
+    cursor: help;
+  }
 }
 
 .power-head {

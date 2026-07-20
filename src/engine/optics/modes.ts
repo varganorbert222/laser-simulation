@@ -91,7 +91,10 @@ export function normalizeLaserParams(
   }
 
   return {
-    w0M: clampPositive(typeof raw.w0M === 'number' ? raw.w0M : d.w0M, d.w0M, 1e-4),
+    w0M: Math.min(
+      0.05,
+      clampPositive(typeof raw.w0M === 'number' ? raw.w0M : d.w0M, d.w0M, 1e-4),
+    ),
     m2,
     probeDistanceM: clampPositive(
       typeof raw.probeDistanceM === 'number' ? raw.probeDistanceM : d.probeDistanceM,

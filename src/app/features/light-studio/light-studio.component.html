@@ -50,7 +50,7 @@
           <span class="cmd-label">{{ label }}</span>
         }
       </button>
-      <label class="quality">
+      <label class="quality" [attr.title]="i18n.t('tipQuality')">
         {{ i18n.t('quality') }}
         <select
           [value]="editor.quality()"
@@ -62,7 +62,7 @@
           <option value="ultra">Ultra</option>
         </select>
       </label>
-      <label class="quality aa">
+      <label class="quality aa" [attr.title]="i18n.t('tipAntiAliasing')">
         <input
           type="checkbox"
           [checked]="editor.antiAliasing()"
@@ -78,7 +78,7 @@
         />
         {{ i18n.t('theatricalGlow') }}
       </label>
-      <label class="quality">
+      <label class="quality" [attr.title]="i18n.t('tipTonemapMode')">
         {{ i18n.t('tonemapMode') }}
         <select
           [value]="editor.tonemapMode()"
@@ -109,11 +109,12 @@
       <button type="button" (click)="saveCurrent()" [attr.title]="i18n.t('sceneSave')">
         {{ i18n.t('sceneSave') }}
       </button>
-      <button type="button" (click)="screenshot()">{{ i18n.t('capture') }}</button>
-      <button type="button" class="ghost" (click)="resetDemo()">{{ i18n.t('demoReset') }}</button>
+      <button type="button" (click)="screenshot()" [attr.title]="i18n.t('tipCapture')">{{ i18n.t('capture') }}</button>
+      <button type="button" class="ghost" (click)="resetDemo()" [attr.title]="i18n.t('tipDemoReset')">{{ i18n.t('demoReset') }}</button>
       <select
         class="locale"
         [value]="i18n.locale()"
+        [attr.title]="i18n.t('tipLocale')"
         (change)="i18n.setLocale($any($event.target).value)"
       >
         <option value="hu">HU</option>
@@ -222,6 +223,7 @@
         (nodeReorder)="editor.reorder($event)"
         (visibilityChange)="editor.setVisibility($event.id, $event.visible)"
         (addAtRoot)="editor.addEmpty()"
+        (addSmokeAtRoot)="editor.addSmokeEmitter()"
         (addBelow)="editor.addBelow($event)"
         (removeNode)="editor.deleteSelected($event)"
         (contextAction)="onHierarchyContext($event)"

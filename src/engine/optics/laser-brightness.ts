@@ -1,14 +1,15 @@
 /**
- * Laser apparent brightness: CIE photopic V(λ) + environment-driven eye exposure
- * + editable power→HDR curve.
+ * Laser apparent brightness: CIE photopic / scotopic V(λ) + environment-driven
+ * eye exposure + editable power→HDR curve.
  *
- * Display chain (educational, not calibrated nits):
- *   P(W), λ → luminous = P·V(λ)·eyeAdaptation(ambient)
- *   → display response curve (default = scientific CIE / Stevens γ≈0.7)
- *   × chromaticity(λ) → luminance-ACES on the volumetric layer
+ * Perceived visibility (educational, LaserPointerHub form):
+ *   I_vis ≈ P × V_eff(λ) × S_Rayleigh/Mie × Q_beam
  *
- * Colour never comes from power — only from wavelength chromaticity.
- * No separate day/night vision curves: ambient environment sets exposure.
+ * Two GPU scales:
+ *   - physicalLuminousScale → volumetric march (linear in P·V·exposure; ACES at compose)
+ *   - displayLuminousPower → surface/UI (Weber–Fechner / editable curve)
+ *
+ * Physical BeamModel irradiance stays ∝ P; waist is not grown with power (étendue).
  *
  * Relative wavelength ordering (Laser Beam and Dot Relative Brightness):
  *   relDot ∝ P·V · relBeam ∝ P·V·(λ_ref/λ)⁴
@@ -25,6 +26,7 @@ import {
   PHOTOPIC_NM_MAX,
   PHOTOPIC_NM_MIN,
 } from './photopic-efficacy-table';
+import { scotopicLuminousEfficacy } from './scotopic-efficacy';
 import { rayleighScatterWeight } from './wavelength';
 
 /**
@@ -33,10 +35,22 @@ import { rayleighScatterWeight } from './wavelength';
  */
 export const DARK_ENVIRONMENT_ADAPTATION_GAIN = 12;
 
+/**
+ * Ambient level at/above which V_eff is fully photopic.
+ * Below this, blends toward scotopic V′ (Purkinje shift) as ambient → 0.
+ */
+export const PHOTOPIC_AMBIENT_FLOOR = 0.35;
+
+/**
+ * Divides CIE luminous product (mW·V·exposure) into a volumetric GPU scale.
+ * ~35 ⇒ 150 mW green at night (product ~1.4e3) → scale ~40, visible with outdoor haze.
+ */
+export const PHYSICAL_LUMINOUS_REF = 35;
+
 export interface VisionBrightnessOpts {
   /** Scene ambient level [0,1] from EnvironmentLighting — drives eye exposure. */
   ambientLevel?: number;
-  /** Editable power→HDR curve; omit to use scientific CIE / Stevens default. */
+  /** Editable power→HDR curve; omit to use scientific Weber–Fechner default. */
   responseCurve?: DisplayResponseCurve | null;
 }
 
@@ -51,9 +65,30 @@ export function photopicLuminousEfficacy(wavelengthNm: number): number {
   return PHOTOPIC_LUMINOUS_EFFICACY[clamped] ?? 0;
 }
 
-/** Universal spectral sensitivity: CIE photopic V(λ). */
-export function eyeSensitivity(wavelengthNm: number): number {
-  return photopicLuminousEfficacy(wavelengthNm);
+/**
+ * Photopic weight in mesopic blend: 1 at bright ambient, 0 in full dark.
+ * Default ambient (0.38) stays fully photopic so calculator ratios hold.
+ */
+export function photopicVisionWeight(ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT): number {
+  const a = clampAmbientLevel(ambientLevel);
+  return Math.min(1, Math.max(0, a / PHOTOPIC_AMBIENT_FLOOR));
+}
+
+/**
+ * Effective spectral sensitivity V_eff(λ): photopic by day, scotopic in the dark
+ * (ambient-driven mesopic blend — Purkinje shift without a mode switch).
+ */
+export function eyeSensitivity(
+  wavelengthNm: number,
+  ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT,
+): number {
+  const w = photopicVisionWeight(ambientLevel);
+  if (w >= 1 - 1e-6) return photopicLuminousEfficacy(wavelengthNm);
+  if (w <= 1e-6) return scotopicLuminousEfficacy(wavelengthNm);
+  return (
+    w * photopicLuminousEfficacy(wavelengthNm) +
+    (1 - w) * scotopicLuminousEfficacy(wavelengthNm)
+  );
 }
 
 /**
@@ -65,7 +100,7 @@ export function eyeAdaptationGainFromAmbient(ambientLevel = ENVIRONMENT_AMBIENT_
   return 1 + (1 - a) * (DARK_ENVIRONMENT_ADAPTATION_GAIN - 1);
 }
 
-/** Relative perceived brightness of a laser spot: P(mW) · V(λ) · exposure(ambient). */
+/** Relative perceived brightness of a laser spot: P(mW) · V_eff(λ) · exposure(ambient). */
 export function laserDotLuminousProduct(
   powerW: number,
   wavelengthNm: number,
@@ -74,14 +109,15 @@ export function laserDotLuminousProduct(
   const powerMw = Math.max(0, powerW) * 1000;
   return (
     powerMw *
-    eyeSensitivity(wavelengthNm) *
+    eyeSensitivity(wavelengthNm, ambientLevel) *
     eyeAdaptationGainFromAmbient(ambientLevel)
   );
 }
 
 /**
- * Relative perceived brightness of a laser beam in scattering media:
- * P(mW) · V(λ) · exposure · (λ_ref / λ)⁴
+ * Relative perceived brightness of a laser beam in clear-air (Rayleigh) media:
+ * P(mW) · V_eff(λ) · exposure · (λ_ref / λ)⁴
+ * Fog/Mie visibility uses the same V_eff but S≈1 in the march (n≈0).
  */
 export function laserBeamLuminousProduct(
   powerW: number,
@@ -93,6 +129,19 @@ export function laserBeamLuminousProduct(
     laserDotLuminousProduct(powerW, wavelengthNm, ambientLevel) *
     rayleighScatterWeight(wavelengthNm, refNm)
   );
+}
+
+/**
+ * Linear luminous scale for volumetric in-scatter (no Weber–Fechner).
+ * ∝ P · V_eff · eyeAdaptation — power differences remain visible until ACES compose.
+ */
+export function physicalLuminousScale(
+  powerW: number,
+  wavelengthNm: number,
+  opts?: VisionBrightnessOpts | null,
+): number {
+  const ambient = opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
+  return laserDotLuminousProduct(powerW, wavelengthNm, ambient) / PHYSICAL_LUMINOUS_REF;
 }
 
 /**
@@ -123,8 +172,8 @@ export function laserDotDisplayBrightness(
 }
 
 /**
- * Educational display luminous scale for emitters (V(λ) + ambient exposure + response curve).
- * Used as GpuLight.powerDisplay; Rayleigh remains scatterWeight in fog.
+ * Educational display luminous scale for emitters (V_eff(λ) + ambient exposure + response curve).
+ * Used as GpuLight.powerDisplay for surfaces/UI; volumetrics use physicalLuminousScale.
  */
 export function displayLuminousPower(
   powerW: number,
@@ -153,7 +202,7 @@ export function relativeDotBrightness(
 }
 
 /**
- * Relative brightness of laser A vs laser B for beams in fog.
+ * Relative brightness of laser A vs laser B for beams in clear air (Rayleigh).
  * Matches calculator: dotRatio · (λ_b / λ_a)⁴
  */
 export function relativeBeamBrightness(
@@ -171,3 +220,4 @@ export function relativeBeamBrightness(
 }
 
 export { scientificDisplayLuminousToneMap } from './display-response-curve';
+export { scotopicLuminousEfficacy } from './scotopic-efficacy';

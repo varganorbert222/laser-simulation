@@ -1,7 +1,17 @@
 /**
  * Residual optical power outside the ideal TEM00 / designed beam.
- * Models imperfect baffling, scatter in the optics train, and aperture leakage
- * as a single energy fraction (physically plausible, not three theatrical knobs).
+ *
+ * Scientifically: a single energy fraction `strayPowerFraction` (0–1) is the
+ * correct first-order description of power that never stays in the designed
+ * mode (scatter, coating bounce, baffle leak). Core irradiance is scaled by
+ * (1 − f); residual irradiance carries fraction f.
+ *
+ * That residual is *not* a single blob — see `optics-residual.ts` for the
+ * educational decomposition into ghosts / Tyndall halo / edge leak / flare
+ * streaks (lens ghosting & internal reflection phenomenology).
+ *
+ * Aberrations that reshape the designed core (coma, astigmatism, spherical,
+ * ellipticity) are separate LaserParams — they do not consume stray power.
  */
 
 export interface OpticsSpillParams {
@@ -28,6 +38,7 @@ export function clampSpill01(v: number): number {
 }
 
 export function defaultOpticsSpill(): OpticsSpillParams {
+  // ~8%: plausible for multi-element uncoated / poorly baffled educational optics.
   return { strayPowerFraction: 0.08 };
 }
 
@@ -54,7 +65,6 @@ export function normalizeOpticsSpill(
   const s = typeof raw.strayLight === 'number' ? Math.max(0, raw.strayLight) : 0;
   const i = typeof raw.internalReflection === 'number' ? Math.max(0, raw.internalReflection) : 0;
   const a = typeof raw.apertureSpill === 'number' ? Math.max(0, raw.apertureSpill) : 0;
-  // Map 0–1 educational mix into a modest physical residual (cap at MAX).
   const mixed = 0.45 * s + 0.25 * i + 0.3 * a;
   return { strayPowerFraction: clampSpill01(mixed * 0.45) };
 }
@@ -64,10 +74,11 @@ export function hasOpticsSpill(spill: OpticsSpillParams): boolean {
 }
 
 /**
- * Pack for GPU: [stray, internal-like, aperture-like] lobe weights derived from
- * a single fraction (wide / mid / near-aperture residual).
+ * Pack for GPU: spill.x = strayPowerFraction.
+ * For gaussian lasers, spill.y = packUnitPair(coma, astigmatism) (float32-safe).
+ * spill.z unused.
  */
 export function spillToGpuWeights(spill: OpticsSpillParams): [number, number, number] {
   const f = clampSpill01(spill.strayPowerFraction);
-  return [f, f * 0.55, f * 0.85];
+  return [f, 0, 0];
 }

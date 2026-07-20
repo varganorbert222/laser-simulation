@@ -69,6 +69,7 @@ function createStores(): StoreMap {
     SurfaceMaterial: new Map(),
     LightEmitter: new Map(),
     MediaVolume: new Map(),
+    SmokeEmitter: new Map(),
     Selectable: new Map(),
     ViewportHidden: new Map(),
     EditorFlags: new Map(),

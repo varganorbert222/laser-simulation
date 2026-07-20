@@ -3,19 +3,21 @@
 
   <app-spectral-color-field
     [label]="i18n.t('wavelength')"
+    [tooltip]="i18n.t('tipWavelength')"
     [wavelengthNm]="light().wavelengthNm"
     [readonly]="!editor.isEditMode()"
     (wavelengthChange)="onWavelength($event)"
   />
   <p class="hint">{{ i18n.t('hintColor') }}</p>
 
-  <div class="power-block">
+  <div class="power-block" [attr.title]="i18n.t('tipPower')">
     <div class="power-head">
       <span class="power-label">{{ i18n.t('power') }}</span>
       <select
         class="power-unit"
         [value]="powerUnit()"
         [disabled]="!editor.isEditMode()"
+        [attr.title]="i18n.t('tipPowerUnit')"
         (change)="onPowerUnit($any($event.target).value)"
       >
         @for (u of powerUnits; track u) {
@@ -31,6 +33,7 @@
         step="any"
         [disabled]="!editor.isEditMode()"
         [value]="powerValueInUnit()"
+        [attr.title]="i18n.t('tipPower')"
         (change)="onPowerNumber($any($event.target).value)"
       />
       <input
@@ -41,6 +44,7 @@
         step="0.001"
         [value]="powerSliderT()"
         [disabled]="!editor.isEditMode()"
+        [attr.title]="i18n.t('tipPower')"
         (input)="onPowerSlider($any($event.target).value)"
       />
     </div>
@@ -48,7 +52,12 @@
   </div>
   <div class="chips">
     @for (p of editor.powerPresets; track p) {
-      <button type="button" [disabled]="!editor.isEditMode()" (click)="editor.setPower(p)">
+      <button
+        type="button"
+        [disabled]="!editor.isEditMode()"
+        [attr.title]="i18n.t('tipPower')"
+        (click)="editor.setPower(p)"
+      >
         {{ formatPower(p) }}
       </button>
     }
@@ -58,7 +67,7 @@
     <p class="hint">{{ i18n.t('hintLaserOptics') }}</p>
 
     <h5 class="subhead-sm">{{ i18n.t('laserBeamProfile') }}</h5>
-    <label>
+    <label [attr.title]="i18n.t('tipW0')">
       w₀ (m)
       <input
         type="range"
@@ -71,7 +80,7 @@
       />
       <span class="value">{{ laserW0() * 1000 | number: '1.2-2' }} mm</span>
     </label>
-    <label>
+    <label [attr.title]="i18n.t('tipM2')">
       M²
       <input
         type="range"
@@ -84,12 +93,12 @@
       />
       <span class="value">{{ laserM2() | number: '1.2-2' }}</span>
     </label>
-    <label>
+    <label [attr.title]="i18n.t('tipEllipticRatio')">
       {{ i18n.t('ellipticRatio') }}
       <input
         type="range"
-        min="0.5"
-        max="4"
+        min="0.2"
+        max="8"
         step="0.05"
         [value]="laserElliptic()"
         [disabled]="!editor.isEditMode()"
@@ -97,7 +106,7 @@
       />
       <span class="value">{{ laserElliptic() | number: '1.2-2' }}</span>
     </label>
-    <label>
+    <label [attr.title]="i18n.t('tipTopHatMix')">
       {{ i18n.t('topHatMix') }}
       <input
         type="range"
@@ -112,7 +121,7 @@
     </label>
 
     <h5 class="subhead-sm">{{ i18n.t('laserFocus') }}</h5>
-    <label>
+    <label [attr.title]="i18n.t('tipWaistOffset')">
       {{ i18n.t('waistOffset') }}
       <input
         type="range"
@@ -125,9 +134,22 @@
       />
       <span class="value">{{ laserWaistOffset() | number: '1.2-2' }} m</span>
     </label>
+    <label [attr.title]="i18n.t('tipProbeDistance')">
+      {{ i18n.t('probeDistance') }}
+      <input
+        type="range"
+        min="0.5"
+        max="20"
+        step="0.1"
+        [value]="laserProbeDistance()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onLaserParam('probeDistanceM', $any($event.target).value)"
+      />
+      <span class="value">{{ laserProbeDistance() | number: '1.1-1' }} m</span>
+    </label>
 
     <h5 class="subhead-sm">{{ i18n.t('laserAberrations') }}</h5>
-    <label>
+    <label [attr.title]="i18n.t('tipSphericalAberration')">
       {{ i18n.t('sphericalAberration') }}
       <input
         type="range"
@@ -140,7 +162,7 @@
       />
       <span class="value">{{ laserSpherical() | number: '1.2-2' }}</span>
     </label>
-    <label>
+    <label [attr.title]="i18n.t('tipComa')">
       {{ i18n.t('coma') }}
       <input
         type="range"
@@ -153,7 +175,7 @@
       />
       <span class="value">{{ laserComa() | number: '1.2-2' }}</span>
     </label>
-    <label>
+    <label [attr.title]="i18n.t('tipAstigmatism')">
       {{ i18n.t('astigmatism') }}
       <input
         type="range"
@@ -170,7 +192,7 @@
   <p class="mode">Mód: {{ light().params.mode }}</p>
 
   <h4 class="subhead">{{ i18n.t('opticsSpill') }}</h4>
-  <label>
+  <label [attr.title]="i18n.t('tipStrayPowerFraction')">
     {{ i18n.t('strayPowerFraction') }}
     <input
       type="range"

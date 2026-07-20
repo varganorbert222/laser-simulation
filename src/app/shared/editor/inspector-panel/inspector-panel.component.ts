@@ -6,6 +6,7 @@ import { I18nService } from '../../../i18n/i18n.service';
 import { TransformInspectorComponent } from '../transform-inspector/transform-inspector.component';
 import { LightEmitterSectionComponent } from '../light-emitter-section/light-emitter-section.component';
 import { MediaVolumeSectionComponent } from '../media-volume-section/media-volume-section.component';
+import { SmokeEmitterSectionComponent } from '../smoke-emitter-section/smoke-emitter-section.component';
 import { SurfaceMaterialSectionComponent } from '../surface-material-section/surface-material-section.component';
 
 @Component({
@@ -16,6 +17,7 @@ import { SurfaceMaterialSectionComponent } from '../surface-material-section/sur
     TransformInspectorComponent,
     LightEmitterSectionComponent,
     MediaVolumeSectionComponent,
+    SmokeEmitterSectionComponent,
     SurfaceMaterialSectionComponent,
   ],
   templateUrl: './inspector-panel.component.html',

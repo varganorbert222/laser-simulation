@@ -20,6 +20,7 @@ import {
 
 export type HierarchyContextAction =
   | 'add'
+  | 'addSmoke'
   | 'rename'
   | 'copy'
   | 'cut'
@@ -55,6 +56,7 @@ export class HierarchyPanelComponent implements OnChanges {
   @Output() nodeReorder = new EventEmitter<HierarchyReorderEvent>();
   @Output() visibilityChange = new EventEmitter<{ id: string; visible: boolean }>();
   @Output() addAtRoot = new EventEmitter<void>();
+  @Output() addSmokeAtRoot = new EventEmitter<void>();
   @Output() addBelow = new EventEmitter<string>();
   @Output() removeNode = new EventEmitter<string>();
   @Output() contextAction = new EventEmitter<{
@@ -137,6 +139,11 @@ export class HierarchyPanelComponent implements OnChanges {
   onAddRoot(event: MouseEvent): void {
     event.stopPropagation();
     this.addAtRoot.emit();
+  }
+
+  onAddSmokeRoot(event: MouseEvent): void {
+    event.stopPropagation();
+    this.addSmokeAtRoot.emit();
   }
 
   onAddBelow(node: HierarchyNode, event: MouseEvent): void {
@@ -261,6 +268,8 @@ export class HierarchyPanelComponent implements OnChanges {
         return '☀';
       case 'media':
         return '☁';
+      case 'smoke':
+        return '💨';
       case 'environment':
         return '▦';
       case 'empty':

@@ -4,6 +4,7 @@ import { World } from '../ecs/world';
 import { createQuality } from '../ecs/resources';
 import { createSceneEntity } from '../hierarchy/entity-factory';
 import { defaultLightEmitter } from '../ecs/components';
+import { defaultMediaVolumeForKind } from '../optics/media-optical-presets';
 import { defaultGroundSurfaceMaterial } from '../optics/surface-material';
 
 export function createDemoWorld(): World {
@@ -41,19 +42,8 @@ export function createDemoWorld(): World {
     scale: vec3(1, 1, 1),
   });
   world.add(fog, 'MediaVolume', {
-    kind: 'fog',
-    density: 0.85,
-    color: [0.85, 0.92, 1],
+    ...defaultMediaVolumeForKind('fog'),
     halfExtents: vec3(6, 3, 6),
-    fbmScale: 0.45,
-    fbmTimeScale: 0.15,
-    noiseThresholdLow: 0.2,
-    noiseThresholdHigh: 0.8,
-    scatter: 0.9,
-    absorption: 0.2,
-    scatterModel: 'tyndall',
-    particleSizeNm: 200,
-    mieAnisotropy: 0.88,
   });
 
   const laser = createSceneEntity(world, {
@@ -73,10 +63,20 @@ export function createDemoWorld(): World {
     powerW: 1,
     params: {
       mode: 'laser' as const,
-      laser: { w0M: 0.01, m2: 1.45, probeDistanceM: 5, ellipticRatio: 1, waistOffsetM: 0, topHatMix: 0, sphericalAberration: 0, coma: 0, astigmatism: 0 },
+      laser: {
+        w0M: 0.01,
+        m2: 1.45,
+        probeDistanceM: 5,
+        ellipticRatio: 1,
+        waistOffsetM: 0,
+        topHatMix: 0,
+        sphericalAberration: 0,
+        coma: 0,
+        astigmatism: 0,
+      },
     },
     spill: {
-      strayPowerFraction: 0.12,
+      strayPowerFraction: 0.18,
     },
   });
 
