@@ -67,51 +67,70 @@ function mediaUniformNames(slots: number): string[] {
 }
 
 /**
- * Layered multi-media sample — one FBM per slot (never dual-pass).
- * Insulating climate → pick innermost AABB; particulate always additive;
- * outdoor climate only when no insulating interior covers the point.
+ * Layered multi-media sample (Exp-C: dual-pass FBM):
+ *   Pass 1 — innermost insulating climate (smallest halfExtents product)
+ *   Pass 2 — particulate always additive (scatter→Mie); outdoor only if no interior
+ *   Then apply stored interior climate rates (replaces outdoor inside AABB).
  */
 function mediaSampleAccum(slots: number): string {
-  const bodies: string[] = [];
+  const pass1: string[] = [];
+  const pass2: string[] = [];
   for (let i = 0; i < slots; i++) {
-    bodies.push(`  if (uMediaCount > ${i}.5) {
-    vec3 local${i} = pCam - uMediaCenter${i};
-    if (!any(greaterThan(abs(local${i}), uMediaHalfExt${i}))) {
-      float field${i} = fbm(local${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
-      float low${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
-      float high${i} = max(uMediaNoiseHigh${i}, low${i} + 0.001);
-      float plume${i} = plumeEnvelope(local${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
-      float fill${i} = smoothstep(low${i}, high${i}, field${i}) * uMediaDensity${i} * plume${i};
-      float turb${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
-      float shimmer${i} = 1.0 + turb${i} * (noise(local${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
-      float d${i} = fill${i} * shimmer${i};
-      if (d${i} > 1e-8) {
+    pass1.push(`  if (uMediaCount > ${i}.5 && uMediaInsulating${i} > 0.5) {
+    vec3 localI${i} = pCam - uMediaCenter${i};
+    if (!any(greaterThan(abs(localI${i}), uMediaHalfExt${i}))) {
+      float fieldI${i} = fbm(localI${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
+      float lowI${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
+      float highI${i} = max(uMediaNoiseHigh${i}, lowI${i} + 0.001);
+      float plumeI${i} = plumeEnvelope(localI${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
+      float fillI${i} = smoothstep(lowI${i}, highI${i}, fieldI${i}) * uMediaDensity${i} * plumeI${i};
+      float turbI${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
+      float shimmerI${i} = 1.0 + turbI${i} * (noise(localI${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
+      float dI${i} = fillI${i} * shimmerI${i};
+      if (dI${i} > 1e-8) {
+        float volI${i} = uMediaHalfExt${i}.x * uMediaHalfExt${i}.y * uMediaHalfExt${i}.z;
+        if (volI${i} < bestVol) {
+          bestVol = volI${i};
+          hasInterior = 1.0;
+          float saI${i} = max(uMediaAbsorb${i}, 0.0) * dI${i};
+          float ssRI${i} = max(uMediaScatter${i}, 0.0) * dI${i};
+          float ssMI${i} = max(uMediaScatterMie${i}, 0.0) * dI${i};
+          intDens = dI${i};
+          intSigmaSR = ssRI${i};
+          intSigmaSM = ssMI${i};
+          intSigmaA = saI${i};
+          float wTintI${i} = ssRI${i} + ssMI${i} + saI${i} * 0.25;
+          intTint = uMediaColor${i} * wTintI${i};
+          intTintW = wTintI${i};
+          intSpecExpM = uMediaSpectralExp${i} * ssMI${i};
+          intMieG = clamp(uMediaMieG${i}, -0.95, 0.95) * ssMI${i};
+          intMieW = ssMI${i};
+        }
+      }
+    }
+  }`);
+
+    pass2.push(`  if (uMediaCount > ${i}.5) {
+    vec3 localP${i} = pCam - uMediaCenter${i};
+    if (!any(greaterThan(abs(localP${i}), uMediaHalfExt${i}))) {
+      float fieldP${i} = fbm(localP${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
+      float lowP${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
+      float highP${i} = max(uMediaNoiseHigh${i}, lowP${i} + 0.001);
+      float plumeP${i} = plumeEnvelope(localP${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
+      float fillP${i} = smoothstep(lowP${i}, highP${i}, fieldP${i}) * uMediaDensity${i} * plumeP${i};
+      float turbP${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
+      float shimmerP${i} = 1.0 + turbP${i} * (noise(localP${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
+      float dP${i} = fillP${i} * shimmerP${i};
+      if (dP${i} > 1e-8) {
         float kind${i} = uMediaLayerKind${i};
-        float sa${i} = max(uMediaAbsorb${i}, 0.0) * d${i};
-        if (uMediaInsulating${i} > 0.5) {
-          float vol${i} = uMediaHalfExt${i}.x * uMediaHalfExt${i}.y * uMediaHalfExt${i}.z;
-          if (vol${i} < bestVol) {
-            bestVol = vol${i};
-            hasInterior = 1.0;
-            float ssRI${i} = max(uMediaScatter${i}, 0.0) * d${i};
-            float ssMI${i} = max(uMediaScatterMie${i}, 0.0) * d${i};
-            intDens = d${i};
-            intSigmaSR = ssRI${i};
-            intSigmaSM = ssMI${i};
-            intSigmaA = sa${i};
-            float wTintI${i} = ssRI${i} + ssMI${i} + sa${i} * 0.25;
-            intTint = uMediaColor${i} * wTintI${i};
-            intTintW = wTintI${i};
-            intSpecExpM = uMediaSpectralExp${i} * ssMI${i};
-            intMieG = clamp(uMediaMieG${i}, -0.95, 0.95) * ssMI${i};
-            intMieW = ssMI${i};
-          }
-        } else if (kind${i} > 1.5) {
-          float ssMP${i} = max(uMediaScatter${i}, 0.0) * d${i};
-          dens += d${i};
-          sigmaA += sa${i};
+        if (kind${i} > 1.5) {
+          // Particulate: always additive; scatter drives Mie.
+          float saP${i} = max(uMediaAbsorb${i}, 0.0) * dP${i};
+          float ssMP${i} = max(uMediaScatter${i}, 0.0) * dP${i};
+          dens += dP${i};
+          sigmaA += saP${i};
           sigmaSM += ssMP${i};
-          float wTintP${i} = ssMP${i} + sa${i} * 0.25;
+          float wTintP${i} = ssMP${i} + saP${i} * 0.25;
           tintAccum += uMediaColor${i} * wTintP${i};
           tintWeight += wTintP${i};
           if (ssMP${i} > 1e-12) {
@@ -119,20 +138,23 @@ function mediaSampleAccum(slots: number): string {
             mieGAccum += clamp(uMediaMieG${i}, -0.95, 0.95) * ssMP${i};
             mieWeight += ssMP${i};
           }
-        } else if (kind${i} < 0.5) {
-          float ssRO${i} = max(uMediaScatter${i}, 0.0) * d${i};
-          float ssMO${i} = max(uMediaScatterMie${i}, 0.0) * d${i};
-          outDens = d${i};
-          outSigmaA = sa${i};
-          outSigmaSR = ssRO${i};
-          outSigmaSM = ssMO${i};
-          float wTintO${i} = ssRO${i} + ssMO${i} + sa${i} * 0.25;
-          outTint = uMediaColor${i} * wTintO${i};
-          outTintW = wTintO${i};
-          outSpecExpM = uMediaSpectralExp${i} * ssMO${i};
-          outMieG = clamp(uMediaMieG${i}, -0.95, 0.95) * ssMO${i};
-          outMieW = ssMO${i};
-          hasOutdoor = 1.0;
+        } else if (kind${i} < 0.5 && uMediaInsulating${i} < 0.5 && hasInterior < 0.5) {
+          // Outdoor climate dual — skipped when an insulating interior covers this point.
+          float saO${i} = max(uMediaAbsorb${i}, 0.0) * dP${i};
+          float ssRO${i} = max(uMediaScatter${i}, 0.0) * dP${i};
+          float ssMO${i} = max(uMediaScatterMie${i}, 0.0) * dP${i};
+          dens += dP${i};
+          sigmaA += saO${i};
+          sigmaSR += ssRO${i};
+          sigmaSM += ssMO${i};
+          float wTintO${i} = ssRO${i} + ssMO${i} + saO${i} * 0.25;
+          tintAccum += uMediaColor${i} * wTintO${i};
+          tintWeight += wTintO${i};
+          if (ssMO${i} > 1e-12) {
+            spectralExpMAccum += uMediaSpectralExp${i} * ssMO${i};
+            mieGAccum += clamp(uMediaMieG${i}, -0.95, 0.95) * ssMO${i};
+            mieWeight += ssMO${i};
+          }
         }
       }
     }
@@ -140,7 +162,6 @@ function mediaSampleAccum(slots: number): string {
   }
 
   const preamble = `  float hasInterior = 0.0;
-  float hasOutdoor = 0.0;
   float bestVol = 1e30;
   float intDens = 0.0;
   float intSigmaSR = 0.0;
@@ -151,15 +172,6 @@ function mediaSampleAccum(slots: number): string {
   float intSpecExpM = 0.0;
   float intMieG = 0.0;
   float intMieW = 0.0;
-  float outDens = 0.0;
-  float outSigmaSR = 0.0;
-  float outSigmaSM = 0.0;
-  float outSigmaA = 0.0;
-  vec3 outTint = vec3(0.0);
-  float outTintW = 0.0;
-  float outSpecExpM = 0.0;
-  float outMieG = 0.0;
-  float outMieW = 0.0;
 `;
 
   const epilogue = `  if (hasInterior > 0.5) {
@@ -174,21 +186,9 @@ function mediaSampleAccum(slots: number): string {
       mieGAccum += intMieG;
       mieWeight += intMieW;
     }
-  } else if (hasOutdoor > 0.5) {
-    dens += outDens;
-    sigmaSR += outSigmaSR;
-    sigmaSM += outSigmaSM;
-    sigmaA += outSigmaA;
-    tintAccum += outTint;
-    tintWeight += outTintW;
-    if (outMieW > 1e-12) {
-      spectralExpMAccum += outSpecExpM;
-      mieGAccum += outMieG;
-      mieWeight += outMieW;
-    }
   }`;
 
-  return [preamble, ...bodies, epilogue].join('\n');
+  return [preamble, ...pass1, ...pass2, epilogue].join('\n');
 }
 
 function mediaIntersectUnion(slots: number): string {
