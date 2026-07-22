@@ -21,6 +21,12 @@ import {
 } from '../optics/optics-spill';
 import { clampPowerW } from '../optics/power';
 import {
+  defaultHdrAppearance,
+  estimateIntensityLmFromSpectral,
+  normalizeHdrAppearance,
+} from '../optics/light-appearance';
+import { wavelengthToRgb } from '../optics/wavelength';
+import {
   clampMieAnisotropy,
   clampParticleSizeForModel,
   defaultMieAnisotropy,
@@ -102,6 +108,19 @@ export interface LightEmitter {
   powerW: number;
   enabled: boolean;
   params: ModeParams;
+  /**
+   * HDR lamp filter (0–1). Used when mode ≠ laser; lasers ignore this.
+   * Unity Light.color analogue.
+   */
+  colorRgb: [number, number, number];
+  /**
+   * Photometric intensity in lumens (Unity-like Intensity). Non-laser only.
+   */
+  intensityLm: number;
+  /** When true, chromaticity comes from colorTemperatureK (Unity useColorTemperature). */
+  useColorTemperature: boolean;
+  /** Correlated color temperature in kelvin (typically 1000–20000). */
+  colorTemperatureK: number;
   /**
    * Presentation-only multipliers (theatrical glow / bloom). Ignored on the
    * scientific radiance path when theatricalGlow is off; surfaceGain is unused
@@ -241,11 +260,16 @@ export function defaultTransform(): Transform {
 }
 
 export function defaultLightEmitter(): LightEmitter {
+  const hdr = defaultHdrAppearance('laser');
   return {
     wavelengthNm: 532,
     powerW: 1,
     enabled: true,
     params: defaultModeParams('laser'),
+    colorRgb: hdr.colorRgb,
+    intensityLm: hdr.intensityLm,
+    useColorTemperature: hdr.useColorTemperature,
+    colorTemperatureK: hdr.colorTemperatureK,
     surfaceGain: 1,
     glowGain: 1,
     bloomGain: 1,
@@ -255,11 +279,16 @@ export function defaultLightEmitter(): LightEmitter {
 }
 
 export function defaultSunLightEmitter(): LightEmitter {
+  const hdr = defaultHdrAppearance('sun');
   return {
     wavelengthNm: 560,
     powerW: 100,
     enabled: true,
     params: defaultModeParams('sun'),
+    colorRgb: hdr.colorRgb,
+    intensityLm: hdr.intensityLm,
+    useColorTemperature: hdr.useColorTemperature,
+    colorTemperatureK: hdr.colorTemperatureK,
     surfaceGain: 1,
     glowGain: 0.2,
     bloomGain: 0.4,
@@ -273,7 +302,18 @@ export function defaultLightEmitterForMode(
 ): LightEmitter {
   if (mode === 'sun') return defaultSunLightEmitter();
   const base = defaultLightEmitter();
-  return { ...base, params: defaultModeParams(mode) };
+  if (mode === 'laser') {
+    return { ...base, params: defaultModeParams('laser') };
+  }
+  const hdr = defaultHdrAppearance(mode);
+  return {
+    ...base,
+    params: defaultModeParams(mode),
+    colorRgb: hdr.colorRgb,
+    intensityLm: hdr.intensityLm,
+    useColorTemperature: hdr.useColorTemperature,
+    colorTemperatureK: hdr.colorTemperatureK,
+  };
 }
 
 export function defaultMediaVolume(): MediaVolume {
@@ -360,11 +400,41 @@ export function normalizeLightEmitter(
     d.bloomGain,
   );
 
+  const params = normalizeModeParams(raw.params as ModeParams | undefined, d.params);
+  const wavelengthNm =
+    typeof raw.wavelengthNm === 'number' ? raw.wavelengthNm : d.wavelengthNm;
+  const powerW = clampPowerW(typeof raw.powerW === 'number' ? raw.powerW : d.powerW);
+  const modeFallback = defaultHdrAppearance(params.mode);
+  const migratedHdr =
+    typeof raw.intensityLm === 'number' || Array.isArray(raw.colorRgb)
+      ? normalizeHdrAppearance(
+          {
+            colorRgb: raw.colorRgb as [number, number, number] | undefined,
+            intensityLm: raw.intensityLm as number | undefined,
+            useColorTemperature: raw.useColorTemperature as boolean | undefined,
+            colorTemperatureK: raw.colorTemperatureK as number | undefined,
+          },
+          modeFallback,
+        )
+      : normalizeHdrAppearance(
+          {
+            colorRgb: wavelengthToRgb(wavelengthNm) as [number, number, number],
+            intensityLm: estimateIntensityLmFromSpectral(powerW, wavelengthNm),
+            useColorTemperature: false,
+            colorTemperatureK: modeFallback.colorTemperatureK,
+          },
+          modeFallback,
+        );
+
   return {
-    wavelengthNm: typeof raw.wavelengthNm === 'number' ? raw.wavelengthNm : d.wavelengthNm,
-    powerW: clampPowerW(typeof raw.powerW === 'number' ? raw.powerW : d.powerW),
+    wavelengthNm,
+    powerW,
     enabled: typeof raw.enabled === 'boolean' ? raw.enabled : d.enabled,
-    params: normalizeModeParams(raw.params as ModeParams | undefined, d.params),
+    params,
+    colorRgb: migratedHdr.colorRgb,
+    intensityLm: migratedHdr.intensityLm,
+    useColorTemperature: migratedHdr.useColorTemperature,
+    colorTemperatureK: migratedHdr.colorTemperatureK,
     surfaceGain,
     glowGain,
     bloomGain,

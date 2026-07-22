@@ -7,10 +7,6 @@ import {
   beamModelFromEmitter,
   beamModelToGpuParams,
 } from '../optics/beam-model';
-import {
-  displayLuminousPower,
-  physicalLuminousScale,
-} from '../optics/laser-brightness';
 import { mediaSpectralExponent } from '../optics/scatter-model';
 import {
   GPU_LAYER_INTERIOR,
@@ -27,8 +23,7 @@ import {
   environmentVolumetricSunRgb,
 } from '../optics/environment-lighting';
 import { isSunEmitter, refreshSceneSunBinding } from '../optics/scene-sun';
-import { normalizeChromaticity } from '../optics/color';
-import { rayleighScatterWeight, wavelengthToRgb } from '../optics/wavelength';
+import { resolveEmitterAppearance } from '../optics/light-appearance';
 import {
   PLUME_DISABLED_CONE_COS,
   coneCosFromHalfAngleDeg,
@@ -181,30 +176,23 @@ export function gatherRenderPack(world: World): GatheredFrame {
     if (isSunEmitter(emitter)) continue;
 
     const pose = lightWorldPose(world, id);
-    const color = normalizeChromaticity(wavelengthToRgb(emitter.wavelengthNm));
     const beam = beamModelFromEmitter(emitter);
     const gpu = beamModelToGpuParams(beam);
 
     const env = world.resources.EnvironmentLighting;
     const vision = world.resources.DisplayVision;
-    const brightnessOpts = {
+    const appearance = resolveEmitterAppearance(emitter, {
       ambientLevel: env.ambientLevel,
       responseCurve: vision.responseCurve,
-    };
+    });
 
     lights.push({
       originCam: worldToCamera(pose.position, camPos),
       directionCam: pose.direction,
-      colorRgb: color,
-      powerDisplay: displayLuminousPower(
-        emitter.powerW,
-        emitter.wavelengthNm,
-        brightnessOpts,
-      ),
-      powerLinear: physicalLuminousScale(emitter.powerW, emitter.wavelengthNm, {
-        ambientLevel: env.ambientLevel,
-      }),
-      scatterWeight: rayleighScatterWeight(emitter.wavelengthNm),
+      colorRgb: appearance.chroma,
+      powerDisplay: appearance.powerDisplay,
+      powerLinear: appearance.powerLinear,
+      scatterWeight: appearance.scatterWeight,
       mode: gpu.mode,
       p0: gpu.p0,
       p1: gpu.p1,
@@ -281,14 +269,16 @@ export function gatherRenderPack(world: World): GatheredFrame {
     if (sunEm?.enabled) {
       const pose = lightWorldPose(world, primarySunId);
       sunDirCam = normalize(pose.direction);
-      const chroma = normalizeChromaticity(wavelengthToRgb(sunEm.wavelengthNm));
-      const gain = physicalLuminousScale(sunEm.powerW, sunEm.wavelengthNm, {
+      const appearance = resolveEmitterAppearance(sunEm, {
         ambientLevel: envRes.ambientLevel,
       });
-      // Scale educational env sun tint by sun emitter power (keep soft ceiling).
       const base = environmentVolumetricSunRgb(envRes.ambientLevel);
-      const k = Math.min(4, 0.35 + gain * 0.002);
-      sunRgb = [base[0] * k * chroma[0], base[1] * k * chroma[1], base[2] * k * chroma[2]];
+      const k = Math.min(4, 0.35 + appearance.powerLinear * 0.002);
+      sunRgb = [
+        base[0] * k * appearance.chroma[0],
+        base[1] * k * appearance.chroma[1],
+        base[2] * k * appearance.chroma[2],
+      ];
     } else {
       sunRgb = [0, 0, 0];
     }

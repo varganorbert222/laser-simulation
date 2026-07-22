@@ -307,6 +307,12 @@ export const hu = {
     'Opcionális egyedi kulcsfény: irány a transform +Z tengelyéből; volumetria + Babylon DirectionalLight.',
   angularDiameter: 'Látszólagos átmérő',
   addSun: 'Sun',
+  lightColor: 'Szín',
+  tipLightColor: 'Unity-szerű HDR szín: RGB filter vagy színhőmérséklet (Kelvin).',
+  hintLightColor:
+    'Nem lézer: nincs nm-korlát. Bekapcsolt CCT felülírja az RGB-t (mint Unity useColorTemperature).',
+  intensityLm: 'Intenzitás',
+  tipIntensityLm: 'Fotometrikus intenzitás lumenben (Unity Light Intensity).',
 } as const;
 
 export const en = {
@@ -618,6 +624,12 @@ export const en = {
     'Optional unique key light: direction from transform +Z; volumetrics + Babylon DirectionalLight.',
   angularDiameter: 'Angular diameter',
   addSun: 'Sun',
+  lightColor: 'Color',
+  tipLightColor: 'Unity-like HDR color: RGB filter or color temperature (Kelvin).',
+  hintLightColor:
+    'Non-laser: no nm limit. When CCT is on it overrides RGB (like Unity useColorTemperature).',
+  intensityLm: 'Intensity',
+  tipIntensityLm: 'Photometric intensity in lumens (Unity Light Intensity).',
 } as const;
 
 export type LocaleKey = keyof typeof hu;

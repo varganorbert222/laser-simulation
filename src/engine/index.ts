@@ -61,6 +61,7 @@ export * from './optics/scene-sun';
 export * from './optics/beam-optics';
 export * from './optics/microfacet-brdf';
 export * from './optics/light-incident';
+export * from './optics/light-appearance';
 export * from './optics/science-readout';
 export * from './ecs/components';
 export * from './ecs/resources';

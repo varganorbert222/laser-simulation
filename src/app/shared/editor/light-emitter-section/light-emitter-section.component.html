@@ -19,67 +19,109 @@
   </label>
   <p class="hint">{{ i18n.t('hintLightMode') }}</p>
 
-  <app-spectral-color-field
-    [label]="i18n.t('wavelength')"
-    [tooltip]="i18n.t('tipWavelength')"
-    [wavelengthNm]="light().wavelengthNm"
-    [readonly]="!editor.isEditMode()"
-    (wavelengthChange)="onWavelength($event)"
-  />
-  <p class="hint">{{ i18n.t('hintColor') }}</p>
+  @if (isLaser()) {
+    <app-spectral-color-field
+      [label]="i18n.t('wavelength')"
+      [tooltip]="i18n.t('tipWavelength')"
+      [wavelengthNm]="light().wavelengthNm"
+      [readonly]="!editor.isEditMode()"
+      (wavelengthChange)="onWavelength($event)"
+    />
+    <p class="hint">{{ i18n.t('hintColor') }}</p>
 
-  <div class="power-block" [attr.title]="i18n.t('tipPower')">
-    <div class="power-head">
-      <span class="power-label">{{ i18n.t('power') }}</span>
-      <select
-        class="power-unit"
-        [value]="powerUnit()"
-        [disabled]="!editor.isEditMode()"
-        [attr.title]="i18n.t('tipPowerUnit')"
-        (change)="onPowerUnit($any($event.target).value)"
-      >
-        @for (u of powerUnits; track u) {
-          <option [value]="u">{{ u }}</option>
-        }
-      </select>
+    <div class="power-block" [attr.title]="i18n.t('tipPower')">
+      <div class="power-head">
+        <span class="power-label">{{ i18n.t('power') }}</span>
+        <select
+          class="power-unit"
+          [value]="powerUnit()"
+          [disabled]="!editor.isEditMode()"
+          [attr.title]="i18n.t('tipPowerUnit')"
+          (change)="onPowerUnit($any($event.target).value)"
+        >
+          @for (u of powerUnits; track u) {
+            <option [value]="u">{{ u }}</option>
+          }
+        </select>
+      </div>
+      <div class="power-inputs">
+        <input
+          type="number"
+          class="power-number"
+          min="0"
+          step="any"
+          [disabled]="!editor.isEditMode()"
+          [value]="powerValueInUnit()"
+          [attr.title]="i18n.t('tipPower')"
+          (change)="onPowerNumber($any($event.target).value)"
+        />
+        <input
+          type="range"
+          class="power-slider"
+          min="0"
+          max="1"
+          step="0.001"
+          [value]="powerSliderT()"
+          [disabled]="!editor.isEditMode()"
+          [attr.title]="i18n.t('tipPower')"
+          (input)="onPowerSlider($any($event.target).value)"
+        />
+      </div>
+      <span class="value">{{ formatPower(light().powerW) }} · max 500 kW</span>
     </div>
-    <div class="power-inputs">
-      <input
-        type="number"
-        class="power-number"
-        min="0"
-        step="any"
-        [disabled]="!editor.isEditMode()"
-        [value]="powerValueInUnit()"
-        [attr.title]="i18n.t('tipPower')"
-        (change)="onPowerNumber($any($event.target).value)"
-      />
-      <input
-        type="range"
-        class="power-slider"
-        min="0"
-        max="1"
-        step="0.001"
-        [value]="powerSliderT()"
-        [disabled]="!editor.isEditMode()"
-        [attr.title]="i18n.t('tipPower')"
-        (input)="onPowerSlider($any($event.target).value)"
-      />
+    <div class="chips">
+      @for (p of editor.powerPresets; track p) {
+        <button
+          type="button"
+          [disabled]="!editor.isEditMode()"
+          [attr.title]="i18n.t('tipPower')"
+          (click)="editor.setPower(p)"
+        >
+          {{ formatPower(p) }}
+        </button>
+      }
     </div>
-    <span class="value">{{ formatPower(light().powerW) }} · max 500 kW</span>
-  </div>
-  <div class="chips">
-    @for (p of editor.powerPresets; track p) {
-      <button
-        type="button"
-        [disabled]="!editor.isEditMode()"
-        [attr.title]="i18n.t('tipPower')"
-        (click)="editor.setPower(p)"
-      >
-        {{ formatPower(p) }}
-      </button>
-    }
-  </div>
+  } @else {
+    <app-hdr-color-field
+      [label]="i18n.t('lightColor')"
+      [tooltip]="i18n.t('tipLightColor')"
+      [colorRgb]="light().colorRgb"
+      [useColorTemperature]="light().useColorTemperature"
+      [colorTemperatureK]="light().colorTemperatureK"
+      [readonly]="!editor.isEditMode()"
+      (appearanceChange)="onHdrAppearance($event)"
+    />
+    <p class="hint">{{ i18n.t('hintLightColor') }}</p>
+
+    <div class="power-block" [attr.title]="i18n.t('tipIntensityLm')">
+      <div class="power-head">
+        <span class="power-label">{{ i18n.t('intensityLm') }}</span>
+        <span class="power-unit">lm</span>
+      </div>
+      <div class="power-inputs">
+        <input
+          type="number"
+          class="power-number"
+          min="0"
+          step="any"
+          [disabled]="!editor.isEditMode()"
+          [value]="light().intensityLm"
+          (change)="onIntensityNumber($any($event.target).value)"
+        />
+        <input
+          type="range"
+          class="power-slider"
+          min="0"
+          max="1"
+          step="0.001"
+          [value]="intensitySliderT()"
+          [disabled]="!editor.isEditMode()"
+          (input)="onIntensitySlider($any($event.target).value)"
+        />
+      </div>
+      <span class="value">{{ light().intensityLm | number: '1.0-0' }} lm</span>
+    </div>
+  }
 
   @if (light().params.mode === 'laser') {
     <h4 class="subhead">{{ i18n.t('laserOptics') }}</h4>

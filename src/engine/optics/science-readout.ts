@@ -23,6 +23,12 @@ import {
 } from './wavelength';
 import type { OpticsSpillParams } from './optics-spill';
 import { hasOpticsSpill, normalizeOpticsSpill } from './optics-spill';
+import {
+  isSpectralLightMode,
+  resolveEmitterAppearance,
+  resolveHdrChroma,
+  type LightHdrAppearance,
+} from './light-appearance';
 
 export type {
   LaserParams,
@@ -58,6 +64,11 @@ export interface LightEmitterInput {
   params: ModeParams;
   spill?: OpticsSpillParams;
   vision?: VisionBrightnessOpts | null;
+  /** HDR lamp fields (ignored for laser). */
+  colorRgb?: [number, number, number];
+  intensityLm?: number;
+  useColorTemperature?: boolean;
+  colorTemperatureK?: number;
 }
 
 export interface ScienceQuantity {
@@ -89,6 +100,10 @@ function fmt(n: number, digits = 3): string {
 }
 
 export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
+  if (!isSpectralLightMode(input.params.mode)) {
+    return buildHdrLampReadout(input);
+  }
+
   const derived = deriveFromWavelengthNm(input.wavelengthNm);
   const rgb = wavelengthToRgb(input.wavelengthNm);
   const scatterWeight = rayleighScatterWeight(input.wavelengthNm);
@@ -475,6 +490,97 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
     scatterWeight,
     displayBrightness,
     safetyNote,
+  };
+}
+
+function buildHdrLampReadout(input: LightEmitterInput): ScienceReadout {
+  const hdr: LightHdrAppearance = {
+    colorRgb: input.colorRgb ?? [1, 1, 1],
+    intensityLm: input.intensityLm ?? 800,
+    useColorTemperature: input.useColorTemperature ?? false,
+    colorTemperatureK: input.colorTemperatureK ?? 6500,
+  };
+  const appearance = resolveEmitterAppearance(
+    {
+      params: input.params,
+      wavelengthNm: input.wavelengthNm,
+      powerW: input.powerW,
+      colorRgb: hdr.colorRgb,
+      intensityLm: hdr.intensityLm,
+      useColorTemperature: hdr.useColorTemperature,
+      colorTemperatureK: hdr.colorTemperatureK,
+    },
+    input.vision,
+  );
+  const rgb = resolveHdrChroma(hdr);
+  const spill = normalizeOpticsSpill(input.spill);
+  const quantities: ScienceQuantity[] = [
+    {
+      id: 'intensityLm',
+      label: 'Intenzitás',
+      value: fmt(hdr.intensityLm, 4),
+      unit: 'lm',
+      kind: 'calculated',
+    },
+  ];
+  if (hdr.useColorTemperature) {
+    quantities.push({
+      id: 'cct',
+      label: 'Színhőmérséklet',
+      value: fmt(hdr.colorTemperatureK, 4),
+      unit: 'K',
+      kind: 'calculated',
+    });
+  } else {
+    quantities.push({
+      id: 'rgb',
+      label: 'RGB filter',
+      value: `${fmt(hdr.colorRgb[0], 3)}, ${fmt(hdr.colorRgb[1], 3)}, ${fmt(hdr.colorRgb[2], 3)}`,
+      unit: '',
+      kind: 'approximated',
+    });
+  }
+  quantities.push({
+    id: 'scatterNm',
+    label: 'Effektív λ (szórás)',
+    value: fmt(appearance.scatterNm, 3),
+    unit: 'nm',
+    kind: 'approximated',
+    note: 'Rayleigh súlyhoz',
+  });
+
+  // Reuse mode-specific geometry insights from the laser switch by calling a slim path:
+  let insight =
+    'HDR lámpa: szín (RGB / CCT) + lumen intenzitás — Unity Light-szerű megjelenés; nincs nm-korlát.';
+  let formula = 'L ≈ color × Φ_v(lm) · T_media';
+  switch (input.params.mode) {
+    case 'omni_lamp':
+      insight = 'Pontlámpa (omni): izotropikus soft lamp; szín/CCT + lumen.';
+      break;
+    case 'spotlight':
+      insight = 'Spotlight: irányított kúp; szín/CCT + lumen (nem spektrális lézer).';
+      break;
+    case 'flashlight':
+      insight = 'Elemlámpa: szélesebb lágy kúp; szín/CCT + lumen.';
+      break;
+    case 'parallel':
+      insight = 'Irányított (directional) nyaláb: finite tube; szín/CCT + lumen.';
+      break;
+    case 'sun':
+      insight = 'Nap kulcsfény: directional + env sun; CCT / szín + lumen.';
+      break;
+  }
+  if (hasOpticsSpill(spill)) {
+    insight += ' Stray spill a fő nyaláb körül.';
+  }
+
+  return {
+    insight,
+    formula,
+    quantities,
+    rgb,
+    scatterWeight: appearance.scatterWeight,
+    displayBrightness: appearance.powerDisplay,
   };
 }
 

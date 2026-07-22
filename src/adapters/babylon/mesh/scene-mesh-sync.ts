@@ -13,10 +13,9 @@ import '@babylonjs/core/Materials/standardMaterial.js';
 import {
   deriveHousingGlowScale,
   displayRgb,
-  laserDotDisplayBrightness,
+  resolveEmitterAppearance,
   SURFACE_MAX_SIMULTANEOUS_LIGHTS,
   surfaceBrdfWeights,
-  wavelengthToRgb,
   type GizmoMode,
   type LightEmitter,
   type SurfaceMaterial,
@@ -300,15 +299,19 @@ export class SceneMeshSync {
     emitter: LightEmitter,
     sm: SurfaceMaterial | null,
   ): void {
-    const rgb = wavelengthToRgb(emitter.wavelengthNm);
     const vision = this.world.resources.DisplayVision;
     const env = this.world.resources.EnvironmentLighting;
-    const power = laserDotDisplayBrightness(emitter.powerW, emitter.wavelengthNm, {
+    const appearance = resolveEmitterAppearance(emitter, {
       ambientLevel: env.ambientLevel,
       responseCurve: vision.responseCurve,
     });
-    const glow = deriveHousingGlowScale(sm, emitter.apertureCoupling, emitter.glowGain, power);
-    const [er, eg, eb] = displayRgb(rgb, glow);
+    const glow = deriveHousingGlowScale(
+      sm,
+      emitter.apertureCoupling,
+      emitter.glowGain,
+      appearance.powerDisplay,
+    );
+    const [er, eg, eb] = displayRgb(appearance.chroma, glow);
     const emissive = new Color3(er, eg, eb);
 
     let mat = mesh.material;

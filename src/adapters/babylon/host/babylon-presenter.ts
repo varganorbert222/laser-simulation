@@ -24,6 +24,7 @@ import {
   environmentSunDirUnit,
   environmentSunIntensity,
   lightWorldPose,
+  resolveEmitterAppearance,
   type CameraPose,
   type FramePresenter,
   type GizmoMode,
@@ -335,9 +336,15 @@ export class BabylonPresenter implements FramePresenter {
           pose.direction[2],
         );
         const base = environmentSunIntensity(ambientLevel);
-        // Soft educational scale from emitter power (100 W ≈ default demo sun).
-        const powerScale = Math.min(3, 0.35 + emitter.powerW * 0.0065);
+        const appearance = resolveEmitterAppearance(emitter, { ambientLevel });
+        // Soft educational scale from lumen intensity (~80 klm ≈ default demo sun).
+        const powerScale = Math.min(3, 0.35 + emitter.intensityLm * 8e-6);
         this.sun.intensity = base * powerScale;
+        this.sun.diffuse = new Color3(
+          appearance.chroma[0],
+          appearance.chroma[1],
+          appearance.chroma[2],
+        );
         return;
       }
       this.sun.intensity = 0;

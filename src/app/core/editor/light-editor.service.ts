@@ -3,15 +3,20 @@ import {
   ALL_LIGHT_MODES,
   POWER_PRESETS_W,
   buildScienceReadout,
+  clampIntensityLm,
   clampPowerW,
   collectComponentValues,
+  defaultHdrAppearance,
   defaultModeParams,
+  estimateIntensityLmFromSpectral,
   fieldStateJson,
+  isSpectralLightMode,
   isSuppressedSunEntity,
   refreshSceneSunBinding,
   restoreWorldFromSerialized,
   selectionHasComponent,
   setLightEmitterCommand,
+  wavelengthToRgb,
   wouldSuppressAdditionalSun,
   type LightEmitter,
   type LightMode,
@@ -73,6 +78,10 @@ export class LightEditorService {
       powerW: fallback.powerW,
       params: fallback.params,
       spill: fallback.spill,
+      colorRgb: fallback.colorRgb,
+      intensityLm: fallback.intensityLm,
+      useColorTemperature: fallback.useColorTemperature,
+      colorTemperatureK: fallback.colorTemperatureK,
       vision: {
         ambientLevel: env.ambientLevel,
         responseCurve: vision.responseCurve,
@@ -149,7 +158,31 @@ export class LightEditorService {
         if (wouldSuppressAdditionalSun(world, id)) warn = true;
       }
     }
-    this.updateLight({ params: defaultModeParams(mode) });
+
+    const primary = world.get(ids[0]!, 'LightEmitter');
+    const patch: Partial<LightEmitter> = { params: defaultModeParams(mode) };
+    if (primary && isSpectralLightMode(primary.params.mode) && !isSpectralLightMode(mode)) {
+      const hdr = defaultHdrAppearance(mode);
+      patch.colorRgb = wavelengthToRgb(primary.wavelengthNm) as [number, number, number];
+      patch.intensityLm = estimateIntensityLmFromSpectral(
+        primary.powerW,
+        primary.wavelengthNm,
+      );
+      patch.useColorTemperature = false;
+      patch.colorTemperatureK = hdr.colorTemperatureK;
+    } else if (primary && !isSpectralLightMode(primary.params.mode) && isSpectralLightMode(mode)) {
+      // Keep wavelengthNm / powerW; HDR fields remain for round-trip.
+    } else if (mode === 'sun' && primary && primary.params.mode !== 'sun') {
+      const hdr = defaultHdrAppearance('sun');
+      if (!primary.useColorTemperature && primary.intensityLm < 10_000) {
+        patch.intensityLm = hdr.intensityLm;
+        patch.useColorTemperature = hdr.useColorTemperature;
+        patch.colorTemperatureK = hdr.colorTemperatureK;
+        patch.colorRgb = hdr.colorRgb;
+      }
+    }
+
+    this.updateLight(patch);
     refreshSceneSunBinding(world);
     if (warn) {
       this.hierarchy.showNotice(this.i18n.t('warnSecondSun'));
@@ -163,6 +196,10 @@ export class LightEditorService {
   setPower(powerW: number): void {
     this.updateLight({ powerW: clampPowerW(powerW) }, { coalesce: true });
   }
+
+  setIntensityLm(intensityLm: number): void {
+    this.updateLight({ intensityLm: clampIntensityLm(intensityLm) }, { coalesce: true });
+  }
 }
 
 function mergeLight(before: LightEmitter, patch: Partial<LightEmitter>): LightEmitter {
@@ -170,6 +207,9 @@ function mergeLight(before: LightEmitter, patch: Partial<LightEmitter>): LightEm
     ...structuredClone(before),
     ...patch,
     params: patch.params ? structuredClone(patch.params) : structuredClone(before.params),
+    colorRgb: patch.colorRgb
+      ? ([...patch.colorRgb] as [number, number, number])
+      : ([...before.colorRgb] as [number, number, number]),
     spill: patch.spill
       ? {
           ...before.spill,

@@ -250,6 +250,10 @@ export class EditorFacade {
     this.light.setPower(powerW);
   }
 
+  setIntensityLm(intensityLm: number): void {
+    this.light.setIntensityLm(intensityLm);
+  }
+
   setMediaDensity(density: number): void {
     this.media.setMediaDensity(density);
   }

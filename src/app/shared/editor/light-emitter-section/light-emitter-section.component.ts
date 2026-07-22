@@ -2,9 +2,11 @@ import { Component, effect, input, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
   ALL_LIGHT_MODES,
+  clampIntensityLm,
   clampSpill01,
   defaultModeParams,
   formatPowerW,
+  isSpectralLightMode,
   normalizeLaserParams,
   normalizeOpticsSpill,
   normalizeSunParams,
@@ -15,17 +17,19 @@ import {
   sliderTFromPowerW,
   suggestPowerUnit,
   type LightEmitter,
+  type LightHdrAppearance,
   type LightMode,
   type PowerUnit,
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { I18nService } from '../../../i18n/i18n.service';
 import { SpectralColorFieldComponent } from '../spectral-color-field/spectral-color-field.component';
+import { HdrColorFieldComponent } from '../hdr-color-field/hdr-color-field.component';
 
 @Component({
   selector: 'app-light-emitter-section',
   standalone: true,
-  imports: [DecimalPipe, SpectralColorFieldComponent],
+  imports: [DecimalPipe, SpectralColorFieldComponent, HdrColorFieldComponent],
   templateUrl: './light-emitter-section.component.html',
   styleUrl: './light-emitter-section.component.scss',
 })
@@ -47,6 +51,10 @@ export class LightEmitterSectionComponent {
         this.powerUnit.set(suggestPowerUnit(light.powerW));
       }
     });
+  }
+
+  isLaser(): boolean {
+    return isSpectralLightMode(this.light().params.mode);
   }
 
   modeLabel(mode: LightMode): string {
@@ -73,6 +81,29 @@ export class LightEmitterSectionComponent {
 
   onWavelength(nm: number): void {
     if (Number.isFinite(nm)) this.editor.setWavelength(nm);
+  }
+
+  onHdrAppearance(patch: Partial<LightHdrAppearance>): void {
+    this.editor.updateLight(patch, { coalesce: true });
+  }
+
+  intensitySliderT(): number {
+    // Log-ish map 1 lm … 1e6 lm → 0…1
+    const lm = Math.max(1, this.light().intensityLm);
+    return Math.min(1, Math.max(0, Math.log10(lm) / 6));
+  }
+
+  onIntensityNumber(raw: string): void {
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return;
+    this.editor.setIntensityLm(clampIntensityLm(n));
+  }
+
+  onIntensitySlider(raw: string): void {
+    const t = Number(raw);
+    if (!Number.isFinite(t)) return;
+    const lm = Math.pow(10, Math.min(1, Math.max(0, t)) * 6);
+    this.editor.setIntensityLm(clampIntensityLm(lm));
   }
 
   powerValueInUnit(): number {

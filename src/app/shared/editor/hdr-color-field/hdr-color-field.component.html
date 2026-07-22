@@ -1,0 +1,95 @@
+<div class="hdr-color" [attr.title]="tooltip || null">
+  <span class="title">{{ label }}</span>
+
+  <label class="temp-toggle">
+    <input
+      type="checkbox"
+      [checked]="useColorTemperature"
+      [disabled]="readonly"
+      (change)="onUseTemp($any($event.target).checked)"
+    />
+    Color temperature
+  </label>
+
+  @if (useColorTemperature) {
+    <label class="temp-row">
+      Kelvin
+      <input
+        type="range"
+        min="1000"
+        max="20000"
+        step="50"
+        [disabled]="readonly"
+        [value]="colorTemperatureK"
+        (input)="onTempSlider($any($event.target).value)"
+      />
+      <span class="value">{{ colorTemperatureK | number: '1.0-0' }} K</span>
+    </label>
+  }
+
+  <div class="row picker-row">
+    <input
+      type="color"
+      [value]="hex"
+      [disabled]="readonly || useColorTemperature"
+      [attr.aria-label]="label + ' picker'"
+      (focus)="editStart.emit()"
+      (input)="onPicker($any($event.target).value)"
+    />
+    <label class="hex">
+      Hex
+      <input
+        type="text"
+        spellcheck="false"
+        [disabled]="readonly || useColorTemperature"
+        [value]="hex"
+        (focus)="editStart.emit()"
+        (change)="onHexText($any($event.target).value)"
+      />
+    </label>
+  </div>
+
+  @if (!useColorTemperature) {
+    <div class="row rgb-row">
+      <label
+        >R
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.01"
+          [disabled]="readonly"
+          [value]="colorRgb[0]"
+          (focus)="editStart.emit()"
+          (change)="onChannel(0, $any($event.target).value)"
+        />
+      </label>
+      <label
+        >G
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.01"
+          [disabled]="readonly"
+          [value]="colorRgb[1]"
+          (focus)="editStart.emit()"
+          (change)="onChannel(1, $any($event.target).value)"
+        />
+      </label>
+      <label
+        >B
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.01"
+          [disabled]="readonly"
+          [value]="colorRgb[2]"
+          (focus)="editStart.emit()"
+          (change)="onChannel(2, $any($event.target).value)"
+        />
+      </label>
+    </div>
+  }
+</div>

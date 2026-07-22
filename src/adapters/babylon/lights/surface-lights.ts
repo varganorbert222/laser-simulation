@@ -3,12 +3,10 @@ import {
   beamModelFromEmitter,
   beamModelToGpuParams,
   isSunEmitter,
-  laserDotDisplayBrightness,
   lightWorldPose,
   MAX_GPU_LIGHTS,
-  normalizeChromaticity,
+  resolveEmitterAppearance,
   surfaceBrdfWeights,
-  wavelengthToRgb,
   type SurfaceMaterial,
   type World,
 } from '../../../engine';
@@ -71,10 +69,9 @@ export class SurfaceLightSync {
       bound++;
 
       const pose = lightWorldPose(world, id);
-      const rgb = normalizeChromaticity(wavelengthToRgb(emitter.wavelengthNm));
       const vision = world.resources.DisplayVision;
       const env = world.resources.EnvironmentLighting;
-      const power = laserDotDisplayBrightness(emitter.powerW, emitter.wavelengthNm, {
+      const appearance = resolveEmitterAppearance(emitter, {
         ambientLevel: env.ambientLevel,
         responseCurve: vision.responseCurve,
       });
@@ -84,8 +81,8 @@ export class SurfaceLightSync {
       pack.push({
         origin: [pose.position[0], pose.position[1], pose.position[2]],
         direction: [pose.direction[0], pose.direction[1], pose.direction[2]],
-        color: [rgb[0], rgb[1], rgb[2]],
-        power: Math.max(0, power) * SURFACE_OPTICS_DISPLAY_GAIN,
+        color: [appearance.chroma[0], appearance.chroma[1], appearance.chroma[2]],
+        power: Math.max(0, appearance.powerDisplay) * SURFACE_OPTICS_DISPLAY_GAIN,
         mode: gpu.mode,
         p0: gpu.p0,
         p1: gpu.p1,
