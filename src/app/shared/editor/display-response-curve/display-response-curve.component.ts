@@ -23,7 +23,7 @@ import {
   type DisplayResponseCurve,
   type DisplayResponsePoint,
 } from '../../../../engine';
-import { I18nService } from '../../../i18n/i18n.service';
+import { LocalizationService } from '../../../core/services/localization.service';
 
 @Component({
   selector: 'app-display-response-curve',
@@ -44,7 +44,7 @@ export class DisplayResponseCurveComponent implements OnChanges, AfterViewInit {
   private dragIndex: number | null = null;
   private localPoints: DisplayResponsePoint[] = [];
 
-  constructor(readonly i18n: I18nService) {}
+  constructor(readonly l10n: LocalizationService) {}
 
   get exposureLabel(): string {
     return `${eyeAdaptationGainFromAmbient(this.ambientLevel).toFixed(1)}×`;

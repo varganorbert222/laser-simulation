@@ -24,14 +24,14 @@ import {
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
 import { HierarchyEditorService } from './hierarchy-editor.service';
-import { I18nService } from '../../i18n/i18n.service';
+import { LocalizationService } from '../services/localization.service';
 
 @Injectable({ providedIn: 'root' })
 export class LightEditorService {
   private readonly engine = inject(EngineHostService);
   private readonly selection = inject(SelectionService);
   private readonly hierarchy = inject(HierarchyEditorService);
-  private readonly i18n = inject(I18nService);
+  private readonly l10n = inject(LocalizationService);
 
   readonly powerPresets = POWER_PRESETS_W;
   readonly lightModes = ALL_LIGHT_MODES;
@@ -185,7 +185,7 @@ export class LightEditorService {
     this.updateLight(patch);
     refreshSceneSunBinding(world);
     if (warn) {
-      this.hierarchy.showNotice(this.i18n.t('warnSecondSun'));
+      this.hierarchy.showNotice(this.l10n.t('warnSecondSun'));
     }
   }
 

@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { EngineHostService } from '../../core/services/engine-host.service';
 import { EditorFacade } from '../../core/services/editor-facade.service';
-import { I18nService } from '../../i18n/i18n.service';
+import { LocalizationService } from '../../core/services/localization.service';
 import { DisplayResponseCurveComponent } from '../../shared/editor/display-response-curve/display-response-curve.component';
 import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
 import { StudioModalComponent } from '../../shared/editor/studio-modal/studio-modal.component';
@@ -42,7 +42,7 @@ import { editorUndoShortcut } from '../../../engine';
 export class LightStudioComponent implements AfterViewInit, OnDestroy {
   readonly engine = inject(EngineHostService);
   readonly editor = inject(EditorFacade);
-  readonly i18n = inject(I18nService);
+  readonly l10n = inject(LocalizationService);
 
   @ViewChild('viewport', { static: true }) viewportRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('fileInput', { static: true }) fileInput!: ElementRef<HTMLInputElement>;
@@ -276,7 +276,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   deleteSelected(): void {
     const id = this.selectedLibraryId();
     if (!id) return;
-    if (!window.confirm(this.i18n.t('sceneDeleteConfirm'))) return;
+    if (!window.confirm(this.l10n.t('sceneDeleteConfirm'))) return;
     this.editor.deleteFromLibrary(id);
     this.selectedLibraryId.set(this.editor.activeSceneId());
   }
@@ -309,7 +309,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
 
   formatUpdated(ms: number): string {
     try {
-      return new Date(ms).toLocaleString(this.i18n.locale() === 'hu' ? 'hu-HU' : 'en-GB', {
+      return new Date(ms).toLocaleString(this.l10n.locale() === 'hu' ? 'hu-HU' : 'en-GB', {
         dateStyle: 'short',
         timeStyle: 'short',
       });
@@ -319,7 +319,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   }
 
   private promptName(initial?: string): string | null {
-    const raw = window.prompt(this.i18n.t('sceneNamePrompt'), initial ?? '');
+    const raw = window.prompt(this.l10n.t('sceneNamePrompt'), initial ?? '');
     if (raw === null) return null;
     return raw.trim();
   }

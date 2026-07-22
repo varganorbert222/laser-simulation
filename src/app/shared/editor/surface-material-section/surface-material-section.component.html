@@ -1,8 +1,8 @@
 <section class="block">
-  <h3>{{ i18n.t('surfaceMaterial') }}</h3>
+  <h3>{{ l10n.t('surfaceMaterial') }}</h3>
 
-  <label [attr.title]="i18n.t('tipFixtureFinish')">
-    {{ i18n.t('fixtureFinish') }}
+  <label [attr.title]="l10n.t('tipFixtureFinish')">
+    {{ l10n.t('fixtureFinish') }}
     <select
       [value]="material().preset"
       [disabled]="!editor.isEditMode()"
@@ -11,11 +11,11 @@
       @for (p of finishPresets; track p) {
         <option [value]="p">{{ finishLabel(p) }}</option>
       }
-      <option value="custom">{{ i18n.t('finishCustom') }}</option>
+      <option value="custom">{{ l10n.t('finishCustom') }}</option>
     </select>
   </label>
-  <label [attr.title]="i18n.t('tipAlbedo')">
-    {{ i18n.t('albedo') }}
+  <label [attr.title]="l10n.t('tipAlbedo')">
+    {{ l10n.t('albedo') }}
     <input
       type="range"
       min="0"
@@ -27,8 +27,8 @@
     />
     <span class="value">{{ material().albedo | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipMetalness')">
-    {{ i18n.t('metalness') }}
+  <label [attr.title]="l10n.t('tipMetalness')">
+    {{ l10n.t('metalness') }}
     <input
       type="range"
       min="0"
@@ -40,8 +40,8 @@
     />
     <span class="value">{{ material().metalness | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipRoughness')">
-    {{ i18n.t('roughness') }}
+  <label [attr.title]="l10n.t('tipRoughness')">
+    {{ l10n.t('roughness') }}
     <input
       type="range"
       min="0"
@@ -53,8 +53,8 @@
     />
     <span class="value">{{ material().roughness | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipTransmission')">
-    {{ i18n.t('transmission') }}
+  <label [attr.title]="l10n.t('tipTransmission')">
+    {{ l10n.t('transmission') }}
     <input
       type="range"
       min="0"
@@ -66,6 +66,6 @@
     />
     <span class="value">{{ material().transmission | number: '1.2-2' }}</span>
   </label>
-  <p class="hint">{{ i18n.t('hintSurfaceMaterial') }}</p>
-  <p class="hint">{{ i18n.t('hintTransmission') }}</p>
+  <p class="hint">{{ l10n.t('hintSurfaceMaterial') }}</p>
+  <p class="hint">{{ l10n.t('hintTransmission') }}</p>
 </section>

@@ -2,13 +2,13 @@
   <section class="block identity">
     <h3>Objektum</h3>
     @if (editor.selectionCount() > 1) {
-      <p class="meta multi">{{ editor.selectionCount() }} {{ i18n.t('multiSelectionLabel') }}</p>
+      <p class="meta multi">{{ editor.selectionCount() }} {{ l10n.t('multiSelectionLabel') }}</p>
     }
-    <label [attr.title]="i18n.t('tipObjectName')">
+    <label [attr.title]="l10n.t('tipObjectName')">
       Név
       <input
         type="text"
-        [value]="editor.selectedNameMixed() ? i18n.t('mixedValue') : (editor.selectedName() ?? '')"
+        [value]="editor.selectedNameMixed() ? l10n.t('mixedValue') : (editor.selectedName() ?? '')"
         [disabled]="!editor.isEditMode() || editor.selectedNameMixed()"
         (change)="onRename($any($event.target).value)"
       />
@@ -58,7 +58,7 @@
       }
     </ul>
     @if (editor.isEditMode()) {
-      <label class="add-comp" [attr.title]="i18n.t('tipAddComponent')">
+      <label class="add-comp" [attr.title]="l10n.t('tipAddComponent')">
         Hozzáadás
         <select (change)="addComponent($any($event.target).value); $any($event.target).value = ''">
           <option value="">—</option>
@@ -72,7 +72,7 @@
 
   @if (editor.selectedLight(); as light) {
     @if (editor.selectedLightMixed()) {
-      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+      <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedLightMixed()">
       <app-light-emitter-section [light]="light" />
@@ -81,7 +81,7 @@
 
   @if (editor.selectedSurfaceMaterial(); as material) {
     @if (editor.selectedSurfaceMaterialMixed()) {
-      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+      <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedSurfaceMaterialMixed()">
       <app-surface-material-section [material]="material" />
@@ -90,7 +90,7 @@
 
   @if (editor.selectedSmoke(); as smoke) {
     @if (editor.selectedSmokeMixed()) {
-      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+      <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedSmokeMixed()">
       <app-smoke-emitter-section [smoke]="smoke" />
@@ -99,12 +99,12 @@
 
   @if (editor.selectedMedia(); as media) {
     @if (editor.selectedMediaMixed()) {
-      <p class="mixed-hint">{{ i18n.t('mixedComponentDisabled') }}</p>
+      <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedMediaMixed()">
       <app-media-volume-section [media]="media" />
     </fieldset>
   }
 } @else {
-  <p class="empty">{{ i18n.t('noSelection') }}</p>
+  <p class="empty">{{ l10n.t('noSelection') }}</p>
 }

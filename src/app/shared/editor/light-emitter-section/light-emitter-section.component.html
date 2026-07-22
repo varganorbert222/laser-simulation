@@ -2,11 +2,11 @@
   <h3>LightEmitter</h3>
 
   @if (editor.selectedSunSuppressed()) {
-    <p class="warn" role="status">{{ i18n.t('warnSecondSun') }}</p>
+    <p class="warn" role="status">{{ l10n.t('warnSecondSun') }}</p>
   }
 
-  <label [attr.title]="i18n.t('tipLightMode')">
-    {{ i18n.t('lightMode') }}
+  <label [attr.title]="l10n.t('tipLightMode')">
+    {{ l10n.t('lightMode') }}
     <select
       [value]="light().params.mode"
       [disabled]="!editor.isEditMode()"
@@ -17,26 +17,26 @@
       }
     </select>
   </label>
-  <p class="hint">{{ i18n.t('hintLightMode') }}</p>
+  <p class="hint">{{ l10n.t('hintLightMode') }}</p>
 
   @if (isLaser()) {
     <app-spectral-color-field
-      [label]="i18n.t('wavelength')"
-      [tooltip]="i18n.t('tipWavelength')"
+      [label]="l10n.t('wavelength')"
+      [tooltip]="l10n.t('tipWavelength')"
       [wavelengthNm]="light().wavelengthNm"
       [readonly]="!editor.isEditMode()"
       (wavelengthChange)="onWavelength($event)"
     />
-    <p class="hint">{{ i18n.t('hintColor') }}</p>
+    <p class="hint">{{ l10n.t('hintColor') }}</p>
 
-    <div class="power-block" [attr.title]="i18n.t('tipPower')">
+    <div class="power-block" [attr.title]="l10n.t('tipPower')">
       <div class="power-head">
-        <span class="power-label">{{ i18n.t('power') }}</span>
+        <span class="power-label">{{ l10n.t('power') }}</span>
         <select
           class="power-unit"
           [value]="powerUnit()"
           [disabled]="!editor.isEditMode()"
-          [attr.title]="i18n.t('tipPowerUnit')"
+          [attr.title]="l10n.t('tipPowerUnit')"
           (change)="onPowerUnit($any($event.target).value)"
         >
           @for (u of powerUnits; track u) {
@@ -52,7 +52,7 @@
           step="any"
           [disabled]="!editor.isEditMode()"
           [value]="powerValueInUnit()"
-          [attr.title]="i18n.t('tipPower')"
+          [attr.title]="l10n.t('tipPower')"
           (change)="onPowerNumber($any($event.target).value)"
         />
         <input
@@ -63,7 +63,7 @@
           step="0.001"
           [value]="powerSliderT()"
           [disabled]="!editor.isEditMode()"
-          [attr.title]="i18n.t('tipPower')"
+          [attr.title]="l10n.t('tipPower')"
           (input)="onPowerSlider($any($event.target).value)"
         />
       </div>
@@ -74,7 +74,7 @@
         <button
           type="button"
           [disabled]="!editor.isEditMode()"
-          [attr.title]="i18n.t('tipPower')"
+          [attr.title]="l10n.t('tipPower')"
           (click)="editor.setPower(p)"
         >
           {{ formatPower(p) }}
@@ -83,19 +83,19 @@
     </div>
   } @else {
     <app-hdr-color-field
-      [label]="i18n.t('lightColor')"
-      [tooltip]="i18n.t('tipLightColor')"
+      [label]="l10n.t('lightColor')"
+      [tooltip]="l10n.t('tipLightColor')"
       [colorRgb]="light().colorRgb"
       [useColorTemperature]="light().useColorTemperature"
       [colorTemperatureK]="light().colorTemperatureK"
       [readonly]="!editor.isEditMode()"
       (appearanceChange)="onHdrAppearance($event)"
     />
-    <p class="hint">{{ i18n.t('hintLightColor') }}</p>
+    <p class="hint">{{ l10n.t('hintLightColor') }}</p>
 
-    <div class="power-block" [attr.title]="i18n.t('tipIntensityLm')">
+    <div class="power-block" [attr.title]="l10n.t('tipIntensityLm')">
       <div class="power-head">
-        <span class="power-label">{{ i18n.t('intensityLm') }}</span>
+        <span class="power-label">{{ l10n.t('intensityLm') }}</span>
         <span class="power-unit">lm</span>
       </div>
       <div class="power-inputs">
@@ -124,11 +124,11 @@
   }
 
   @if (light().params.mode === 'laser') {
-    <h4 class="subhead">{{ i18n.t('laserOptics') }}</h4>
-    <p class="hint">{{ i18n.t('hintLaserOptics') }}</p>
+    <h4 class="subhead">{{ l10n.t('laserOptics') }}</h4>
+    <p class="hint">{{ l10n.t('hintLaserOptics') }}</p>
 
-    <h5 class="subhead-sm">{{ i18n.t('laserBeamProfile') }}</h5>
-    <label [attr.title]="i18n.t('tipW0')">
+    <h5 class="subhead-sm">{{ l10n.t('laserBeamProfile') }}</h5>
+    <label [attr.title]="l10n.t('tipW0')">
       w₀ (m)
       <input
         type="range"
@@ -141,7 +141,7 @@
       />
       <span class="value">{{ laserW0() * 1000 | number: '1.2-2' }} mm</span>
     </label>
-    <label [attr.title]="i18n.t('tipM2')">
+    <label [attr.title]="l10n.t('tipM2')">
       M²
       <input
         type="range"
@@ -154,8 +154,8 @@
       />
       <span class="value">{{ laserM2() | number: '1.2-2' }}</span>
     </label>
-    <label [attr.title]="i18n.t('tipEllipticRatio')">
-      {{ i18n.t('ellipticRatio') }}
+    <label [attr.title]="l10n.t('tipEllipticRatio')">
+      {{ l10n.t('ellipticRatio') }}
       <input
         type="range"
         min="0.2"
@@ -167,8 +167,8 @@
       />
       <span class="value">{{ laserElliptic() | number: '1.2-2' }}</span>
     </label>
-    <label [attr.title]="i18n.t('tipTopHatMix')">
-      {{ i18n.t('topHatMix') }}
+    <label [attr.title]="l10n.t('tipTopHatMix')">
+      {{ l10n.t('topHatMix') }}
       <input
         type="range"
         min="0"
@@ -181,9 +181,9 @@
       <span class="value">{{ laserTopHat() | number: '1.2-2' }}</span>
     </label>
 
-    <h5 class="subhead-sm">{{ i18n.t('laserFocus') }}</h5>
-    <label [attr.title]="i18n.t('tipWaistOffset')">
-      {{ i18n.t('waistOffset') }}
+    <h5 class="subhead-sm">{{ l10n.t('laserFocus') }}</h5>
+    <label [attr.title]="l10n.t('tipWaistOffset')">
+      {{ l10n.t('waistOffset') }}
       <input
         type="range"
         min="-5"
@@ -195,8 +195,8 @@
       />
       <span class="value">{{ laserWaistOffset() | number: '1.2-2' }} m</span>
     </label>
-    <label [attr.title]="i18n.t('tipProbeDistance')">
-      {{ i18n.t('probeDistance') }}
+    <label [attr.title]="l10n.t('tipProbeDistance')">
+      {{ l10n.t('probeDistance') }}
       <input
         type="range"
         min="0.5"
@@ -209,9 +209,9 @@
       <span class="value">{{ laserProbeDistance() | number: '1.1-1' }} m</span>
     </label>
 
-    <h5 class="subhead-sm">{{ i18n.t('laserAberrations') }}</h5>
-    <label [attr.title]="i18n.t('tipSphericalAberration')">
-      {{ i18n.t('sphericalAberration') }}
+    <h5 class="subhead-sm">{{ l10n.t('laserAberrations') }}</h5>
+    <label [attr.title]="l10n.t('tipSphericalAberration')">
+      {{ l10n.t('sphericalAberration') }}
       <input
         type="range"
         min="0"
@@ -223,8 +223,8 @@
       />
       <span class="value">{{ laserSpherical() | number: '1.2-2' }}</span>
     </label>
-    <label [attr.title]="i18n.t('tipComa')">
-      {{ i18n.t('coma') }}
+    <label [attr.title]="l10n.t('tipComa')">
+      {{ l10n.t('coma') }}
       <input
         type="range"
         min="0"
@@ -236,8 +236,8 @@
       />
       <span class="value">{{ laserComa() | number: '1.2-2' }}</span>
     </label>
-    <label [attr.title]="i18n.t('tipAstigmatism')">
-      {{ i18n.t('astigmatism') }}
+    <label [attr.title]="l10n.t('tipAstigmatism')">
+      {{ l10n.t('astigmatism') }}
       <input
         type="range"
         min="0"
@@ -252,16 +252,16 @@
   }
 
   @if (light().params.mode === 'spotlight' || light().params.mode === 'flashlight') {
-    <h4 class="subhead">{{ i18n.t('coneOptics') }}</h4>
+    <h4 class="subhead">{{ l10n.t('coneOptics') }}</h4>
     <p class="hint">
       {{
         light().params.mode === 'flashlight'
-          ? i18n.t('hintFlashlight')
-          : i18n.t('hintSpotlight')
+          ? l10n.t('hintFlashlight')
+          : l10n.t('hintSpotlight')
       }}
     </p>
     <label>
-      {{ i18n.t('innerCone') }}
+      {{ l10n.t('innerCone') }}
       <input
         type="range"
         min="1"
@@ -274,7 +274,7 @@
       <span class="value">{{ spotInner() | number: '1.1-1' }}°</span>
     </label>
     <label>
-      {{ i18n.t('outerCone') }}
+      {{ l10n.t('outerCone') }}
       <input
         type="range"
         min="2"
@@ -287,7 +287,7 @@
       <span class="value">{{ spotOuter() | number: '1.1-1' }}°</span>
     </label>
     <label>
-      {{ i18n.t('apertureSharpness') }}
+      {{ l10n.t('apertureSharpness') }}
       <input
         type="range"
         min="0.5"
@@ -302,9 +302,9 @@
   }
 
   @if (light().params.mode === 'omni_lamp') {
-    <h4 class="subhead">{{ i18n.t('omniOptics') }}</h4>
+    <h4 class="subhead">{{ l10n.t('omniOptics') }}</h4>
     <label>
-      {{ i18n.t('softRadius') }}
+      {{ l10n.t('softRadius') }}
       <input
         type="range"
         min="0.05"
@@ -317,7 +317,7 @@
       <span class="value">{{ omniSoftRadius() | number: '1.2-2' }} m</span>
     </label>
     <label>
-      {{ i18n.t('falloff') }}
+      {{ l10n.t('falloff') }}
       <input
         type="range"
         min="0.5"
@@ -332,10 +332,10 @@
   }
 
   @if (light().params.mode === 'parallel') {
-    <h4 class="subhead">{{ i18n.t('parallelOptics') }}</h4>
-    <p class="hint">{{ i18n.t('hintParallel') }}</p>
+    <h4 class="subhead">{{ l10n.t('parallelOptics') }}</h4>
+    <p class="hint">{{ l10n.t('hintParallel') }}</p>
     <label>
-      {{ i18n.t('beamRadius') }}
+      {{ l10n.t('beamRadius') }}
       <input
         type="range"
         min="0.005"
@@ -348,7 +348,7 @@
       <span class="value">{{ parallelRadius() * 1000 | number: '1.1-1' }} mm</span>
     </label>
     <label>
-      {{ i18n.t('residualMrad') }}
+      {{ l10n.t('residualMrad') }}
       <input
         type="range"
         min="0"
@@ -363,10 +363,10 @@
   }
 
   @if (light().params.mode === 'sun') {
-    <h4 class="subhead">{{ i18n.t('sunOptics') }}</h4>
-    <p class="hint">{{ i18n.t('hintSun') }}</p>
+    <h4 class="subhead">{{ l10n.t('sunOptics') }}</h4>
+    <p class="hint">{{ l10n.t('hintSun') }}</p>
     <label>
-      {{ i18n.t('angularDiameter') }}
+      {{ l10n.t('angularDiameter') }}
       <input
         type="range"
         min="0.1"
@@ -380,9 +380,9 @@
     </label>
   }
 
-  <h4 class="subhead">{{ i18n.t('opticsSpill') }}</h4>
-  <label [attr.title]="i18n.t('tipStrayPowerFraction')">
-    {{ i18n.t('strayPowerFraction') }}
+  <h4 class="subhead">{{ l10n.t('opticsSpill') }}</h4>
+  <label [attr.title]="l10n.t('tipStrayPowerFraction')">
+    {{ l10n.t('strayPowerFraction') }}
     <input
       type="range"
       min="0"
@@ -394,5 +394,5 @@
     />
     <span class="value">{{ strayPowerFraction() * 100 | number: '1.0-0' }}%</span>
   </label>
-  <p class="hint">{{ i18n.t('hintOpticsSpill') }}</p>
+  <p class="hint">{{ l10n.t('hintOpticsSpill') }}</p>
 </section>

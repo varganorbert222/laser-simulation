@@ -31,7 +31,7 @@ import {
   type Vec3Editable,
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { I18nService } from '../../../i18n/i18n.service';
+import { LocalizationService } from '../../../core/services/localization.service';
 import { ColorFieldComponent } from '../color-field/color-field.component';
 import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 
@@ -45,7 +45,7 @@ import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 export class MediaVolumeSectionComponent {
   readonly media = input.required<MediaVolume>();
   readonly editor = inject(EditorFacade);
-  readonly i18n = inject(I18nService);
+  readonly l10n = inject(LocalizationService);
   readonly mediaLayers = MEDIA_LAYERS;
   readonly scatterModels = SCATTER_MODELS;
   readonly rayleighParticleNmMax = RAYLEIGH_PARTICLE_NM_MAX;
@@ -89,44 +89,44 @@ export class MediaVolumeSectionComponent {
   layerLabel(layer: MediaLayer): string {
     switch (layer) {
       case 'outdoor':
-        return this.i18n.t('mediaLayerOutdoor');
+        return this.l10n.t('mediaLayerOutdoor');
       case 'interior':
-        return this.i18n.t('mediaLayerInterior');
+        return this.l10n.t('mediaLayerInterior');
       case 'particulate':
-        return this.i18n.t('mediaLayerParticulate');
+        return this.l10n.t('mediaLayerParticulate');
     }
   }
 
   presetLabel(preset: MediaPresetId | MediaKind): string {
     switch (preset) {
       case 'clearNight':
-        return this.i18n.t('mediaPresetClearNight');
+        return this.l10n.t('mediaPresetClearNight');
       case 'clearDay':
-        return this.i18n.t('mediaPresetClearDay');
+        return this.l10n.t('mediaPresetClearDay');
       case 'spring':
-        return this.i18n.t('mediaPresetSpring');
+        return this.l10n.t('mediaPresetSpring');
       case 'summerHumid':
-        return this.i18n.t('mediaPresetSummerHumid');
+        return this.l10n.t('mediaPresetSummerHumid');
       case 'autumnMist':
-        return this.i18n.t('mediaPresetAutumnMist');
+        return this.l10n.t('mediaPresetAutumnMist');
       case 'winterDry':
-        return this.i18n.t('mediaPresetWinterDry');
+        return this.l10n.t('mediaPresetWinterDry');
       case 'room':
-        return this.i18n.t('mediaPresetRoom');
+        return this.l10n.t('mediaPresetRoom');
       case 'lab':
-        return this.i18n.t('mediaPresetLab');
+        return this.l10n.t('mediaPresetLab');
       case 'hall':
-        return this.i18n.t('mediaPresetHall');
+        return this.l10n.t('mediaPresetHall');
       case 'fog':
-        return this.i18n.t('mediaPresetFog');
+        return this.l10n.t('mediaPresetFog');
       case 'smoke':
-        return this.i18n.t('mediaPresetSmoke');
+        return this.l10n.t('mediaPresetSmoke');
       case 'dust':
-        return this.i18n.t('mediaPresetDust');
+        return this.l10n.t('mediaPresetDust');
       case 'haze':
-        return this.i18n.t('mediaPresetHaze');
+        return this.l10n.t('mediaPresetHaze');
       case 'cloud':
-        return this.i18n.t('mediaPresetCloud');
+        return this.l10n.t('mediaPresetCloud');
       default:
         return String(preset);
     }
@@ -221,8 +221,8 @@ export class MediaVolumeSectionComponent {
 
   scatterModelLabel(model: ScatterModel): string {
     return model === 'tyndall'
-      ? this.i18n.t('scatterModelTyndall')
-      : this.i18n.t('scatterModelRayleigh');
+      ? this.l10n.t('scatterModelTyndall')
+      : this.l10n.t('scatterModelRayleigh');
   }
 
   onMediaNumber(

@@ -22,7 +22,7 @@ import {
   type PowerUnit,
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { I18nService } from '../../../i18n/i18n.service';
+import { LocalizationService } from '../../../core/services/localization.service';
 import { SpectralColorFieldComponent } from '../spectral-color-field/spectral-color-field.component';
 import { HdrColorFieldComponent } from '../hdr-color-field/hdr-color-field.component';
 
@@ -36,7 +36,7 @@ import { HdrColorFieldComponent } from '../hdr-color-field/hdr-color-field.compo
 export class LightEmitterSectionComponent {
   readonly light = input.required<LightEmitter>();
   readonly editor = inject(EditorFacade);
-  readonly i18n = inject(I18nService);
+  readonly l10n = inject(LocalizationService);
   readonly powerUnits = POWER_UNITS;
   readonly lightModes = ALL_LIGHT_MODES;
   readonly powerUnit = signal<PowerUnit>('W');
@@ -60,17 +60,17 @@ export class LightEmitterSectionComponent {
   modeLabel(mode: LightMode): string {
     switch (mode) {
       case 'laser':
-        return this.i18n.t('modeLaser');
+        return this.l10n.t('modeLaser');
       case 'flashlight':
-        return this.i18n.t('modeFlashlight');
+        return this.l10n.t('modeFlashlight');
       case 'spotlight':
-        return this.i18n.t('modeSpotlight');
+        return this.l10n.t('modeSpotlight');
       case 'omni_lamp':
-        return this.i18n.t('modeOmni');
+        return this.l10n.t('modeOmni');
       case 'parallel':
-        return this.i18n.t('modeParallel');
+        return this.l10n.t('modeParallel');
       case 'sun':
-        return this.i18n.t('modeSun');
+        return this.l10n.t('modeSun');
     }
   }
 

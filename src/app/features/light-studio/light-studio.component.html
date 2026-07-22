@@ -1,11 +1,11 @@
 <div class="studio" [class.photo-mode]="!editor.isEditMode()">
   <header class="topbar">
     <div class="brand">
-      <h1>{{ i18n.t('appTitle') }}</h1>
+      <h1>{{ l10n.t('appTitle') }}</h1>
       <p>
-        {{ i18n.t('appSubtitle') }}
+        {{ l10n.t('appSubtitle') }}
         @if (editor.activeSceneLabel(); as sceneLabel) {
-          <span class="scene-chip" [attr.title]="i18n.t('sceneCurrent')"> · {{ sceneLabel }}</span>
+          <span class="scene-chip" [attr.title]="l10n.t('sceneCurrent')"> · {{ sceneLabel }}</span>
         }
       </p>
     </div>
@@ -15,26 +15,26 @@
         class="mode-btn"
         [class.active]="editor.isEditMode()"
         (click)="editor.setPresentation('edit')"
-        [attr.title]="i18n.t('presentationEdit')"
+        [attr.title]="l10n.t('presentationEdit')"
       >
-        {{ i18n.t('presentationEdit') }}
+        {{ l10n.t('presentationEdit') }}
       </button>
       <button
         type="button"
         class="mode-btn"
         [class.active]="!editor.isEditMode()"
         (click)="editor.setPresentation('photo')"
-        [attr.title]="i18n.t('presentationPhoto')"
+        [attr.title]="l10n.t('presentationPhoto')"
       >
-        {{ i18n.t('presentationPhoto') }}
+        {{ l10n.t('presentationPhoto') }}
       </button>
       <button
         type="button"
         (click)="engine.undo()"
         [disabled]="!engine.canUndo()"
-        [attr.title]="engine.undoLabel() ?? i18n.t('undo')"
+        [attr.title]="engine.undoLabel() ?? l10n.t('undo')"
       >
-        {{ i18n.t('undo') }}
+        {{ l10n.t('undo') }}
         @if (engine.undoLabel(); as label) {
           <span class="cmd-label">{{ label }}</span>
         }
@@ -43,9 +43,9 @@
         type="button"
         (click)="engine.redo()"
         [disabled]="!engine.canRedo()"
-        [attr.title]="engine.redoLabel() ?? i18n.t('redo')"
+        [attr.title]="engine.redoLabel() ?? l10n.t('redo')"
       >
-        {{ i18n.t('redo') }}
+        {{ l10n.t('redo') }}
         @if (engine.redoLabel(); as label) {
           <span class="cmd-label">{{ label }}</span>
         }
@@ -55,38 +55,38 @@
         class="mode-btn"
         [class.active]="renderModalOpen()"
         (click)="renderModalOpen.set(true)"
-        [attr.title]="i18n.t('tipRenderSettings')"
+        [attr.title]="l10n.t('tipRenderSettings')"
       >
-        {{ i18n.t('renderSettings') }}
+        {{ l10n.t('renderSettings') }}
       </button>
       <button
         type="button"
         class="mode-btn"
         [class.active]="visionModalOpen()"
         (click)="visionModalOpen.set(true)"
-        [attr.title]="i18n.t('toggleVisionPanel')"
+        [attr.title]="l10n.t('toggleVisionPanel')"
       >
-        {{ i18n.t('toggleVisionPanel') }}
+        {{ l10n.t('toggleVisionPanel') }}
       </button>
       <button
         type="button"
         class="mode-btn"
         [class.active]="scenesModalOpen()"
         (click)="openScenes()"
-        [attr.title]="i18n.t('sceneLibrary')"
+        [attr.title]="l10n.t('sceneLibrary')"
       >
-        {{ i18n.t('scenes') }}
+        {{ l10n.t('scenes') }}
       </button>
-      <button type="button" (click)="saveCurrent()" [attr.title]="i18n.t('sceneSave')">
-        {{ i18n.t('sceneSave') }}
+      <button type="button" (click)="saveCurrent()" [attr.title]="l10n.t('sceneSave')">
+        {{ l10n.t('sceneSave') }}
       </button>
-      <button type="button" (click)="screenshot()" [attr.title]="i18n.t('tipCapture')">{{ i18n.t('capture') }}</button>
-      <button type="button" class="ghost" (click)="resetDemo()" [attr.title]="i18n.t('tipDemoReset')">{{ i18n.t('demoReset') }}</button>
+      <button type="button" (click)="screenshot()" [attr.title]="l10n.t('tipCapture')">{{ l10n.t('capture') }}</button>
+      <button type="button" class="ghost" (click)="resetDemo()" [attr.title]="l10n.t('tipDemoReset')">{{ l10n.t('demoReset') }}</button>
       <select
         class="locale"
-        [value]="i18n.locale()"
-        [attr.title]="i18n.t('tipLocale')"
-        (change)="i18n.setLocale($any($event.target).value)"
+        [value]="l10n.locale()"
+        [attr.title]="l10n.t('tipLocale')"
+        (change)="l10n.setLocale($any($event.target).value)"
       >
         <option value="hu">HU</option>
         <option value="en">EN</option>
@@ -97,21 +97,21 @@
 
   <app-studio-modal
     [open]="renderModalOpen()"
-    [title]="i18n.t('renderSettings')"
+    [title]="l10n.t('renderSettings')"
     titleId="render-settings-modal-title"
     (dismiss)="renderModalOpen.set(false)"
   >
     <app-render-settings-panel />
     <div studioModalActions>
       <button type="button" class="primary" (click)="renderModalOpen.set(false)">
-        {{ i18n.t('modalClose') }}
+        {{ l10n.t('modalClose') }}
       </button>
     </div>
   </app-studio-modal>
 
   <app-studio-modal
     [open]="visionModalOpen()"
-    [title]="i18n.t('displayVision')"
+    [title]="l10n.t('displayVision')"
     titleId="vision-curve-modal-title"
     [wide]="true"
     (dismiss)="visionModalOpen.set(false)"
@@ -125,41 +125,41 @@
     />
     <div studioModalActions>
       <button type="button" (click)="editor.resetResponseCurve()">
-        {{ i18n.t('resetCurve') }}
+        {{ l10n.t('resetCurve') }}
       </button>
       <button type="button" class="primary" (click)="visionModalOpen.set(false)">
-        {{ i18n.t('modalClose') }}
+        {{ l10n.t('modalClose') }}
       </button>
     </div>
   </app-studio-modal>
 
   <app-studio-modal
     [open]="scenesModalOpen()"
-    [title]="i18n.t('sceneLibrary')"
+    [title]="l10n.t('sceneLibrary')"
     titleId="scene-library-modal-title"
     [wide]="true"
     [closeOnBackdrop]="!sceneLoading()"
     (dismiss)="onScenesDismiss()"
   >
     <p class="hint">
-      {{ i18n.t('sceneCurrent') }}:
+      {{ l10n.t('sceneCurrent') }}:
       <strong>{{ editor.activeSceneLabel() }}</strong>
     </p>
     <div class="scene-toolbar">
       <button type="button" class="primary" [disabled]="sceneLoading()" (click)="saveCurrent()">
-        {{ i18n.t('sceneSave') }}
+        {{ l10n.t('sceneSave') }}
       </button>
       <button type="button" [disabled]="sceneLoading()" (click)="saveAsNew()">
-        {{ i18n.t('sceneSaveAs') }}
+        {{ l10n.t('sceneSaveAs') }}
       </button>
       <button type="button" [disabled]="sceneLoading()" (click)="exportFile()">
-        {{ i18n.t('sceneExport') }}
+        {{ l10n.t('sceneExport') }}
       </button>
       <button type="button" [disabled]="sceneLoading()" (click)="importClick()">
-        {{ i18n.t('sceneImport') }}
+        {{ l10n.t('sceneImport') }}
       </button>
     </div>
-    <ul class="scene-list" role="listbox" [attr.aria-label]="i18n.t('sceneLibrary')">
+    <ul class="scene-list" role="listbox" [attr.aria-label]="l10n.t('sceneLibrary')">
       @for (scene of editor.sceneList(); track scene.id) {
         <li>
           <button
@@ -174,14 +174,14 @@
             <span class="scene-name">{{ scene.label }}</span>
             <span class="scene-meta">
               @if (editor.activeSceneId() === scene.id) {
-                <span class="badge">{{ i18n.t('sceneCurrent') }}</span>
+                <span class="badge">{{ l10n.t('sceneCurrent') }}</span>
               }
               {{ formatUpdated(scene.updatedAt) }}
             </span>
           </button>
         </li>
       } @empty {
-        <li class="scene-empty">{{ i18n.t('sceneEmpty') }}</li>
+        <li class="scene-empty">{{ l10n.t('sceneEmpty') }}</li>
       }
     </ul>
     <div studioModalActions>
@@ -190,21 +190,21 @@
         [disabled]="!selectedLibraryId() || sceneLoading()"
         (click)="loadSelected()"
       >
-        {{ i18n.t('sceneLoad') }}
+        {{ l10n.t('sceneLoad') }}
       </button>
       <button
         type="button"
         [disabled]="!selectedLibraryId() || sceneLoading()"
         (click)="renameSelected()"
       >
-        {{ i18n.t('sceneRename') }}
+        {{ l10n.t('sceneRename') }}
       </button>
       <button
         type="button"
         [disabled]="!selectedLibraryId() || sceneLoading()"
         (click)="deleteSelected()"
       >
-        {{ i18n.t('sceneDelete') }}
+        {{ l10n.t('sceneDelete') }}
       </button>
       <button
         type="button"
@@ -212,7 +212,7 @@
         [disabled]="sceneLoading()"
         (click)="onScenesDismiss()"
       >
-        {{ i18n.t('modalClose') }}
+        {{ l10n.t('modalClose') }}
       </button>
     </div>
   </app-studio-modal>
@@ -226,7 +226,7 @@
     >
       <div class="scene-loading-card">
         <span class="scene-spinner" aria-hidden="true"></span>
-        <span>{{ i18n.t('sceneLoading') }}</span>
+        <span>{{ l10n.t('sceneLoading') }}</span>
       </div>
     </div>
   }
@@ -271,7 +271,7 @@
       }
       @if (engine.shadersCompiling()) {
         <div class="shader-warmup" role="status" aria-live="polite">
-          <p class="shader-warmup-title">{{ i18n.t('shaderCompiling') }}</p>
+          <p class="shader-warmup-title">{{ l10n.t('shaderCompiling') }}</p>
           @if (engine.shaderCompileTotal() > 0) {
             <p class="shader-warmup-count">
               {{ engine.shaderCompileReady() }} / {{ engine.shaderCompileTotal() }}
@@ -284,9 +284,9 @@
       }
       <p class="hint">
         @if (editor.isEditMode()) {
-          {{ i18n.t('hintEditorMode') }}
+          {{ l10n.t('hintEditorMode') }}
         } @else {
-          {{ i18n.t('hintPhotoMode') }}
+          {{ l10n.t('hintPhotoMode') }}
         }
       </p>
     </main>
@@ -294,9 +294,9 @@
     <div class="splitter" role="separator" (mousedown)="startResize('right', $event)"></div>
 
     <aside class="panel right" [style.width.px]="rightWidth()">
-      <h2>{{ i18n.t('inspector') }}</h2>
+      <h2>{{ l10n.t('inspector') }}</h2>
       <app-inspector-panel />
-      <h2 class="science-title">{{ i18n.t('science') }}</h2>
+      <h2 class="science-title">{{ l10n.t('science') }}</h2>
       <app-science-readout />
     </aside>
   </div>

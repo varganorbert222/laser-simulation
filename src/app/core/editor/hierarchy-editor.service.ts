@@ -18,13 +18,13 @@ import {
 } from '../../../engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
-import { I18nService } from '../../i18n/i18n.service';
+import { LocalizationService } from '../services/localization.service';
 
 @Injectable({ providedIn: 'root' })
 export class HierarchyEditorService {
   private readonly engine = inject(EngineHostService);
   private readonly selection = inject(SelectionService);
-  private readonly i18n = inject(I18nService);
+  private readonly l10n = inject(LocalizationService);
 
   private readonly clipboard = signal<HierarchyClipboardNode[]>([]);
   /** Transient editor notice (e.g. suppressed second sun). */
@@ -127,7 +127,7 @@ export class HierarchyEditorService {
     const { command, suppressed } = createSunEntityCommand(world, 'Sun', parent);
     this.engine.commitApplied(command);
     if (suppressed) {
-      this.showNotice(this.i18n.t('warnSecondSun'));
+      this.showNotice(this.l10n.t('warnSecondSun'));
     }
   }
 
@@ -149,7 +149,7 @@ export class HierarchyEditorService {
     );
     this.engine.commitApplied(command);
     if (suppressed) {
-      this.showNotice(this.i18n.t('warnSecondSun'));
+      this.showNotice(this.l10n.t('warnSecondSun'));
     }
   }
 
@@ -239,7 +239,7 @@ export class HierarchyEditorService {
     const cmd = duplicateEntitiesCommand(world, targets);
     if (cmd) this.engine.commitApplied(cmd);
     if (hadSun) {
-      this.showNotice(this.i18n.t('warnSecondSun'));
+      this.showNotice(this.l10n.t('warnSecondSun'));
     }
   }
 }

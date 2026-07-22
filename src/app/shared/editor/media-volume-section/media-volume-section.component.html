@@ -1,7 +1,7 @@
 <section class="block">
   <h3>MediaVolume</h3>
-  <label [attr.title]="i18n.t('tipMediaLayer')">
-    {{ i18n.t('mediaLayer') }}
+  <label [attr.title]="l10n.t('tipMediaLayer')">
+    {{ l10n.t('mediaLayer') }}
     <select
       [value]="media().layer"
       [disabled]="!editor.isEditMode()"
@@ -12,8 +12,8 @@
       }
     </select>
   </label>
-  <label [attr.title]="i18n.t('tipMediaPreset')">
-    {{ i18n.t('mediaPreset') }}
+  <label [attr.title]="l10n.t('tipMediaPreset')">
+    {{ l10n.t('mediaPreset') }}
     <select
       [value]="activePreset()"
       [disabled]="!editor.isEditMode()"
@@ -24,8 +24,8 @@
       }
     </select>
   </label>
-  <label [attr.title]="i18n.t('tipFogDensity')">
-    {{ i18n.t('fogDensity') }}
+  <label [attr.title]="l10n.t('tipFogDensity')">
+    {{ l10n.t('fogDensity') }}
     <input
       type="range"
       min="0"
@@ -39,17 +39,17 @@
   </label>
 
   <app-color-field
-    [label]="i18n.t('mediaColor')"
-    [tooltip]="i18n.t('tipMediaColor')"
+    [label]="l10n.t('mediaColor')"
+    [tooltip]="l10n.t('tipMediaColor')"
     [rgb]="media().color"
     [readonly]="!editor.isEditMode()"
     (rgbChange)="onMediaColor($event)"
   />
 
-  <h4 class="subhead">{{ i18n.t('boundingBox') }}</h4>
+  <h4 class="subhead">{{ l10n.t('boundingBox') }}</h4>
   <app-vec3-field
-    [label]="i18n.t('halfExtents')"
-    [tooltip]="i18n.t('tipHalfExtents')"
+    [label]="l10n.t('halfExtents')"
+    [tooltip]="l10n.t('tipHalfExtents')"
     [value]="halfExtentsVec()"
     [readonly]="!editor.isEditMode()"
     [step]="0.05"
@@ -57,9 +57,9 @@
     (valueChange)="onHalfExtents($event)"
   />
 
-  <h4 class="subhead">{{ i18n.t('noiseParams') }}</h4>
-  <label [attr.title]="i18n.t('tipFbmScale')">
-    {{ i18n.t('fbmScale') }}
+  <h4 class="subhead">{{ l10n.t('noiseParams') }}</h4>
+  <label [attr.title]="l10n.t('tipFbmScale')">
+    {{ l10n.t('fbmScale') }}
     <input
       type="range"
       min="0.05"
@@ -71,8 +71,8 @@
     />
     <span class="value">{{ media().fbmScale | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipFbmTimeScale')">
-    {{ i18n.t('fbmTimeScale') }}
+  <label [attr.title]="l10n.t('tipFbmTimeScale')">
+    {{ l10n.t('fbmTimeScale') }}
     <input
       type="range"
       min="0"
@@ -84,8 +84,8 @@
     />
     <span class="value">{{ media().fbmTimeScale | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipNoiseLow')">
-    {{ i18n.t('noiseLow') }}
+  <label [attr.title]="l10n.t('tipNoiseLow')">
+    {{ l10n.t('noiseLow') }}
     <input
       type="range"
       min="0"
@@ -97,8 +97,8 @@
     />
     <span class="value">{{ media().noiseThresholdLow | number: '1.2-2' }}</span>
   </label>
-  <label [attr.title]="i18n.t('tipNoiseHigh')">
-    {{ i18n.t('noiseHigh') }}
+  <label [attr.title]="l10n.t('tipNoiseHigh')">
+    {{ l10n.t('noiseHigh') }}
     <input
       type="range"
       min="0"
@@ -111,15 +111,15 @@
     <span class="value">{{ media().noiseThresholdHigh | number: '1.2-2' }}</span>
   </label>
 
-  <h4 class="subhead">{{ i18n.t('opticalParams') }}</h4>
+  <h4 class="subhead">{{ l10n.t('opticalParams') }}</h4>
 
   @if (isClimateAir()) {
-    <p class="hint">{{ i18n.t('hintAtmosphereClimate') }}</p>
+    <p class="hint">{{ l10n.t('hintAtmosphereClimate') }}</p>
     @if (media().insulating) {
-      <p class="hint">{{ i18n.t('hintMediaInsulating') }}</p>
+      <p class="hint">{{ l10n.t('hintMediaInsulating') }}</p>
     }
-    <label [attr.title]="i18n.t('tipRelativeHumidity')">
-      {{ i18n.t('relativeHumidity') }}
+    <label [attr.title]="l10n.t('tipRelativeHumidity')">
+      {{ l10n.t('relativeHumidity') }}
       <input
         type="range"
         [min]="rhMin"
@@ -131,8 +131,8 @@
       />
       <span class="value">{{ media().relativeHumidity * 100 | number: '1.0-0' }}%</span>
     </label>
-    <label [attr.title]="i18n.t('tipTemperatureC')">
-      {{ i18n.t('temperatureC') }}
+    <label [attr.title]="l10n.t('tipTemperatureC')">
+      {{ l10n.t('temperatureC') }}
       <input
         type="range"
         [min]="tempMin"
@@ -144,25 +144,25 @@
       />
       <span class="value">{{ media().temperatureC | number: '1.0-1' }} °C</span>
     </label>
-    <label [attr.title]="i18n.t('tipScatterRayleigh')">
-      {{ i18n.t('scatterRayleigh') }}
+    <label [attr.title]="l10n.t('tipScatterRayleigh')">
+      {{ l10n.t('scatterRayleigh') }}
       <span class="value readonly">{{ media().scatter | number: '1.4-6' }} m⁻¹</span>
     </label>
-    <label [attr.title]="i18n.t('tipScatterMie')">
-      {{ i18n.t('scatterMie') }}
+    <label [attr.title]="l10n.t('tipScatterMie')">
+      {{ l10n.t('scatterMie') }}
       <span class="value readonly">{{ media().scatterMie | number: '1.4-6' }} m⁻¹</span>
     </label>
-    <label [attr.title]="i18n.t('tipAbsorption')">
-      {{ i18n.t('absorption') }}
+    <label [attr.title]="l10n.t('tipAbsorption')">
+      {{ l10n.t('absorption') }}
       <span class="value readonly">{{ media().absorption | number: '1.4-6' }} m⁻¹</span>
     </label>
-    <label [attr.title]="i18n.t('tipTurbulence')">
-      {{ i18n.t('turbulence') }}
+    <label [attr.title]="l10n.t('tipTurbulence')">
+      {{ l10n.t('turbulence') }}
       <span class="value readonly">{{ media().turbulence | number: '1.2-2' }}</span>
     </label>
   } @else {
-    <label [attr.title]="i18n.t('tipScatterModel')">
-      {{ i18n.t('scatterModel') }}
+    <label [attr.title]="l10n.t('tipScatterModel')">
+      {{ l10n.t('scatterModel') }}
       <select
         [value]="media().scatterModel"
         [disabled]="!editor.isEditMode()"
@@ -173,8 +173,8 @@
         }
       </select>
     </label>
-    <label [attr.title]="i18n.t('tipParticleSizeNm')">
-      {{ i18n.t('particleSizeNm') }}
+    <label [attr.title]="l10n.t('tipParticleSizeNm')">
+      {{ l10n.t('particleSizeNm') }}
       <input
         type="range"
         [min]="particleSizeMin()"
@@ -186,8 +186,8 @@
       />
       <span class="value">{{ media().particleSizeNm | number: '1.0-1' }} nm</span>
     </label>
-    <label [attr.title]="i18n.t('tipMieAnisotropy')">
-      {{ i18n.t('mieAnisotropy') }}
+    <label [attr.title]="l10n.t('tipMieAnisotropy')">
+      {{ l10n.t('mieAnisotropy') }}
       <input
         type="range"
         min="-0.95"
@@ -199,8 +199,8 @@
       />
       <span class="value">{{ media().mieAnisotropy | number: '1.2-2' }}</span>
     </label>
-    <label [attr.title]="i18n.t('tipScatter')">
-      {{ i18n.t('scatter') }}
+    <label [attr.title]="l10n.t('tipScatter')">
+      {{ l10n.t('scatter') }}
       <input
         type="range"
         min="0"
@@ -212,8 +212,8 @@
       />
       <span class="value">{{ media().scatter | number: '1.4-4' }} m⁻¹</span>
     </label>
-    <label [attr.title]="i18n.t('tipAbsorption')">
-      {{ i18n.t('absorption') }}
+    <label [attr.title]="l10n.t('tipAbsorption')">
+      {{ l10n.t('absorption') }}
       <input
         type="range"
         min="0"
@@ -225,10 +225,10 @@
       />
       <span class="value">{{ media().absorption | number: '1.4-4' }} m⁻¹</span>
     </label>
-    <p class="hint">{{ i18n.t('hintMediaOptics') }}</p>
-    <p class="hint">{{ i18n.t('hintScatterModel') }}</p>
-    <p class="hint">{{ i18n.t('hintMieAnisotropy') }}</p>
+    <p class="hint">{{ l10n.t('hintMediaOptics') }}</p>
+    <p class="hint">{{ l10n.t('hintScatterModel') }}</p>
+    <p class="hint">{{ l10n.t('hintMieAnisotropy') }}</p>
   }
-  <p class="hint">{{ i18n.t('hintFog') }}</p>
-  <p class="hint">{{ i18n.t('hintMediaLighting') }}</p>
+  <p class="hint">{{ l10n.t('hintFog') }}</p>
+  <p class="hint">{{ l10n.t('hintMediaLighting') }}</p>
 </section>

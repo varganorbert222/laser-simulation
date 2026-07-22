@@ -1,7 +1,7 @@
 <div class="render-settings">
   <section>
-    <h4>{{ i18n.t('renderPreset') }}</h4>
-    <p class="hint">{{ i18n.t('hintRenderPreset') }}</p>
+    <h4>{{ l10n.t('renderPreset') }}</h4>
+    <p class="hint">{{ l10n.t('hintRenderPreset') }}</p>
     <div class="preset-row">
       @for (p of ['low', 'medium', 'high', 'ultra']; track p) {
         <button
@@ -17,9 +17,9 @@
   </section>
 
   <section>
-    <h4>{{ i18n.t('renderVolumetrics') }}</h4>
+    <h4>{{ l10n.t('renderVolumetrics') }}</h4>
     <label>
-      {{ i18n.t('renderStepSize') }}
+      {{ l10n.t('renderStepSize') }}
       <input
         type="number"
         min="0.02"
@@ -30,7 +30,7 @@
       />
     </label>
     <label>
-      {{ i18n.t('renderMaxSteps') }}
+      {{ l10n.t('renderMaxSteps') }}
       <input
         type="number"
         min="16"
@@ -41,7 +41,7 @@
       />
     </label>
     <label>
-      {{ i18n.t('renderDensityThreshold') }}
+      {{ l10n.t('renderDensityThreshold') }}
       <input
         type="number"
         min="0"
@@ -52,7 +52,7 @@
       />
     </label>
     <label>
-      {{ i18n.t('renderTransmittanceCut') }}
+      {{ l10n.t('renderTransmittanceCut') }}
       <input
         type="number"
         min="0"
@@ -63,7 +63,7 @@
       />
     </label>
     <label>
-      {{ i18n.t('renderScale') }}
+      {{ l10n.t('renderScale') }}
       <input
         type="number"
         min="0.05"
@@ -76,31 +76,31 @@
   </section>
 
   <section>
-    <h4>{{ i18n.t('renderShadow') }}</h4>
-    <p class="hint">{{ i18n.t('hintRenderShadow') }}</p>
+    <h4>{{ l10n.t('renderShadow') }}</h4>
+    <p class="hint">{{ l10n.t('hintRenderShadow') }}</p>
     <label>
-      {{ i18n.t('shadowQuality') }}
+      {{ l10n.t('shadowQuality') }}
       <select
         [value]="editor.shadowQuality()"
         (change)="onShadow($any($event.target).value)"
       >
-        <option value="off">{{ i18n.t('shadowQualityOff') }}</option>
-        <option value="low">{{ i18n.t('shadowQualityLow') }}</option>
-        <option value="medium">{{ i18n.t('shadowQualityMedium') }}</option>
-        <option value="high">{{ i18n.t('shadowQualityHigh') }}</option>
+        <option value="off">{{ l10n.t('shadowQualityOff') }}</option>
+        <option value="low">{{ l10n.t('shadowQualityLow') }}</option>
+        <option value="medium">{{ l10n.t('shadowQualityMedium') }}</option>
+        <option value="high">{{ l10n.t('shadowQualityHigh') }}</option>
       </select>
     </label>
   </section>
 
   <section>
-    <h4>{{ i18n.t('renderPresentation') }}</h4>
+    <h4>{{ l10n.t('renderPresentation') }}</h4>
     <label class="check">
       <input
         type="checkbox"
         [checked]="editor.antiAliasing()"
         (change)="editor.setAntiAliasing($any($event.target).checked)"
       />
-      {{ i18n.t('antiAliasing') }}
+      {{ l10n.t('antiAliasing') }}
     </label>
     <label class="check">
       <input
@@ -108,10 +108,10 @@
         [checked]="editor.theatricalGlow()"
         (change)="editor.setTheatricalGlow($any($event.target).checked)"
       />
-      {{ i18n.t('theatricalGlow') }}
+      {{ l10n.t('theatricalGlow') }}
     </label>
     <label>
-      {{ i18n.t('tonemapMode') }}
+      {{ l10n.t('tonemapMode') }}
       <select
         [value]="editor.tonemapMode()"
         (change)="onTonemap($any($event.target).value)"

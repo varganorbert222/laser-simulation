@@ -10,7 +10,7 @@ import {
   type SmokeEmitter,
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { I18nService } from '../../../i18n/i18n.service';
+import { LocalizationService } from '../../../core/services/localization.service';
 
 @Component({
   selector: 'app-smoke-emitter-section',
@@ -22,7 +22,7 @@ import { I18nService } from '../../../i18n/i18n.service';
 export class SmokeEmitterSectionComponent {
   readonly smoke = input.required<SmokeEmitter>();
   readonly editor = inject(EditorFacade);
-  readonly i18n = inject(I18nService);
+  readonly l10n = inject(LocalizationService);
 
   readonly emissionMin = SMOKE_EMISSION_RATE_MIN;
   readonly emissionMax = SMOKE_EMISSION_RATE_MAX;

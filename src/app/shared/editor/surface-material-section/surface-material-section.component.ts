@@ -8,7 +8,7 @@ import {
   type SurfaceMaterial,
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { I18nService } from '../../../i18n/i18n.service';
+import { LocalizationService } from '../../../core/services/localization.service';
 
 @Component({
   selector: 'app-surface-material-section',
@@ -20,7 +20,7 @@ import { I18nService } from '../../../i18n/i18n.service';
 export class SurfaceMaterialSectionComponent {
   readonly material = input.required<SurfaceMaterial>();
   readonly editor = inject(EditorFacade);
-  readonly i18n = inject(I18nService);
+  readonly l10n = inject(LocalizationService);
   readonly finishPresets = SURFACE_FINISH_PRESETS;
 
   onFinishPreset(value: string): void {
@@ -54,17 +54,17 @@ export class SurfaceMaterialSectionComponent {
   finishLabel(preset: SurfaceFinishPreset): string {
     switch (preset) {
       case 'matte_black':
-        return this.i18n.t('finishMatteBlack');
+        return this.l10n.t('finishMatteBlack');
       case 'anodized_aluminum':
-        return this.i18n.t('finishAnodized');
+        return this.l10n.t('finishAnodized');
       case 'painted_plastic':
-        return this.i18n.t('finishPlastic');
+        return this.l10n.t('finishPlastic');
       case 'brushed_metal':
-        return this.i18n.t('finishBrushed');
+        return this.l10n.t('finishBrushed');
       case 'chrome':
-        return this.i18n.t('finishChrome');
+        return this.l10n.t('finishChrome');
       default:
-        return this.i18n.t('finishCustom');
+        return this.l10n.t('finishCustom');
     }
   }
 }

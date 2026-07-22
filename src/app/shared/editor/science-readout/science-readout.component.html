@@ -17,10 +17,10 @@
         readout.rgb[2] * 255 +
         ')'
       "
-      [attr.title]="i18n.t('hintColor')"
+      [attr.title]="l10n.t('hintColor')"
     ></div>
 
-    <h4>{{ i18n.t('calculated') }}</h4>
+    <h4>{{ l10n.t('calculated') }}</h4>
     <ul>
       @for (q of readout.quantities; track q.id) {
         @if (q.kind === 'calculated') {
@@ -35,7 +35,7 @@
       }
     </ul>
 
-    <h4>{{ i18n.t('approximated') }}</h4>
+    <h4>{{ l10n.t('approximated') }}</h4>
     <ul>
       @for (q of readout.quantities; track q.id) {
         @if (q.kind === 'approximated') {
@@ -55,5 +55,5 @@
     }
   </article>
 } @else {
-  <p class="empty">{{ i18n.t('noSelection') }}</p>
+  <p class="empty">{{ l10n.t('noSelection') }}</p>
 }
