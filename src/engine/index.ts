@@ -54,6 +54,8 @@ export * from './optics/scotopic-efficacy';
 export * from './optics/display-response-curve';
 export * from './optics/display-vision';
 export * from './optics/environment-lighting';
+export * from './noise/volume-noise';
+export * from './noise/volume-noise-io';
 export * from './optics/power';
 export * from './optics/laser';
 export * from './optics/modes';

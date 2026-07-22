@@ -31,6 +31,7 @@ import {
   type GizmoSpace,
   type Transform,
   type World,
+  type BakedNoiseVolume,
 } from '../../../engine';
 import {
   BlenderCameraControls,
@@ -396,6 +397,16 @@ export class BabylonPresenter implements FramePresenter {
     const q = this.world.resources.Quality;
     this.volumetrics.applyRenderScale(q.renderScale);
     this.pipeline.applyAntiAliasing(q.antiAliasing);
+  }
+
+  /** Sync baked noise library (2D/3D) to volumetric GPU cache. */
+  syncNoiseLibrary(entries: ReadonlyArray<{ id: string; baked: BakedNoiseVolume }>): void {
+    this.volumetrics.syncNoiseLibrary(entries);
+  }
+
+  /** @deprecated Prefer syncNoiseLibrary. */
+  setNoiseVolume(_baked: BakedNoiseVolume): void {
+    // no-op
   }
 
   applyPresentationMode(): void {

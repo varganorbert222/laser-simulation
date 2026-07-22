@@ -1,0 +1,300 @@
+<div class="noise-editor">
+  <p class="hint">{{ l10n.t('hintNoiseEditor') }}</p>
+
+  <div class="editor-grid">
+    <section class="preview-col">
+      <div class="section-head">
+        <h4>{{ l10n.t('noisePreview3d') }}</h4>
+        <span class="meta">
+          @if (noise.bakedPreview(); as b) {
+            {{ b.dimension === '2d' ? '2D' : '3D' }} · {{ b.resolution }}
+            {{ b.dimension === '3d' ? '³' : '²' }}
+          } @else {
+            —
+          }
+        </span>
+      </div>
+      <div class="preview-frame">
+        <canvas #preview class="preview-canvas"></canvas>
+        <p class="preview-hint">{{ l10n.t('noisePreviewDrag') }}</p>
+      </div>
+    </section>
+
+    <section class="library-col">
+      <div class="section-head">
+        <h4>{{ l10n.t('noiseLibrary') }}</h4>
+        <button type="button" class="ghost" (click)="noise.newDraft(noise.recipe().dimension)">
+          {{ l10n.t('noiseNew') }}
+        </button>
+      </div>
+      <ul class="lib-list" role="listbox">
+        @for (item of noise.libraryMeta(); track item.id) {
+          <li>
+            <button
+              type="button"
+              class="lib-row"
+              [class.active]="noise.editingId() === item.id"
+              (click)="noise.loadEntry(item.id)"
+            >
+              <span class="lib-name">{{ item.label }}</span>
+              <span class="lib-meta">
+                {{ item.dimension === '2d' ? '2D' : '3D' }} · {{ item.resolution }}
+                {{ item.dimension === '3d' ? '³' : '²' }}
+              </span>
+              <span class="lib-time">{{ formatUpdated(item.updatedAt) }}</span>
+            </button>
+          </li>
+        } @empty {
+          <li class="empty">{{ l10n.t('noiseLibraryEmpty') }}</li>
+        }
+      </ul>
+      @if (noise.editingId(); as eid) {
+        <div class="lib-actions">
+          <button type="button" class="ghost danger" (click)="noise.deleteEntry(eid)">
+            {{ l10n.t('noiseDeleteAsset') }}
+          </button>
+        </div>
+      }
+    </section>
+
+    <section class="settings-col">
+      <h4>{{ l10n.t('noiseVolumeSettings') }}</h4>
+
+      <div class="field-grid">
+        <label class="field">
+          <span>{{ l10n.t('noiseAssetName') }}</span>
+          <input
+            type="text"
+            [value]="noise.draftLabel()"
+            (change)="noise.setDraftLabel($any($event.target).value)"
+          />
+        </label>
+
+        <label class="field">
+          <span>{{ l10n.t('noiseDimension') }}</span>
+          <select
+            [value]="noise.recipe().dimension"
+            (change)="onDimension($any($event.target).value)"
+          >
+            <option value="3d">{{ l10n.t('noiseDimension3d') }}</option>
+            <option value="2d">{{ l10n.t('noiseDimension2d') }}</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>{{ l10n.t('noiseResolution') }}</span>
+          <select
+            [value]="noise.recipe().resolution"
+            (change)="onResolution($any($event.target).value)"
+          >
+            @for (r of resolutions; track r) {
+              <option [value]="r">
+                {{ r }}{{ noise.recipe().dimension === '3d' ? '³' : '²' }}
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="field">
+          <span>{{ l10n.t('noiseContrast') }}</span>
+          <input
+            type="number"
+            min="0.1"
+            max="4"
+            step="0.05"
+            [value]="noise.recipe().contrast"
+            (change)="onContrast($any($event.target).value)"
+          />
+        </label>
+
+        <label class="field check">
+          <input
+            type="checkbox"
+            [checked]="noise.recipe().normalize"
+            (change)="noise.setNormalize($any($event.target).checked)"
+          />
+          <span>{{ l10n.t('noiseNormalize') }}</span>
+        </label>
+      </div>
+
+      <p class="hint tight">{{ l10n.t('hintNoiseSeamless') }}</p>
+
+      <div class="btn-row">
+        <button type="button" [disabled]="noise.baking()" (click)="noise.bakePreview()">
+          {{ l10n.t('noiseBake') }}
+        </button>
+        <button
+          type="button"
+          class="primary"
+          [disabled]="noise.baking()"
+          (click)="noise.bakeAndSave()"
+        >
+          {{ l10n.t('noiseSaveLibrary') }}
+        </button>
+        <button
+          type="button"
+          class="ghost"
+          [disabled]="noise.baking()"
+          (click)="noise.bakeAndSave({ asNew: true })"
+        >
+          {{ l10n.t('noiseSaveAsNew') }}
+        </button>
+        <button type="button" class="ghost" (click)="noise.resetDefault()">
+          {{ l10n.t('noiseReset') }}
+        </button>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="ghost" (click)="noise.exportJson()">
+          {{ l10n.t('noiseExportJson') }}
+        </button>
+        <button type="button" class="ghost" (click)="noise.exportRaw()">
+          {{ l10n.t('noiseExportRaw') }}
+        </button>
+        <button type="button" class="ghost" (click)="importClick()">
+          {{ l10n.t('noiseImport') }}
+        </button>
+      </div>
+      <input
+        #fileInput
+        type="file"
+        accept="application/json,.json,.noise2d.json,.noise3d.json"
+        hidden
+        (change)="onFile($event)"
+      />
+    </section>
+  </div>
+
+  <section class="layers-panel">
+    <div class="layers-side">
+      <div class="section-head">
+        <h4>{{ l10n.t('noiseLayers') }}</h4>
+        <button type="button" class="ghost" (click)="noise.addLayer()">
+          {{ l10n.t('noiseAddLayer') }}
+        </button>
+      </div>
+      <ul class="layer-list" role="listbox">
+        @for (layer of noise.recipe().layers; track layer.id) {
+          <li>
+            <button
+              type="button"
+              class="layer-row"
+              [class.active]="noise.selectedLayerId() === layer.id"
+              [class.disabled-layer]="!layer.enabled"
+              (click)="noise.selectLayer(layer.id)"
+            >
+              <span class="blend-tag" [attr.data-blend]="layer.blend">{{ layer.blend }}</span>
+              <span class="layer-name">{{ layer.name }}</span>
+              <span class="layer-meta">f={{ layer.frequency }} · amp={{ layer.amplitude }}</span>
+            </button>
+          </li>
+        } @empty {
+          <li class="empty">{{ l10n.t('noiseNoLayers') }}</li>
+        }
+      </ul>
+    </div>
+
+    @if (selectedLayer(); as layer) {
+      <div class="layer-editor">
+        <h4>{{ l10n.t('noiseLayerSettings') }}</h4>
+        <div class="field-grid layer-fields">
+          <label class="field">
+            <span>{{ l10n.t('noiseLayerName') }}</span>
+            <input
+              type="text"
+              [value]="layer.name"
+              (change)="onLayerName($any($event.target).value)"
+            />
+          </label>
+          <label class="field check">
+            <input
+              type="checkbox"
+              [checked]="layer.enabled"
+              (change)="onLayerEnabled($any($event.target).checked)"
+            />
+            <span>{{ l10n.t('noiseLayerEnabled') }}</span>
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noiseBlend') }}</span>
+            <select [value]="layer.blend" (change)="onLayerBlend($any($event.target).value)">
+              @for (b of blends; track b) {
+                <option [value]="b">{{ blendLabel(b) }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noiseSeed') }}</span>
+            <input
+              type="number"
+              step="1"
+              [value]="layer.seed"
+              (change)="onLayerNumber('seed', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noiseFrequency') }}</span>
+            <input
+              type="number"
+              min="1"
+              max="32"
+              step="1"
+              [value]="layer.frequency"
+              (change)="onLayerNumber('frequency', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noiseOctaves') }}</span>
+            <input
+              type="number"
+              min="1"
+              max="6"
+              step="1"
+              [value]="layer.octaves"
+              (change)="onLayerNumber('octaves', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noiseLacunarity') }}</span>
+            <input
+              type="number"
+              min="1.1"
+              max="4"
+              step="0.05"
+              [value]="layer.lacunarity"
+              (change)="onLayerNumber('lacunarity', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noisePersistence') }}</span>
+            <input
+              type="number"
+              min="0.05"
+              max="1"
+              step="0.05"
+              [value]="layer.persistence"
+              (change)="onLayerNumber('persistence', $any($event.target).value)"
+            />
+          </label>
+          <label class="field">
+            <span>{{ l10n.t('noiseAmplitude') }}</span>
+            <input
+              type="number"
+              min="-2"
+              max="2"
+              step="0.05"
+              [value]="layer.amplitude"
+              (change)="onLayerNumber('amplitude', $any($event.target).value)"
+            />
+          </label>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="ghost" (click)="noise.duplicateLayer(layer.id)">
+            {{ l10n.t('noiseDuplicateLayer') }}
+          </button>
+          <button type="button" class="ghost danger" (click)="noise.removeLayer(layer.id)">
+            {{ l10n.t('noiseRemoveLayer') }}
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+</div>

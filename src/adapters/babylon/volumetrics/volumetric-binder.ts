@@ -18,6 +18,7 @@ import {
   VOLUMETRIC_LIGHT_SLOTS,
   VOLUMETRIC_MEDIA_SLOTS,
   gatherRenderPack,
+  type BakedNoiseVolume,
   type GatheredFrame,
   type World,
 } from '../../../engine';
@@ -27,6 +28,7 @@ import {
   VOLUMETRIC_SAMPLERS,
   VOLUMETRIC_UNIFORMS,
 } from '../shaders/volumetric-shader';
+import { NoiseTextureCache } from './noise-volume-texture';
 
 Effect.ShadersStore['volumetricFragmentShader'] = VOLUMETRIC_FRAGMENT;
 Effect.ShadersStore['volumetricComposeFragmentShader'] = VOLUMETRIC_COMPOSE_FRAGMENT;
@@ -58,6 +60,7 @@ export class VolumetricBinder {
 
   private readonly effectRenderer: EffectRenderer;
   private readonly volumetricEffect: EffectWrapper;
+  private readonly noiseTextures: NoiseTextureCache;
 
   private lastRenderScale = 1;
   private lastVolW = 0;
@@ -76,6 +79,8 @@ export class VolumetricBinder {
   ) {
     const scale = clampScale(initialScale);
     const vol = this.volumetricSize(scale);
+
+    this.noiseTextures = new NoiseTextureCache(scene);
 
     this.volumetricTarget = new RenderTargetTexture(
       'volumetricLights',
@@ -143,6 +148,16 @@ export class VolumetricBinder {
     this._sceneDepth = texture;
   }
 
+  /** Sync baked noise library assets onto the GPU (2D / 3D). */
+  syncNoiseLibrary(entries: ReadonlyArray<{ id: string; baked: BakedNoiseVolume }>): void {
+    this.noiseTextures.syncEntries(entries);
+  }
+
+  /** @deprecated Use syncNoiseLibrary — kept for transitional callers. */
+  setNoiseVolume(_baked: BakedNoiseVolume): void {
+    // no-op: per-media assets come from the noise library
+  }
+
   /** True when the low-res raymarch effect is compiled. */
   isRaymarchReady(): boolean {
     if (!this.volumetricEffect.isReady()) return false;
@@ -195,6 +210,7 @@ export class VolumetricBinder {
     this.volumetricEffect.dispose();
     this.effectRenderer.dispose();
     this.volumetricTarget.dispose();
+    this.noiseTextures.dispose();
   }
 
   private syncVolumetricSize(scale: number, force: boolean): void {
@@ -295,6 +311,10 @@ export class VolumetricBinder {
       effect.setFloat(`uMediaFbmTime${s}`, 0);
       effect.setFloat(`uMediaNoiseLow${s}`, 0.2);
       effect.setFloat(`uMediaNoiseHigh${s}`, 0.8);
+      effect.setFloat(`uMediaNoiseKind${s}`, 0);
+      const fb = this.noiseTextures.bindingFor(null);
+      effect.setTexture(`uMediaNoise2D${s}`, fb.tex2D);
+      effect.setTexture(`uMediaNoise3D${s}`, fb.tex3D);
       effect.setFloat(`uMediaScatter${s}`, 0.0257);
       effect.setFloat(`uMediaScatterMie${s}`, 0);
       effect.setFloat(`uMediaAbsorb${s}`, 0.0003);
@@ -318,6 +338,10 @@ export class VolumetricBinder {
     effect.setFloat(`uMediaFbmTime${s}`, M.fbmTimeScale);
     effect.setFloat(`uMediaNoiseLow${s}`, M.noiseThresholdLow);
     effect.setFloat(`uMediaNoiseHigh${s}`, M.noiseThresholdHigh);
+    const noise = this.noiseTextures.bindingFor(M.noiseAssetId || null);
+    effect.setFloat(`uMediaNoiseKind${s}`, noise.kind);
+    effect.setTexture(`uMediaNoise2D${s}`, noise.tex2D);
+    effect.setTexture(`uMediaNoise3D${s}`, noise.tex3D);
     effect.setFloat(`uMediaScatter${s}`, M.scatter);
     effect.setFloat(`uMediaScatterMie${s}`, M.scatterMie);
     effect.setFloat(`uMediaAbsorb${s}`, M.absorption);

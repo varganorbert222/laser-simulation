@@ -74,6 +74,8 @@ export interface GpuMedia {
   fbmTimeScale: number;
   noiseThresholdLow: number;
   noiseThresholdHigh: number;
+  /** Baked noise library asset id; empty string = none. */
+  noiseAssetId: string;
   scatter: number;
   scatterMie: number;
   absorption: number;
@@ -237,6 +239,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
       fbmTimeScale: vol.fbmTimeScale,
       noiseThresholdLow: vol.noiseThresholdLow,
       noiseThresholdHigh: vol.noiseThresholdHigh,
+      noiseAssetId: vol.noiseAssetId ?? '',
       scatter: vol.scatter,
       scatterMie: climate ? vol.scatterMie : 0,
       absorption: vol.absorption,

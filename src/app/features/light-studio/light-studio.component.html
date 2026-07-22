@@ -62,6 +62,15 @@
       <button
         type="button"
         class="mode-btn"
+        [class.active]="noiseModalOpen()"
+        (click)="noiseModalOpen.set(true)"
+        [attr.title]="l10n.t('tipNoiseEditor')"
+      >
+        {{ l10n.t('noiseEditor') }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
         [class.active]="visionModalOpen()"
         (click)="visionModalOpen.set(true)"
         [attr.title]="l10n.t('toggleVisionPanel')"
@@ -104,6 +113,22 @@
     <app-render-settings-panel />
     <div studioModalActions>
       <button type="button" class="primary" (click)="renderModalOpen.set(false)">
+        {{ l10n.t('modalClose') }}
+      </button>
+    </div>
+  </app-studio-modal>
+
+  <app-studio-modal
+    [open]="noiseModalOpen()"
+    [title]="l10n.t('noiseEditor')"
+    titleId="noise-editor-modal-title"
+    [wide]="true"
+    [xlarge]="true"
+    (dismiss)="noiseModalOpen.set(false)"
+  >
+    <app-noise-editor />
+    <div studioModalActions>
+      <button type="button" class="primary" (click)="noiseModalOpen.set(false)">
         {{ l10n.t('modalClose') }}
       </button>
     </div>

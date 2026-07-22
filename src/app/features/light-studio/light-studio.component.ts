@@ -14,6 +14,7 @@ import { EditorFacade } from '../../core/services/editor-facade.service';
 import { LocalizationService } from '../../core/services/localization.service';
 import { DisplayResponseCurveComponent } from '../../shared/editor/display-response-curve/display-response-curve.component';
 import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
+import { NoiseEditorComponent } from '../../shared/editor/noise-editor/noise-editor.component';
 import { StudioModalComponent } from '../../shared/editor/studio-modal/studio-modal.component';
 import {
   HierarchyPanelComponent,
@@ -23,6 +24,7 @@ import { InspectorPanelComponent } from '../../shared/editor/inspector-panel/ins
 import { ScienceReadoutComponent } from '../../shared/editor/science-readout/science-readout.component';
 import { ViewportAxesComponent } from '../../shared/editor/viewport-axes/viewport-axes.component';
 import { editorUndoShortcut } from '../../../engine';
+import { NoiseVolumeService } from '../../core/editor/noise-volume.service';
 
 @Component({
   selector: 'app-light-studio',
@@ -34,6 +36,7 @@ import { editorUndoShortcut } from '../../../engine';
     ViewportAxesComponent,
     DisplayResponseCurveComponent,
     RenderSettingsPanelComponent,
+    NoiseEditorComponent,
     StudioModalComponent,
   ],
   templateUrl: './light-studio.component.html',
@@ -43,6 +46,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   readonly engine = inject(EngineHostService);
   readonly editor = inject(EditorFacade);
   readonly l10n = inject(LocalizationService);
+  readonly noiseVolume = inject(NoiseVolumeService);
 
   @ViewChild('viewport', { static: true }) viewportRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('fileInput', { static: true }) fileInput!: ElementRef<HTMLInputElement>;
@@ -54,6 +58,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   scenesModalOpen = signal(false);
   sceneLoading = signal(false);
   renderModalOpen = signal(false);
+  noiseModalOpen = signal(false);
   selectedLibraryId = signal<string | null>(null);
   private resizeSide: 'left' | 'right' | null = null;
   private resizeStartX = 0;
@@ -74,6 +79,21 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.engine.attach(this.viewportRef.nativeElement);
+    this.noiseVolume.syncToHost();
+    this.assignDefaultNoiseAssets();
+  }
+
+  /** First-run / legacy scenes: attach the default library noise when media has none. */
+  private assignDefaultNoiseAssets(): void {
+    const first = this.noiseVolume.libraryMeta()[0];
+    if (!first) return;
+    this.engine.mutate((world) => {
+      for (const id of world.query('MediaVolume')) {
+        const m = world.get(id, 'MediaVolume');
+        if (!m || m.noiseAssetId) continue;
+        world.set(id, 'MediaVolume', { ...m, noiseAssetId: first.id });
+      }
+    });
   }
 
   ngOnDestroy(): void {

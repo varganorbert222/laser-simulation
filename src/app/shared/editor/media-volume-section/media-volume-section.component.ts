@@ -32,6 +32,7 @@ import {
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
+import { NoiseVolumeService } from '../../../core/editor/noise-volume.service';
 import { ColorFieldComponent } from '../color-field/color-field.component';
 import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 
@@ -46,6 +47,7 @@ export class MediaVolumeSectionComponent {
   readonly media = input.required<MediaVolume>();
   readonly editor = inject(EditorFacade);
   readonly l10n = inject(LocalizationService);
+  readonly noiseLibrary = inject(NoiseVolumeService);
   readonly mediaLayers = MEDIA_LAYERS;
   readonly scatterModels = SCATTER_MODELS;
   readonly rayleighParticleNmMax = RAYLEIGH_PARTICLE_NM_MAX;
@@ -223,6 +225,11 @@ export class MediaVolumeSectionComponent {
     return model === 'tyndall'
       ? this.l10n.t('scatterModelTyndall')
       : this.l10n.t('scatterModelRayleigh');
+  }
+
+  onNoiseAsset(raw: string): void {
+    const noiseAssetId = raw.trim() ? raw.trim() : null;
+    this.editor.updateMedia({ noiseAssetId });
   }
 
   onMediaNumber(

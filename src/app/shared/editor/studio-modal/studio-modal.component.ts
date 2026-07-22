@@ -25,6 +25,8 @@ export class StudioModalComponent {
   @Input() closeOnBackdrop = true;
   /** Wider card for curve editors / charts. */
   @Input() wide = false;
+  /** Extra-wide card for multi-column tools (noise editor). */
+  @Input() xlarge = false;
 
   @Output() dismiss = new EventEmitter<void>();
 

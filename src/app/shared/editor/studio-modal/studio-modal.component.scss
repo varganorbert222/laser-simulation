@@ -25,6 +25,11 @@
     width: min(28rem, 100%);
   }
 
+  &.xlarge {
+    width: min(68rem, 96vw);
+    max-height: min(92vh, 960px);
+  }
+
   h3 {
     margin: 0;
     font-size: 1rem;
@@ -41,11 +46,9 @@
   }
 }
 
-.studio-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  min-width: 0;
+.studio-modal-card.xlarge .studio-modal-body {
+  overflow: auto;
+  max-height: min(75vh, 760px);
 }
 
 .studio-modal-actions {

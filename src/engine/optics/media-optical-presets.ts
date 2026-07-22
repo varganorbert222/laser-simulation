@@ -300,6 +300,7 @@ export function opticalFieldsFromClimate(
 
 export function defaultMediaVolumeForKind(kind: MediaKind | string = 'fog'): MediaOpticalFields & {
   halfExtents: [number, number, number];
+  noiseAssetId: null;
 } {
   const fields = opticalFieldsForMediaKind(kind);
   let half: [number, number, number] =
@@ -307,7 +308,7 @@ export function defaultMediaVolumeForKind(kind: MediaKind | string = 'fog'): Med
   if (fields.preset === 'cloud') {
     half = [28, 6, 28];
   }
-  return { ...fields, halfExtents: half };
+  return { ...fields, halfExtents: half, noiseAssetId: null };
 }
 
 /**

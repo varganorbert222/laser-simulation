@@ -161,6 +161,11 @@ export interface MediaVolume {
   noiseThresholdLow: number;
   noiseThresholdHigh: number;
   /**
+   * Id of a baked noise asset from the Noise library (null = flat 0.5 fallback).
+   * 2D / 3D texture type comes from the asset.
+   */
+  noiseAssetId: string | null;
+  /**
    * Volume scatter coefficient σ_s [m⁻¹].
    * Particulate: Tyndall channel. Climate: Rayleigh channel.
    */
@@ -506,6 +511,10 @@ export function normalizeMediaVolume(
           : climate.noiseThresholdHigh,
       insulating:
         typeof raw.insulating === 'boolean' ? raw.insulating : climate.insulating,
+      noiseAssetId:
+        typeof raw.noiseAssetId === 'string' && raw.noiseAssetId.length > 0
+          ? raw.noiseAssetId
+          : null,
     };
   }
 
@@ -545,6 +554,10 @@ export function normalizeMediaVolume(
       typeof raw.noiseThresholdHigh === 'number'
         ? raw.noiseThresholdHigh
         : fromPreset.noiseThresholdHigh,
+    noiseAssetId:
+      typeof raw.noiseAssetId === 'string' && raw.noiseAssetId.length > 0
+        ? raw.noiseAssetId
+        : null,
     scatter: typeof raw.scatter === 'number' ? raw.scatter : fromPreset.scatter,
     scatterMie: 0,
     absorption: typeof raw.absorption === 'number' ? raw.absorption : fromPreset.absorption,

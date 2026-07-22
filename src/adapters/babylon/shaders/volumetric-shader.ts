@@ -25,6 +25,9 @@ function mediaUniformDecls(slots: number): string {
       `uniform vec3 uMediaCenter${i}; uniform vec3 uMediaHalfExt${i}; uniform vec3 uMediaColor${i};`,
       `uniform float uMediaDensity${i}; uniform float uMediaFbmScale${i}; uniform float uMediaFbmTime${i};`,
       `uniform float uMediaNoiseLow${i}; uniform float uMediaNoiseHigh${i};`,
+      `uniform float uMediaNoiseKind${i};`,
+      `uniform sampler2D uMediaNoise2D${i};`,
+      `uniform sampler3D uMediaNoise3D${i};`,
       `uniform float uMediaScatter${i}; uniform float uMediaScatterMie${i}; uniform float uMediaAbsorb${i};`,
       `uniform float uMediaSpectralExp${i}; uniform float uMediaMieG${i};`,
       `uniform float uMediaScatterModel${i}; uniform float uMediaTurbulence${i};`,
@@ -48,6 +51,7 @@ function mediaUniformNames(slots: number): string[] {
       `uMediaFbmTime${i}`,
       `uMediaNoiseLow${i}`,
       `uMediaNoiseHigh${i}`,
+      `uMediaNoiseKind${i}`,
       `uMediaScatter${i}`,
       `uMediaScatterMie${i}`,
       `uMediaAbsorb${i}`,
@@ -66,10 +70,34 @@ function mediaUniformNames(slots: number): string[] {
   return names;
 }
 
+function mediaNoiseSamplers(slots: number): string[] {
+  const names: string[] = [];
+  for (let i = 0; i < slots; i++) {
+    names.push(`uMediaNoise2D${i}`, `uMediaNoise3D${i}`);
+  }
+  return names;
+}
+
+/** Per-slot noise sample from baked 2D or 3D texture (kind 0 → flat 0.5). */
+function mediaNoiseSampleFn(i: number): string {
+  return `float sampleMediaNoise${i}(vec3 p) {
+  float kind = uMediaNoiseKind${i};
+  if (kind > 2.5) return texture(uMediaNoise3D${i}, fract(p)).r;
+  if (kind > 1.5) return texture(uMediaNoise2D${i}, fract(p.xy)).r;
+  return 0.5;
+}`;
+}
+
+function mediaNoiseSampleFns(slots: number): string {
+  const lines: string[] = [];
+  for (let i = 0; i < slots; i++) lines.push(mediaNoiseSampleFn(i));
+  return lines.join('\n');
+}
+
 /**
  * Layered multi-media sample (Exp-C: dual-pass):
- *   Pass 1 — innermost insulating climate (FBM once per insulating slot)
- *   Pass 2 — particulate / outdoor only (skip insulating → one FBM per slot total)
+ *   Pass 1 — innermost insulating climate (noise volume once per insulating slot)
+ *   Pass 2 — particulate / outdoor only (skip insulating → one sample per slot total)
  */
 function mediaSampleAccum(slots: number): string {
   const pass1: string[] = [];
@@ -78,13 +106,13 @@ function mediaSampleAccum(slots: number): string {
     pass1.push(`  if (uMediaCount > ${i}.5 && uMediaInsulating${i} > 0.5) {
     vec3 localI${i} = pCam - uMediaCenter${i};
     if (!any(greaterThan(abs(localI${i}), uMediaHalfExt${i}))) {
-      float fieldI${i} = fbm(localI${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
+      float fieldI${i} = sampleMediaNoise${i}(localI${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
       float lowI${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
       float highI${i} = max(uMediaNoiseHigh${i}, lowI${i} + 0.001);
       float plumeI${i} = plumeEnvelope(localI${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
       float fillI${i} = densityRemap(fieldI${i}, lowI${i}, highI${i}, 1.2) * uMediaDensity${i} * plumeI${i};
       float turbI${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
-      float shimmerI${i} = 1.0 + turbI${i} * (noise(localI${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
+      float shimmerI${i} = 1.0 + turbI${i} * (sampleMediaNoise${i}(localI${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
       float dI${i} = fillI${i} * shimmerI${i};
       if (dI${i} > 1e-8) {
         float volI${i} = uMediaHalfExt${i}.x * uMediaHalfExt${i}.y * uMediaHalfExt${i}.z;
@@ -112,7 +140,7 @@ function mediaSampleAccum(slots: number): string {
     pass2.push(`  if (uMediaCount > ${i}.5 && uMediaInsulating${i} < 0.5) {
     vec3 localP${i} = pCam - uMediaCenter${i};
     if (!any(greaterThan(abs(localP${i}), uMediaHalfExt${i}))) {
-      float fieldP${i} = fbm(localP${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
+      float fieldP${i} = sampleMediaNoise${i}(localP${i} * uMediaFbmScale${i} + vec3(0.0, uTime * uMediaFbmTime${i}, 0.0));
       float lowP${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
       float highP${i} = max(uMediaNoiseHigh${i}, lowP${i} + 0.001);
       float plumeP${i} = plumeEnvelope(localP${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
@@ -123,7 +151,7 @@ function mediaSampleAccum(slots: number): string {
       float nyP${i} = localP${i}.y / max(uMediaHalfExt${i}.y, 1e-3);
       float heightFallP${i} = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP${i}));
       float turbP${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
-      float shimmerP${i} = 1.0 + turbP${i} * (noise(localP${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
+      float shimmerP${i} = 1.0 + turbP${i} * (sampleMediaNoise${i}(localP${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
       float dP${i} = fillP${i} * heightFallP${i} * shimmerP${i};
       if (dP${i} > 1e-8) {
         float kind${i} = uMediaLayerKind${i};
@@ -322,6 +350,7 @@ function lightUniformNames(slots: number): string[] {
 /** Babylon PostProcess–compatible volumetric fragment (camera rays, no orbit cam). */
 export const VOLUMETRIC_FRAGMENT = `
 precision highp float;
+precision highp sampler3D;
 
 varying vec2 vUV;
 uniform vec2 uResolution;
@@ -352,44 +381,15 @@ ${lightUniformDecls(VOLUMETRIC_LIGHT_SLOTS)}
 uniform float uMediaCount;
 ${mediaUniformDecls(VOLUMETRIC_MEDIA_SLOTS)}
 
+${mediaNoiseSampleFns(VOLUMETRIC_MEDIA_SLOTS)}
+
 float hash(vec3 p) {
   p = fract(p * 0.3183099 + vec3(0.1, 0.2, 0.3));
   p *= 17.0;
   return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
 }
 
-float noise(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  f = f * f * (3.0 - 2.0 * f);
-  float n000 = hash(i);
-  float n100 = hash(i + vec3(1.0, 0.0, 0.0));
-  float n010 = hash(i + vec3(0.0, 1.0, 0.0));
-  float n110 = hash(i + vec3(1.0, 1.0, 0.0));
-  float n001 = hash(i + vec3(0.0, 0.0, 1.0));
-  float n101 = hash(i + vec3(1.0, 0.0, 1.0));
-  float n011 = hash(i + vec3(0.0, 1.0, 1.0));
-  float n111 = hash(i + vec3(1.0, 1.0, 1.0));
-  float nx00 = mix(n000, n100, f.x);
-  float nx10 = mix(n010, n110, f.x);
-  float nx01 = mix(n001, n101, f.x);
-  float nx11 = mix(n011, n111, f.x);
-  return mix(mix(nx00, nx10, f.y), mix(nx01, nx11, f.y), f.z);
-}
-
-float fbm(vec3 p) {
-  // 2 octaves — 3+ with per-slot dual-pass + shadows times out WebGL compile.
-  float v = 0.0;
-  float a = 0.5;
-  for (int i = 0; i < 2; i++) {
-    v += a * noise(p);
-    p *= 2.0;
-    a *= 0.5;
-  }
-  return v;
-}
-
-/** Remap soft FBM → puffier islands (cloud-like contrast, cheap). */
+/** Remap soft noise field → puffier islands (cloud-like contrast, cheap). */
 float densityRemap(float field, float low, float high, float contrast) {
   float s = smoothstep(min(low, high - 0.001), max(high, low + 0.001), field);
   return pow(max(s, 0.0), max(contrast, 1.0));
@@ -422,7 +422,7 @@ bool intersectBox(vec3 ro, vec3 rd, vec3 center, vec3 halfSize, out float tEnter
 }
 
 /**
- * Extinction σ_t at q for shadow rays — AABB + density×plume (+ height), no FBM.
+ * Extinction σ_t at q for shadow rays — AABB + density×plume (+ height), no noise texture.
  */
 float mediaExtinctionFast(vec3 q) {
 ${mediaExtinctionFastAccum(VOLUMETRIC_MEDIA_SLOTS)}
@@ -720,4 +720,4 @@ export const VOLUMETRIC_UNIFORMS = [
   ...mediaUniformNames(VOLUMETRIC_MEDIA_SLOTS),
 ];
 
-export const VOLUMETRIC_SAMPLERS = ['uSceneDepth'];
+export const VOLUMETRIC_SAMPLERS = ['uSceneDepth', ...mediaNoiseSamplers(VOLUMETRIC_MEDIA_SLOTS)];

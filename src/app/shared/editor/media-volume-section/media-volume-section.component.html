@@ -58,6 +58,23 @@
   />
 
   <h4 class="subhead">{{ l10n.t('noiseParams') }}</h4>
+  <p class="hint">{{ l10n.t('tipNoiseVolumeSampling') }}</p>
+  <label [attr.title]="l10n.t('tipNoiseAsset')">
+    {{ l10n.t('noiseAsset') }}
+    <select
+      [value]="media().noiseAssetId ?? ''"
+      [disabled]="!editor.isEditMode()"
+      (change)="onNoiseAsset($any($event.target).value)"
+    >
+      <option value="">{{ l10n.t('noiseAssetNone') }}</option>
+      @for (item of noiseLibrary.libraryMeta(); track item.id) {
+        <option [value]="item.id">
+          {{ item.label }} ({{ item.dimension === '2d' ? '2D' : '3D' }}
+          {{ item.resolution }}{{ item.dimension === '3d' ? '³' : '²' }})
+        </option>
+      }
+    </select>
+  </label>
   <label [attr.title]="l10n.t('tipFbmScale')">
     {{ l10n.t('fbmScale') }}
     <input
