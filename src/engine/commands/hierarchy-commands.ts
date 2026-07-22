@@ -4,9 +4,11 @@ import {
   defaultLightEmitter,
   defaultMediaVolume,
   defaultSmokeEmitter,
+  defaultSunLightEmitter,
 } from '../ecs/components';
 import { defaultMediaVolumeForKind } from '../optics/media-optical-presets';
 import { defaultSurfaceMaterial } from '../optics/surface-material';
+import { refreshSceneSunBinding, wouldSuppressAdditionalSun } from '../optics/scene-sun';
 import type { World } from '../ecs/world';
 import { applySelection } from './selection';
 import { createSceneEntity } from '../hierarchy/entity-factory';
@@ -23,6 +25,7 @@ import {
 import type { HierarchyDropPosition } from '../hierarchy/tree';
 import { restoreWorldFromSerialized } from '../save/serialize';
 import type { Command } from './stack';
+import { fromEulerYXZ } from '../math/quat';
 import { vec3 } from '../math/vec3';
 
 function worldMutationCommand(label: string, world: World, mutate: () => void): Command {
@@ -144,6 +147,31 @@ export function createSmokeEmitterCommand(
     world.add(id, 'SmokeEmitter', defaultSmokeEmitter());
     applySelection(world, id);
   });
+}
+
+/**
+ * Optional unique scene Sun (directional key light). Extra suns stay in the
+ * hierarchy but are suppressed from rendering — caller should warn the user.
+ */
+export function createSunEntityCommand(
+  world: World,
+  name: string,
+  parentId: EntityId | null,
+): { command: Command; suppressed: boolean } {
+  const suppressed = wouldSuppressAdditionalSun(world);
+  const command = worldMutationCommand('Nap', world, () => {
+    const id = createSceneEntity(world, { name, parentId });
+    // Point roughly toward −Y/−Z like the educational env sun.
+    world.set(id, 'Transform', {
+      position: vec3(0, 8, 0),
+      rotation: fromEulerYXZ(0, -Math.PI * 0.65, 0),
+      scale: vec3(1, 1, 1),
+    });
+    world.add(id, 'LightEmitter', defaultSunLightEmitter());
+    refreshSceneSunBinding(world);
+    applySelection(world, id);
+  });
+  return { command, suppressed };
 }
 
 export function addComponentCommand(

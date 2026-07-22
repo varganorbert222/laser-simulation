@@ -1,6 +1,24 @@
 <section class="block">
   <h3>LightEmitter</h3>
 
+  @if (editor.selectedSunSuppressed()) {
+    <p class="warn" role="status">{{ i18n.t('warnSecondSun') }}</p>
+  }
+
+  <label [attr.title]="i18n.t('tipLightMode')">
+    {{ i18n.t('lightMode') }}
+    <select
+      [value]="light().params.mode"
+      [disabled]="!editor.isEditMode()"
+      (change)="onMode($any($event.target).value)"
+    >
+      @for (m of lightModes; track m) {
+        <option [value]="m">{{ modeLabel(m) }}</option>
+      }
+    </select>
+  </label>
+  <p class="hint">{{ i18n.t('hintLightMode') }}</p>
+
   <app-spectral-color-field
     [label]="i18n.t('wavelength')"
     [tooltip]="i18n.t('tipWavelength')"
@@ -62,6 +80,7 @@
       </button>
     }
   </div>
+
   @if (light().params.mode === 'laser') {
     <h4 class="subhead">{{ i18n.t('laserOptics') }}</h4>
     <p class="hint">{{ i18n.t('hintLaserOptics') }}</p>
@@ -189,7 +208,135 @@
       <span class="value">{{ laserAstig() | number: '1.2-2' }}</span>
     </label>
   }
-  <p class="mode">Mód: {{ light().params.mode }}</p>
+
+  @if (light().params.mode === 'spotlight' || light().params.mode === 'flashlight') {
+    <h4 class="subhead">{{ i18n.t('coneOptics') }}</h4>
+    <p class="hint">
+      {{
+        light().params.mode === 'flashlight'
+          ? i18n.t('hintFlashlight')
+          : i18n.t('hintSpotlight')
+      }}
+    </p>
+    <label>
+      {{ i18n.t('innerCone') }}
+      <input
+        type="range"
+        min="1"
+        max="60"
+        step="0.5"
+        [value]="spotInner()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onSpotParam('innerConeDeg', $any($event.target).value)"
+      />
+      <span class="value">{{ spotInner() | number: '1.1-1' }}°</span>
+    </label>
+    <label>
+      {{ i18n.t('outerCone') }}
+      <input
+        type="range"
+        min="2"
+        max="90"
+        step="0.5"
+        [value]="spotOuter()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onSpotParam('outerConeDeg', $any($event.target).value)"
+      />
+      <span class="value">{{ spotOuter() | number: '1.1-1' }}°</span>
+    </label>
+    <label>
+      {{ i18n.t('apertureSharpness') }}
+      <input
+        type="range"
+        min="0.5"
+        max="12"
+        step="0.1"
+        [value]="spotSharpness()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onSpotParam('apertureSharpness', $any($event.target).value)"
+      />
+      <span class="value">{{ spotSharpness() | number: '1.1-1' }}</span>
+    </label>
+  }
+
+  @if (light().params.mode === 'omni_lamp') {
+    <h4 class="subhead">{{ i18n.t('omniOptics') }}</h4>
+    <label>
+      {{ i18n.t('softRadius') }}
+      <input
+        type="range"
+        min="0.05"
+        max="3"
+        step="0.01"
+        [value]="omniSoftRadius()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onOmniParam('softRadiusM', $any($event.target).value)"
+      />
+      <span class="value">{{ omniSoftRadius() | number: '1.2-2' }} m</span>
+    </label>
+    <label>
+      {{ i18n.t('falloff') }}
+      <input
+        type="range"
+        min="0.5"
+        max="6"
+        step="0.1"
+        [value]="omniFalloff()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onOmniParam('falloff', $any($event.target).value)"
+      />
+      <span class="value">{{ omniFalloff() | number: '1.1-1' }}</span>
+    </label>
+  }
+
+  @if (light().params.mode === 'parallel') {
+    <h4 class="subhead">{{ i18n.t('parallelOptics') }}</h4>
+    <p class="hint">{{ i18n.t('hintParallel') }}</p>
+    <label>
+      {{ i18n.t('beamRadius') }}
+      <input
+        type="range"
+        min="0.005"
+        max="0.5"
+        step="0.001"
+        [value]="parallelRadius()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onParallelParam('beamRadiusM', $any($event.target).value)"
+      />
+      <span class="value">{{ parallelRadius() * 1000 | number: '1.1-1' }} mm</span>
+    </label>
+    <label>
+      {{ i18n.t('residualMrad') }}
+      <input
+        type="range"
+        min="0"
+        max="20"
+        step="0.1"
+        [value]="parallelResidual()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onParallelParam('residualMrad', $any($event.target).value)"
+      />
+      <span class="value">{{ parallelResidual() | number: '1.1-1' }} mrad</span>
+    </label>
+  }
+
+  @if (light().params.mode === 'sun') {
+    <h4 class="subhead">{{ i18n.t('sunOptics') }}</h4>
+    <p class="hint">{{ i18n.t('hintSun') }}</p>
+    <label>
+      {{ i18n.t('angularDiameter') }}
+      <input
+        type="range"
+        min="0.1"
+        max="5"
+        step="0.01"
+        [value]="sunAngularDiameter()"
+        [disabled]="!editor.isEditMode()"
+        (input)="onSunAngularDiameter($any($event.target).value)"
+      />
+      <span class="value">{{ sunAngularDiameter() | number: '1.2-2' }}°</span>
+    </label>
+  }
 
   <h4 class="subhead">{{ i18n.t('opticsSpill') }}</h4>
   <label [attr.title]="i18n.t('tipStrayPowerFraction')">

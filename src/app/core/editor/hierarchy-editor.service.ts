@@ -4,6 +4,7 @@ import {
   captureEntityForest,
   createEmptyEntityCommand,
   createSmokeEmitterCommand,
+  createSunEntityCommand,
   deleteEntitiesCommand,
   duplicateEntitiesCommand,
   pasteEntityCommand,
@@ -17,13 +18,18 @@ import {
 } from '../../../engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
+import { I18nService } from '../../i18n/i18n.service';
 
 @Injectable({ providedIn: 'root' })
 export class HierarchyEditorService {
   private readonly engine = inject(EngineHostService);
   private readonly selection = inject(SelectionService);
+  private readonly i18n = inject(I18nService);
 
   private readonly clipboard = signal<HierarchyClipboardNode[]>([]);
+  /** Transient editor notice (e.g. suppressed second sun). */
+  readonly notice = signal<string | null>(null);
+  private noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly hierarchyTree = computed(() => {
     this.engine.epoch();
@@ -31,6 +37,21 @@ export class HierarchyEditorService {
   });
 
   readonly hasClipboard = computed(() => this.clipboard().length > 0);
+
+  showNotice(message: string, ms = 6000): void {
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.notice.set(message);
+    this.noticeTimer = setTimeout(() => {
+      this.notice.set(null);
+      this.noticeTimer = null;
+    }, ms);
+  }
+
+  clearNotice(): void {
+    if (this.noticeTimer) clearTimeout(this.noticeTimer);
+    this.noticeTimer = null;
+    this.notice.set(null);
+  }
 
   worldHidden = (id: string): boolean => {
     return this.engine.world().get(id, 'ViewportHidden')?.hidden ?? false;
@@ -98,6 +119,18 @@ export class HierarchyEditorService {
     this.engine.commitApplied(cmd);
   }
 
+  addSun(parentId: string | null = null): void {
+    const world = this.engine.world();
+    const sceneRoot =
+      world.allEntities().find((id) => world.get(id, 'EditorFlags')?.isSceneRoot) ?? null;
+    const parent = parentId ?? sceneRoot;
+    const { command, suppressed } = createSunEntityCommand(world, 'Sun', parent);
+    this.engine.commitApplied(command);
+    if (suppressed) {
+      this.showNotice(this.i18n.t('warnSecondSun'));
+    }
+  }
+
   addBelow(parentId: string): void {
     const cmd = createEmptyEntityCommand(this.engine.world(), 'Üres objektum', parentId);
     this.engine.commitApplied(cmd);
@@ -106,6 +139,18 @@ export class HierarchyEditorService {
   addSmokeEmitterBelow(parentId: string): void {
     const cmd = createSmokeEmitterCommand(this.engine.world(), 'Füstszóró', parentId);
     this.engine.commitApplied(cmd);
+  }
+
+  addSunBelow(parentId: string): void {
+    const { command, suppressed } = createSunEntityCommand(
+      this.engine.world(),
+      'Sun',
+      parentId,
+    );
+    this.engine.commitApplied(command);
+    if (suppressed) {
+      this.showNotice(this.i18n.t('warnSecondSun'));
+    }
   }
 
   deleteSelected(id?: string | null): void {
@@ -186,7 +231,15 @@ export class HierarchyEditorService {
   duplicate(id?: string | null): void {
     const targets = this.mutableSelection(id);
     if (!targets.length) return;
-    const cmd = duplicateEntitiesCommand(this.engine.world(), targets);
+    const world = this.engine.world();
+    const hadSun = targets.some((tid) => {
+      const em = world.get(tid, 'LightEmitter');
+      return em?.params.mode === 'sun';
+    });
+    const cmd = duplicateEntitiesCommand(world, targets);
     if (cmd) this.engine.commitApplied(cmd);
+    if (hadSun) {
+      this.showNotice(this.i18n.t('warnSecondSun'));
+    }
   }
 }

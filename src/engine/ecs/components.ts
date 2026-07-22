@@ -2,7 +2,10 @@ import type { Mat4 } from '../math/mat4';
 import type { Quat } from '../math/quat';
 import type { Vec3 } from '../math/vec3';
 import type { ModeParams } from '../optics/modes';
-import { defaultLaserParams, normalizeLaserParams } from '../optics/modes';
+import {
+  defaultModeParams,
+  normalizeModeParamsPublic,
+} from '../optics/modes';
 import {
   apertureCouplingFromLegacyMaterial,
   clampUnit,
@@ -242,16 +245,35 @@ export function defaultLightEmitter(): LightEmitter {
     wavelengthNm: 532,
     powerW: 1,
     enabled: true,
-    params: {
-      mode: 'laser',
-      laser: defaultLaserParams(),
-    },
+    params: defaultModeParams('laser'),
     surfaceGain: 1,
     glowGain: 1,
     bloomGain: 1,
     apertureCoupling: 0.4,
     spill: defaultOpticsSpill(),
   };
+}
+
+export function defaultSunLightEmitter(): LightEmitter {
+  return {
+    wavelengthNm: 560,
+    powerW: 100,
+    enabled: true,
+    params: defaultModeParams('sun'),
+    surfaceGain: 1,
+    glowGain: 0.2,
+    bloomGain: 0.4,
+    apertureCoupling: 1,
+    spill: defaultOpticsSpill(),
+  };
+}
+
+export function defaultLightEmitterForMode(
+  mode: import('../optics/modes').LightMode,
+): LightEmitter {
+  if (mode === 'sun') return defaultSunLightEmitter();
+  const base = defaultLightEmitter();
+  return { ...base, params: defaultModeParams(mode) };
 }
 
 export function defaultMediaVolume(): MediaVolume {
@@ -357,11 +379,7 @@ function normalizeModeParams(
   raw: ModeParams | undefined,
   fallback: ModeParams,
 ): ModeParams {
-  if (!raw || typeof raw !== 'object' || !('mode' in raw)) return fallback;
-  if (raw.mode === 'laser') {
-    return { mode: 'laser', laser: normalizeLaserParams(raw.laser) };
-  }
-  return raw;
+  return normalizeModeParamsPublic(raw, fallback);
 }
 
 /** Fill missing fields when loading older saves. Migrates legacy kinds → presets. */

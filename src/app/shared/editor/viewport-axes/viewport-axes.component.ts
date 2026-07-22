@@ -32,18 +32,20 @@ const DRAG_THRESHOLD_PX = 3;
             [attr.stroke]="line.color"
             stroke-width="2"
             stroke-linecap="round"
+            stroke-opacity="0.72"
           />
           <circle
             [attr.cx]="line.x2"
             [attr.cy]="line.y2"
             r="8"
             [attr.fill]="line.color"
-            fill-opacity="0.4"
+            fill-opacity="0.35"
           />
           <text
             [attr.x]="line.labelX"
             [attr.y]="line.labelY"
             [attr.fill]="line.color"
+            fill-opacity="0.85"
             font-size="11"
             font-family="IBM Plex Sans, sans-serif"
           >

@@ -21,7 +21,9 @@ import type { DepthRenderer } from '@babylonjs/core/Rendering/depthRenderer.js';
 import {
   environmentClearRgb,
   environmentHemiIntensity,
+  environmentSunDirUnit,
   environmentSunIntensity,
+  lightWorldPose,
   type CameraPose,
   type FramePresenter,
   type GizmoMode,
@@ -307,7 +309,7 @@ export class BabylonPresenter implements FramePresenter {
   sync(world: World): void {
     this.world = world;
     this.syncCameraToResource();
-    this.syncEnvironmentLighting(world.resources.EnvironmentLighting.ambientLevel);
+    this.syncEnvironmentLighting(world);
     this.meshes.sync();
     this.lights.sync(world);
     this.pipeline.syncBloomFromLights(world);
@@ -315,11 +317,35 @@ export class BabylonPresenter implements FramePresenter {
     this.volumetrics.applyRenderScale(world.resources.Quality.renderScale);
   }
 
-  /** Apply environment ambient to fill lights + clear color (source of eye exposure). */
-  private syncEnvironmentLighting(ambientLevel: number): void {
+  /** Apply environment ambient + optional primary Sun entity to fill lights. */
+  private syncEnvironmentLighting(world: World): void {
+    const ambientLevel = world.resources.EnvironmentLighting.ambientLevel;
     const [r, g, b] = environmentClearRgb(ambientLevel);
     this.scene.clearColor = new Color4(r, g, b, 1);
     this.hemi.intensity = environmentHemiIntensity(ambientLevel);
+
+    const primarySunId = world.resources.SceneSun.primaryId;
+    if (primarySunId) {
+      const emitter = world.get(primarySunId, 'LightEmitter');
+      if (emitter?.enabled) {
+        const pose = lightWorldPose(world, primarySunId);
+        this.sun.direction = new Vector3(
+          pose.direction[0],
+          pose.direction[1],
+          pose.direction[2],
+        );
+        const base = environmentSunIntensity(ambientLevel);
+        // Soft educational scale from emitter power (100 W ≈ default demo sun).
+        const powerScale = Math.min(3, 0.35 + emitter.powerW * 0.0065);
+        this.sun.intensity = base * powerScale;
+        return;
+      }
+      this.sun.intensity = 0;
+      return;
+    }
+
+    const [dx, dy, dz] = environmentSunDirUnit();
+    this.sun.direction = new Vector3(dx, dy, dz);
     this.sun.intensity = environmentSunIntensity(ambientLevel);
   }
 

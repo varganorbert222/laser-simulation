@@ -11,7 +11,7 @@ import {
   normalizeMediaVolume,
   normalizeSmokeEmitter,
 } from '../ecs/components';
-import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, normalizeShadowQuality, type Quality } from '../ecs/resources';
+import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, normalizeShadowQuality, refreshSceneSunBinding, type Quality } from '../ecs/resources';
 import { World, SAVE_SCHEMA_VERSION, type SerializedWorld } from '../ecs/world';
 import { identity as matIdentity } from '../math/mat4';
 import {
@@ -154,6 +154,7 @@ export function restoreWorldFromSerialized(world: World, data: SerializedWorld):
       world.add(entity.id, 'ViewportHidden', { hidden: false });
     }
   }
+  refreshSceneSunBinding(world);
   world.bump();
 }
 

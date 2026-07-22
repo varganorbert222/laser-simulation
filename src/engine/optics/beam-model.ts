@@ -79,6 +79,7 @@ export function beamModelFromEmitter(emitter: LightEmitter): BeamModel {
         spill,
       };
     case 'spotlight':
+    case 'flashlight':
       return {
         kind: 'cone',
         innerRad: Math.max((p.spot.innerConeDeg * Math.PI) / 180, 0.01),
@@ -93,6 +94,16 @@ export function beamModelFromEmitter(emitter: LightEmitter): BeamModel {
         residualRad: Math.max(p.parallel.residualMrad * 1e-3, 0),
         spill,
       };
+    case 'sun': {
+      // Wide parallel tube so volumetric/surface paths treat sun as directional key.
+      const halfRad = Math.max((p.sun.angularDiameterDeg * 0.5 * Math.PI) / 180, 1e-4);
+      return {
+        kind: 'tube',
+        radiusM: Math.max(Math.tan(halfRad) * 50, 5),
+        residualRad: halfRad,
+        spill,
+      };
+    }
     case 'laser':
       return {
         kind: 'gaussian',

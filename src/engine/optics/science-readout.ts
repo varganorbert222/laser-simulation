@@ -317,6 +317,36 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       formula = 'θ_inner → θ_outer falloff';
       break;
     }
+    case 'flashlight': {
+      const { innerConeDeg, outerConeDeg, apertureSharpness } = input.params.spot;
+      quantities.push(
+        {
+          id: 'inner',
+          label: 'Belső kúp',
+          value: fmt(innerConeDeg, 3),
+          unit: '°',
+          kind: 'calculated',
+        },
+        {
+          id: 'outer',
+          label: 'Külső kúp',
+          value: fmt(outerConeDeg, 3),
+          unit: '°',
+          kind: 'calculated',
+        },
+        {
+          id: 'aperture',
+          label: 'Apertúra',
+          value: fmt(apertureSharpness, 3),
+          unit: '',
+          kind: 'calculated',
+        },
+      );
+      insight =
+        'Elemlámpa: szélesebb, lágyabb kúp — szórt / „diffuse” nyaláb a spot útvonalon.';
+      formula = 'θ_inner → θ_outer (soft cone)';
+      break;
+    }
     case 'parallel': {
       const { beamRadiusM, residualMrad } = input.params.parallel;
       quantities.push(
@@ -337,6 +367,20 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       );
       insight = 'Kollimált nyaláb: közel állandó sugár, kis maradék divergenciával.';
       formula = 'w(z) ≈ w₀ + θ·z';
+      break;
+    }
+    case 'sun': {
+      const { angularDiameterDeg } = input.params.sun;
+      quantities.push({
+        id: 'angDiam',
+        label: 'Látszólagos átmérő',
+        value: fmt(angularDiameterDeg, 3),
+        unit: '°',
+        kind: 'calculated',
+      });
+      insight =
+        'Nap: egyedi jelenet-kulcsfény (directional). Irány a transform +Z; volumetria az env sun úton.';
+      formula = 'L_sun · T_media(p → sun)';
       break;
     }
     case 'laser': {

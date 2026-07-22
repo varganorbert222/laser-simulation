@@ -209,6 +209,7 @@
         (visibilityChange)="editor.setVisibility($event.id, $event.visible)"
         (addAtRoot)="editor.addEmpty()"
         (addSmokeAtRoot)="editor.addSmokeEmitter()"
+        (addSunAtRoot)="editor.addSun()"
         (addBelow)="editor.addBelow($event)"
         (removeNode)="editor.deleteSelected($event)"
         (contextAction)="onHierarchyContext($event)"
@@ -221,6 +222,12 @@
 
     <main class="viewport-wrap">
       <canvas #viewport class="viewport"></canvas>
+      @if (editor.editorNotice(); as notice) {
+        <div class="editor-notice" role="status" aria-live="polite">
+          <p>{{ notice }}</p>
+          <button type="button" (click)="editor.clearEditorNotice()">×</button>
+        </div>
+      }
       @if (engine.shadersCompiling()) {
         <div class="shader-warmup" role="status" aria-live="polite">
           <p class="shader-warmup-title">{{ i18n.t('shaderCompiling') }}</p>

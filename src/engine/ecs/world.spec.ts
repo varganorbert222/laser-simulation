@@ -52,8 +52,10 @@ describe('save/load', () => {
     expect(JSON.stringify(parsed)).not.toContain('WorldXform');
 
     const loaded = deserializeWorld(json);
-    expect(loaded.query('LightEmitter')).toHaveLength(1);
+    expect(loaded.query('LightEmitter')).toHaveLength(2);
     expect(loaded.get('laser_1', 'LightEmitter')?.wavelengthNm).toBe(532);
+    expect(loaded.get('sun_1', 'LightEmitter')?.params.mode).toBe('sun');
+    expect(loaded.resources.SceneSun.primaryId).toBe('sun_1');
   });
 });
 
@@ -92,6 +94,57 @@ describe('render pack', () => {
     expect(modes).toContain(1); // spotlight
     expect(modes).toContain(3); // laser
     expect(pack.lights.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('drives env sun from primary Sun entity and skips GpuLight slot', () => {
+    const world = createDemoWorld();
+    worldTransformSystem(world);
+    const pack = gatherRenderPack(world);
+    expect(world.resources.SceneSun.primaryId).toBe('sun_1');
+    // Only the demo laser occupies a GpuLight slot (sun uses env path).
+    expect(pack.lights).toHaveLength(1);
+    expect(pack.lights[0]!.mode).toBe(3);
+    expect(pack.env.sunRgb[0] + pack.env.sunRgb[1] + pack.env.sunRgb[2]).toBeGreaterThan(0);
+  });
+
+  it('packs flashlight and parallel into volumetric slots', () => {
+    const world = createDemoWorld();
+    const flash = createSceneEntity(world, { name: 'Flash', parentId: 'scene_root' });
+    world.add(flash, 'LightEmitter', {
+      ...defaultLightEmitter(),
+      params: {
+        mode: 'flashlight',
+        spot: { innerConeDeg: 14, outerConeDeg: 42, apertureSharpness: 2 },
+      },
+    });
+    const dir = createSceneEntity(world, { name: 'Dir', parentId: 'scene_root' });
+    world.add(dir, 'LightEmitter', {
+      ...defaultLightEmitter(),
+      params: {
+        mode: 'parallel',
+        parallel: { beamRadiusM: 0.05, residualMrad: 2 },
+      },
+    });
+    worldTransformSystem(world);
+    const pack = gatherRenderPack(world);
+    const modes = pack.lights.map((l) => l.mode);
+    expect(modes).toContain(1); // flashlight cone
+    expect(modes).toContain(2); // parallel tube
+  });
+
+  it('suppresses a second sun from the env key-light path', () => {
+    const world = createDemoWorld();
+    const extra = createSceneEntity(world, { name: 'Sun 2', parentId: 'scene_root' });
+    world.add(extra, 'LightEmitter', {
+      ...defaultLightEmitter(),
+      params: { mode: 'sun', sun: { angularDiameterDeg: 0.53 } },
+      powerW: 200,
+    });
+    worldTransformSystem(world);
+    const pack = gatherRenderPack(world);
+    expect(world.resources.SceneSun.primaryId).toBe('sun_1');
+    expect(world.resources.SceneSun.suppressedIds).toContain(extra);
+    expect(pack.lights).toHaveLength(1);
   });
 
   it('packs up to MAX_GPU_LIGHTS lasers for volumetric slots', () => {

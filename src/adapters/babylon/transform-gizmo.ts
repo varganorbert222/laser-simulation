@@ -1,7 +1,8 @@
 import { GizmoManager } from '@babylonjs/core/Gizmos/gizmoManager';
 import type { Scene } from '@babylonjs/core';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
-import { Quaternion } from '@babylonjs/core';
+import { Material, Quaternion } from '@babylonjs/core';
+import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
 import type { GizmoMode, Transform } from '../../engine';
 
 type DragGizmo = {
@@ -9,6 +10,17 @@ type DragGizmo = {
   onDragEndObservable: { add: (cb: () => void) => void };
   isDragging?: boolean;
 };
+
+type MaterialGizmo = {
+  coloredMaterial?: StandardMaterial;
+  hoverMaterial?: StandardMaterial;
+  disableMaterial?: StandardMaterial;
+};
+
+/** Slight translucency so gizmos don't obscure the scene. */
+const GIZMO_ALPHA = 0.62;
+const GIZMO_HOVER_ALPHA = 0.82;
+const GIZMO_DISABLE_ALPHA = 0.35;
 
 export class StudioTransformGizmo {
   private readonly manager: GizmoManager;
@@ -18,6 +30,7 @@ export class StudioTransformGizmo {
   private onDragStart: ((entityId: string) => void) | null = null;
   private onDragEnd: ((entityId: string, transform: Transform) => void) | null = null;
   private readonly wired = new WeakSet<object>();
+  private readonly styled = new WeakSet<object>();
   private dragging = false;
 
   constructor(scene: Scene) {
@@ -63,6 +76,7 @@ export class StudioTransformGizmo {
     if (mode === 'rotation' && this.manager.gizmos.rotationGizmo) {
       this.manager.gizmos.rotationGizmo.updateGizmoRotationToMatchAttachedMesh = false;
     }
+    this.styleActiveGizmos();
     this.wire(this.manager.gizmos.positionGizmo as DragGizmo | null);
     this.wire(this.manager.gizmos.rotationGizmo as DragGizmo | null);
     this.wire(this.manager.gizmos.scaleGizmo as DragGizmo | null);
@@ -112,6 +126,47 @@ export class StudioTransformGizmo {
       this.emit();
     });
     this.wired.add(gizmo);
+  }
+
+  private styleActiveGizmos(): void {
+    const { positionGizmo, rotationGizmo, scaleGizmo } = this.manager.gizmos;
+    if (positionGizmo) {
+      this.styleAxisBundle([
+        positionGizmo.xGizmo,
+        positionGizmo.yGizmo,
+        positionGizmo.zGizmo,
+        positionGizmo.xPlaneGizmo,
+        positionGizmo.yPlaneGizmo,
+        positionGizmo.zPlaneGizmo,
+      ]);
+    }
+    if (rotationGizmo) {
+      this.styleAxisBundle([rotationGizmo.xGizmo, rotationGizmo.yGizmo, rotationGizmo.zGizmo]);
+    }
+    if (scaleGizmo) {
+      this.styleAxisBundle([
+        scaleGizmo.xGizmo,
+        scaleGizmo.yGizmo,
+        scaleGizmo.zGizmo,
+        scaleGizmo,
+      ]);
+    }
+  }
+
+  private styleAxisBundle(parts: readonly MaterialGizmo[]): void {
+    for (const part of parts) {
+      if (!part || this.styled.has(part)) continue;
+      this.applyMaterialAlpha(part.coloredMaterial, GIZMO_ALPHA);
+      this.applyMaterialAlpha(part.hoverMaterial, GIZMO_HOVER_ALPHA);
+      this.applyMaterialAlpha(part.disableMaterial, GIZMO_DISABLE_ALPHA);
+      this.styled.add(part);
+    }
+  }
+
+  private applyMaterialAlpha(mat: StandardMaterial | undefined, alpha: number): void {
+    if (!mat) return;
+    mat.alpha = alpha;
+    mat.transparencyMode = Material.MATERIAL_ALPHABLEND;
   }
 
   private refresh(): void {

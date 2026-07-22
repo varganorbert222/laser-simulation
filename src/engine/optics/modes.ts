@@ -2,7 +2,21 @@
 
 import { clampM2, m2FromParallelness } from './laser';
 
-export type LightMode = 'omni_lamp' | 'spotlight' | 'parallel' | 'laser';
+/**
+ * Emitter kinds:
+ * - omni_lamp / point — isotropic soft lamp
+ * - spotlight / flashlight — cone (flashlight = softer, wider defaults)
+ * - parallel / directional — finite tube / collimated beam
+ * - sun — unique scene key light (directional; drives env sun + Babylon DirectionalLight)
+ * - laser — Gaussian TEM₀₀
+ */
+export type LightMode =
+  | 'omni_lamp'
+  | 'spotlight'
+  | 'flashlight'
+  | 'parallel'
+  | 'sun'
+  | 'laser';
 
 export interface OmniParams {
   softRadiusM: number;
@@ -18,6 +32,12 @@ export interface SpotParams {
 export interface ParallelParams {
   beamRadiusM: number;
   residualMrad: number;
+}
+
+/** Sun key light — direction from entity −Z; angular size for soft rim (educational). */
+export interface SunParams {
+  /** Apparent angular diameter (deg). Softens the directional lobe slightly. */
+  angularDiameterDeg: number;
 }
 
 /**
@@ -49,8 +69,19 @@ export interface LaserParams {
 export type ModeParams =
   | { mode: 'omni_lamp'; omni: OmniParams }
   | { mode: 'spotlight'; spot: SpotParams }
+  | { mode: 'flashlight'; spot: SpotParams }
   | { mode: 'parallel'; parallel: ParallelParams }
+  | { mode: 'sun'; sun: SunParams }
   | { mode: 'laser'; laser: LaserParams };
+
+export const ALL_LIGHT_MODES: readonly LightMode[] = [
+  'laser',
+  'flashlight',
+  'spotlight',
+  'omni_lamp',
+  'parallel',
+  'sun',
+] as const;
 
 export function defaultLaserParams(): LaserParams {
   return {
@@ -66,6 +97,31 @@ export function defaultLaserParams(): LaserParams {
   };
 }
 
+export function defaultSpotParams(): SpotParams {
+  return { innerConeDeg: 8, outerConeDeg: 18, apertureSharpness: 4 };
+}
+
+/** Flashlight ≈ soft / wider spot (or “diffuse laser” cone). */
+export function defaultFlashlightParams(): SpotParams {
+  return { innerConeDeg: 12, outerConeDeg: 40, apertureSharpness: 2 };
+}
+
+export function defaultParallelParams(): ParallelParams {
+  return { beamRadiusM: 0.04, residualMrad: 1 };
+}
+
+export function defaultOmniParams(): OmniParams {
+  return { softRadiusM: 0.35, falloff: 2 };
+}
+
+export function defaultSunParams(): SunParams {
+  return { angularDiameterDeg: 0.53 };
+}
+
+export function isSunMode(mode: LightMode): boolean {
+  return mode === 'sun';
+}
+
 function clamp01(v: number, fallback = 0): number {
   if (!Number.isFinite(v)) return fallback;
   return Math.min(1, Math.max(0, v));
@@ -74,6 +130,32 @@ function clamp01(v: number, fallback = 0): number {
 function clampPositive(v: number, fallback: number, min = 0): number {
   if (!Number.isFinite(v)) return fallback;
   return Math.max(min, v);
+}
+
+function normalizeSpotParams(raw: Partial<SpotParams> | null | undefined, d: SpotParams): SpotParams {
+  if (!raw || typeof raw !== 'object') return d;
+  const inner = clampPositive(
+    typeof raw.innerConeDeg === 'number' ? raw.innerConeDeg : d.innerConeDeg,
+    d.innerConeDeg,
+    0.5,
+  );
+  const outer = Math.max(
+    inner + 0.5,
+    clampPositive(
+      typeof raw.outerConeDeg === 'number' ? raw.outerConeDeg : d.outerConeDeg,
+      d.outerConeDeg,
+      1,
+    ),
+  );
+  return {
+    innerConeDeg: Math.min(80, inner),
+    outerConeDeg: Math.min(90, outer),
+    apertureSharpness: clampPositive(
+      typeof raw.apertureSharpness === 'number' ? raw.apertureSharpness : d.apertureSharpness,
+      d.apertureSharpness,
+      0.5,
+    ),
+  };
 }
 
 /** Normalize laser params; migrates legacy `parallelness` → `m2`. */
@@ -120,4 +202,116 @@ export function normalizeLaserParams(
     coma: clamp01(typeof raw.coma === 'number' ? raw.coma : d.coma),
     astigmatism: clamp01(typeof raw.astigmatism === 'number' ? raw.astigmatism : d.astigmatism),
   };
+}
+
+export function normalizeSunParams(raw: Partial<SunParams> | null | undefined): SunParams {
+  const d = defaultSunParams();
+  if (!raw || typeof raw !== 'object') return d;
+  return {
+    angularDiameterDeg: Math.min(
+      5,
+      clampPositive(
+        typeof raw.angularDiameterDeg === 'number' ? raw.angularDiameterDeg : d.angularDiameterDeg,
+        d.angularDiameterDeg,
+        0.05,
+      ),
+    ),
+  };
+}
+
+/** Build default ModeParams for a light kind. */
+export function defaultModeParams(mode: LightMode): ModeParams {
+  switch (mode) {
+    case 'omni_lamp':
+      return { mode: 'omni_lamp', omni: defaultOmniParams() };
+    case 'spotlight':
+      return { mode: 'spotlight', spot: defaultSpotParams() };
+    case 'flashlight':
+      return { mode: 'flashlight', spot: defaultFlashlightParams() };
+    case 'parallel':
+      return { mode: 'parallel', parallel: defaultParallelParams() };
+    case 'sun':
+      return { mode: 'sun', sun: defaultSunParams() };
+    case 'laser':
+    default:
+      return { mode: 'laser', laser: defaultLaserParams() };
+  }
+}
+
+export function normalizeModeParamsPublic(
+  raw: ModeParams | (Partial<ModeParams> & { mode?: string }) | undefined,
+  fallback: ModeParams,
+): ModeParams {
+  if (!raw || typeof raw !== 'object' || !('mode' in raw) || !raw.mode) return fallback;
+  const mode = raw.mode as LightMode;
+  switch (mode) {
+    case 'laser':
+      return {
+        mode: 'laser',
+        laser: normalizeLaserParams(
+          (raw as { laser?: Parameters<typeof normalizeLaserParams>[0] }).laser,
+        ),
+      };
+    case 'spotlight':
+      return {
+        mode: 'spotlight',
+        spot: normalizeSpotParams(
+          (raw as { spot?: Partial<SpotParams> }).spot,
+          defaultSpotParams(),
+        ),
+      };
+    case 'flashlight':
+      return {
+        mode: 'flashlight',
+        spot: normalizeSpotParams(
+          (raw as { spot?: Partial<SpotParams> }).spot,
+          defaultFlashlightParams(),
+        ),
+      };
+    case 'omni_lamp': {
+      const o = (raw as { omni?: Partial<OmniParams> }).omni;
+      const d = defaultOmniParams();
+      return {
+        mode: 'omni_lamp',
+        omni: {
+          softRadiusM: clampPositive(
+            typeof o?.softRadiusM === 'number' ? o.softRadiusM : d.softRadiusM,
+            d.softRadiusM,
+            0.01,
+          ),
+          falloff: clampPositive(
+            typeof o?.falloff === 'number' ? o.falloff : d.falloff,
+            d.falloff,
+            0.5,
+          ),
+        },
+      };
+    }
+    case 'parallel': {
+      const p = (raw as { parallel?: Partial<ParallelParams> }).parallel;
+      const d = defaultParallelParams();
+      return {
+        mode: 'parallel',
+        parallel: {
+          beamRadiusM: clampPositive(
+            typeof p?.beamRadiusM === 'number' ? p.beamRadiusM : d.beamRadiusM,
+            d.beamRadiusM,
+            0.001,
+          ),
+          residualMrad: clampPositive(
+            typeof p?.residualMrad === 'number' ? p.residualMrad : d.residualMrad,
+            d.residualMrad,
+            0,
+          ),
+        },
+      };
+    }
+    case 'sun':
+      return {
+        mode: 'sun',
+        sun: normalizeSunParams((raw as { sun?: Partial<SunParams> }).sun),
+      };
+    default:
+      return fallback;
+  }
 }

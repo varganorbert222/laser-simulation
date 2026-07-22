@@ -2,6 +2,7 @@ import { type Scene, type StandardMaterial } from '@babylonjs/core';
 import {
   beamModelFromEmitter,
   beamModelToGpuParams,
+  isSunEmitter,
   laserDotDisplayBrightness,
   lightWorldPose,
   MAX_GPU_LIGHTS,
@@ -64,6 +65,8 @@ export class SurfaceLightSync {
     for (const id of world.query('LightEmitter', 'Transform')) {
       const emitter = world.get(id, 'LightEmitter');
       if (!emitter?.enabled) continue;
+      // Sun key light is Babylon DirectionalLight + volumetric env sun — not a surface slot.
+      if (isSunEmitter(emitter)) continue;
       if (bound >= MAX_GPU_LIGHTS) continue;
       bound++;
 

@@ -164,6 +164,9 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
       case 'addSmoke':
         this.editor.addSmokeEmitterBelow(nodeId);
         break;
+      case 'addSun':
+        this.editor.addSunBelow(nodeId);
+        break;
       case 'rename':
         this.editor.renameInteractive(nodeId);
         break;

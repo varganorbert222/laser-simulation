@@ -26,6 +26,7 @@ import {
   environmentVolumetricHemiRgb,
   environmentVolumetricSunRgb,
 } from '../optics/environment-lighting';
+import { isSunEmitter, refreshSceneSunBinding } from '../optics/scene-sun';
 import { normalizeChromaticity } from '../optics/color';
 import { rayleighScatterWeight, wavelengthToRgb } from '../optics/wavelength';
 import {
@@ -170,11 +171,14 @@ export function gatherRenderPack(world: World): GatheredFrame {
   const camPos = world.resources.Camera.position;
   const lights: GpuLight[] = [];
   const media: GpuMedia[] = [];
+  const sunBinding = refreshSceneSunBinding(world);
 
   for (const id of world.query('LightEmitter', 'Transform')) {
     if (lights.length >= MAX_GPU_LIGHTS) break;
     const emitter = world.get(id, 'LightEmitter');
     if (!emitter?.enabled) continue;
+    // Sun key light uses env sun path (uEnvSun), not a GpuLight slot.
+    if (isSunEmitter(emitter)) continue;
 
     const pose = lightWorldPose(world, id);
     const color = normalizeChromaticity(wavelengthToRgb(emitter.wavelengthNm));
@@ -269,7 +273,26 @@ export function gatherRenderPack(world: World): GatheredFrame {
 
   const q = world.resources.Quality;
   const envRes = world.resources.EnvironmentLighting;
-  const sunDirCam = normalize(environmentSunDirUnit() as Vec3);
+  let sunDirCam = normalize(environmentSunDirUnit() as Vec3);
+  let sunRgb = environmentVolumetricSunRgb(envRes.ambientLevel);
+  const primarySunId = sunBinding.primaryId;
+  if (primarySunId) {
+    const sunEm = world.get(primarySunId, 'LightEmitter');
+    if (sunEm?.enabled) {
+      const pose = lightWorldPose(world, primarySunId);
+      sunDirCam = normalize(pose.direction);
+      const chroma = normalizeChromaticity(wavelengthToRgb(sunEm.wavelengthNm));
+      const gain = physicalLuminousScale(sunEm.powerW, sunEm.wavelengthNm, {
+        ambientLevel: envRes.ambientLevel,
+      });
+      // Scale educational env sun tint by sun emitter power (keep soft ceiling).
+      const base = environmentVolumetricSunRgb(envRes.ambientLevel);
+      const k = Math.min(4, 0.35 + gain * 0.002);
+      sunRgb = [base[0] * k * chroma[0], base[1] * k * chroma[1], base[2] * k * chroma[2]];
+    } else {
+      sunRgb = [0, 0, 0];
+    }
+  }
 
   return {
     lights,
@@ -286,7 +309,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
     },
     env: {
       hemiRgb: environmentVolumetricHemiRgb(envRes.ambientLevel),
-      sunRgb: environmentVolumetricSunRgb(envRes.ambientLevel),
+      sunRgb,
       sunDirCam,
       multiScatter: envRes.volumeMultiScatter,
     },

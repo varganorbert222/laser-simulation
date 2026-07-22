@@ -137,6 +137,17 @@ input[type='range'] {
   color: var(--ls-muted);
 }
 
+.warn {
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: #f0e6d2;
+  background: rgba(42, 28, 12, 0.85);
+  border: 1px solid rgba(214, 168, 90, 0.4);
+  border-radius: 4px;
+}
+
 .derived {
   margin: 0;
   font-size: 0.75rem;

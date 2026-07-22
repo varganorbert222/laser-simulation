@@ -9,6 +9,7 @@ import type {
   EnvironmentLighting,
   PresentationMode,
   Quality,
+  SceneSunBinding,
   TimeResource,
 } from './resources';
 import {
@@ -16,6 +17,7 @@ import {
   createDefaultDisplayVision,
   createDefaultEditorSelection,
   createDefaultEnvironmentLighting,
+  createDefaultSceneSunBinding,
   createQuality,
   normalizeEditorSelection,
 } from './resources';
@@ -32,6 +34,8 @@ export interface WorldResources {
   EditorTooling: EditorTooling;
   DisplayVision: DisplayVision;
   EnvironmentLighting: EnvironmentLighting;
+  /** Primary / suppressed sun emitters (refreshed on pack / load). */
+  SceneSun: SceneSunBinding;
   epoch: number;
 }
 
@@ -51,6 +55,7 @@ export interface SerializedWorld {
     EditorTooling: EditorTooling;
     DisplayVision: DisplayVision;
     EnvironmentLighting: EnvironmentLighting;
+    SceneSun?: SceneSunBinding;
   };
   entities: SerializedEntity[];
 }
@@ -95,6 +100,7 @@ export class World {
       EditorTooling: resources?.EditorTooling ?? { gizmoMode: 'position' },
       DisplayVision: resources?.DisplayVision ?? createDefaultDisplayVision(),
       EnvironmentLighting: resources?.EnvironmentLighting ?? createDefaultEnvironmentLighting(),
+      SceneSun: resources?.SceneSun ?? createDefaultSceneSunBinding(),
       epoch: resources?.epoch ?? 0,
     };
   }

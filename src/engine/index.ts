@@ -57,6 +57,7 @@ export * from './optics/environment-lighting';
 export * from './optics/power';
 export * from './optics/laser';
 export * from './optics/modes';
+export * from './optics/scene-sun';
 export * from './optics/beam-optics';
 export * from './optics/microfacet-brdf';
 export * from './optics/light-incident';

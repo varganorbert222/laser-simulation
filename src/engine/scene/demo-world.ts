@@ -3,9 +3,10 @@ import { vec3 } from '../math/vec3';
 import { World } from '../ecs/world';
 import { createQuality } from '../ecs/resources';
 import { createSceneEntity } from '../hierarchy/entity-factory';
-import { defaultLightEmitter } from '../ecs/components';
+import { defaultLightEmitter, defaultSunLightEmitter } from '../ecs/components';
 import { defaultMediaVolumeForKind } from '../optics/media-optical-presets';
 import { defaultGroundSurfaceMaterial } from '../optics/surface-material';
+import { refreshSceneSunBinding } from '../optics/scene-sun';
 
 export function createDemoWorld(): World {
   const world = new World({
@@ -46,6 +47,19 @@ export function createDemoWorld(): World {
     halfExtents: vec3(6, 3, 6),
   });
 
+  const sun = createSceneEntity(world, {
+    id: 'sun_1',
+    name: 'Sun',
+    parentId: root,
+  });
+  world.set(sun, 'Transform', {
+    position: vec3(0, 8, 0),
+    // Aim roughly along educational env sun (−0.4, −1, −0.3).
+    rotation: fromEulerYXZ(0.35, -0.55, 0),
+    scale: vec3(1, 1, 1),
+  });
+  world.add(sun, 'LightEmitter', defaultSunLightEmitter());
+
   const laser = createSceneEntity(world, {
     id: 'laser_1',
     name: 'Lézer',
@@ -79,6 +93,8 @@ export function createDemoWorld(): World {
       strayPowerFraction: 0.18,
     },
   });
+
+  refreshSceneSunBinding(world);
 
   world.resources.EditorSelection = { entityId: laser, entityIds: [laser] };
   const sel = world.get(laser, 'Selectable');

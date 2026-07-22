@@ -1,5 +1,6 @@
 import type { EntityId, LightEmitter, MediaVolume, SmokeEmitter } from '../ecs/components';
 import type { SurfaceMaterial } from '../optics/surface-material';
+import { refreshSceneSunBinding } from '../optics/scene-sun';
 import type { World } from '../ecs/world';
 import type { Command } from './stack';
 import { snapshotCommand } from './stack';
@@ -16,6 +17,7 @@ export function setLightEmitterCommand(
     structuredClone(after),
     (v) => {
       world.set(entityId, 'LightEmitter', structuredClone(v));
+      refreshSceneSunBinding(world);
     },
   );
 }

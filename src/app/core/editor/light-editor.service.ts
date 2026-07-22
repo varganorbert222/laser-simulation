@@ -1,24 +1,35 @@
 import { Injectable, computed, inject } from '@angular/core';
 import {
+  ALL_LIGHT_MODES,
   POWER_PRESETS_W,
   buildScienceReadout,
   clampPowerW,
   collectComponentValues,
+  defaultModeParams,
   fieldStateJson,
+  isSuppressedSunEntity,
+  refreshSceneSunBinding,
   restoreWorldFromSerialized,
   selectionHasComponent,
   setLightEmitterCommand,
+  wouldSuppressAdditionalSun,
   type LightEmitter,
+  type LightMode,
 } from '../../../engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
+import { HierarchyEditorService } from './hierarchy-editor.service';
+import { I18nService } from '../../i18n/i18n.service';
 
 @Injectable({ providedIn: 'root' })
 export class LightEditorService {
   private readonly engine = inject(EngineHostService);
   private readonly selection = inject(SelectionService);
+  private readonly hierarchy = inject(HierarchyEditorService);
+  private readonly i18n = inject(I18nService);
 
   readonly powerPresets = POWER_PRESETS_W;
+  readonly lightModes = ALL_LIGHT_MODES;
 
   /** Display light when all selected have LightEmitter (primary values if mixed). */
   readonly selectedLight = computed(() => {
@@ -37,6 +48,14 @@ export class LightEditorService {
     const world = this.engine.world();
     if (!selectionHasComponent(world, ids, 'LightEmitter')) return false;
     return fieldStateJson(collectComponentValues(world, ids, 'LightEmitter')).kind === 'mixed';
+  });
+
+  /** Selected entity is an extra sun (not rendered as key light). */
+  readonly selectedSunSuppressed = computed(() => {
+    this.engine.epoch();
+    const id = this.selection.selectedId();
+    if (!id) return false;
+    return isSuppressedSunEntity(this.engine.world(), id);
   });
 
   readonly scienceReadout = computed(() => {
@@ -81,11 +100,13 @@ export class LightEditorService {
           after,
           apply: (v) => {
             world.set(id, 'LightEmitter', structuredClone(v));
+            refreshSceneSunBinding(world);
           },
         });
         return;
       }
       this.engine.executeCommand(setLightEmitterCommand(world, id, before, after));
+      refreshSceneSunBinding(world);
       return;
     }
 
@@ -95,6 +116,7 @@ export class LightEditorService {
       if (!before) continue;
       world.set(id, 'LightEmitter', mergeLight(before, patch));
     }
+    refreshSceneSunBinding(world);
     const afterSnap = world.cloneSerializable();
     if (opts?.coalesce) {
       this.engine.coalesceSnapshot({
@@ -113,6 +135,25 @@ export class LightEditorService {
       execute: () => restoreWorldFromSerialized(world, afterSnap),
       undo: () => restoreWorldFromSerialized(world, beforeSnap),
     });
+  }
+
+  setLightMode(mode: LightMode): void {
+    const ids = this.selection.selectedIds().filter((id) =>
+      this.engine.world().has(id, 'LightEmitter'),
+    );
+    if (!ids.length) return;
+    const world = this.engine.world();
+    let warn = false;
+    if (mode === 'sun') {
+      for (const id of ids) {
+        if (wouldSuppressAdditionalSun(world, id)) warn = true;
+      }
+    }
+    this.updateLight({ params: defaultModeParams(mode) });
+    refreshSceneSunBinding(world);
+    if (warn) {
+      this.hierarchy.showNotice(this.i18n.t('warnSecondSun'));
+    }
   }
 
   setWavelength(nm: number): void {

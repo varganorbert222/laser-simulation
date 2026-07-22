@@ -184,6 +184,45 @@ button.ghost {
   color: var(--ls-muted);
 }
 
+.editor-notice {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  z-index: 3;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: min(480px, 92%);
+  padding: 0.55rem 0.65rem;
+  border-radius: 4px;
+  background: rgba(42, 28, 12, 0.92);
+  border: 1px solid rgba(214, 168, 90, 0.45);
+  color: #f0e6d2;
+  font-size: 0.8rem;
+  line-height: 1.35;
+
+  p {
+    margin: 0;
+    flex: 1;
+  }
+
+  button {
+    flex-shrink: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.75;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
 .hint {
   position: absolute;
   left: 0.75rem;

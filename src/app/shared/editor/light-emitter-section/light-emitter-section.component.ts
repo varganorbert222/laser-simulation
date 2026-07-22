@@ -1,10 +1,13 @@
 import { Component, effect, input, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
+  ALL_LIGHT_MODES,
   clampSpill01,
+  defaultModeParams,
   formatPowerW,
   normalizeLaserParams,
   normalizeOpticsSpill,
+  normalizeSunParams,
   POWER_UNITS,
   powerFromUnit,
   powerToUnit,
@@ -12,6 +15,7 @@ import {
   sliderTFromPowerW,
   suggestPowerUnit,
   type LightEmitter,
+  type LightMode,
   type PowerUnit,
 } from '../../../../engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
@@ -30,6 +34,7 @@ export class LightEmitterSectionComponent {
   readonly editor = inject(EditorFacade);
   readonly i18n = inject(I18nService);
   readonly powerUnits = POWER_UNITS;
+  readonly lightModes = ALL_LIGHT_MODES;
   readonly powerUnit = signal<PowerUnit>('W');
   private lastSelectionId: string | null = null;
 
@@ -42,6 +47,28 @@ export class LightEmitterSectionComponent {
         this.powerUnit.set(suggestPowerUnit(light.powerW));
       }
     });
+  }
+
+  modeLabel(mode: LightMode): string {
+    switch (mode) {
+      case 'laser':
+        return this.i18n.t('modeLaser');
+      case 'flashlight':
+        return this.i18n.t('modeFlashlight');
+      case 'spotlight':
+        return this.i18n.t('modeSpotlight');
+      case 'omni_lamp':
+        return this.i18n.t('modeOmni');
+      case 'parallel':
+        return this.i18n.t('modeParallel');
+      case 'sun':
+        return this.i18n.t('modeSun');
+    }
+  }
+
+  onMode(raw: string): void {
+    if (!this.lightModes.includes(raw as LightMode)) return;
+    this.editor.setLightMode(raw as LightMode);
   }
 
   onWavelength(nm: number): void {
@@ -156,6 +183,104 @@ export class LightEmitterSectionComponent {
     const laser = normalizeLaserParams({ ...light.params.laser, [key]: n });
     this.editor.updateLight(
       { params: { mode: 'laser', laser } },
+      { coalesce: true },
+    );
+  }
+
+  spotInner(): number {
+    const p = this.light().params;
+    return p.mode === 'spotlight' || p.mode === 'flashlight' ? p.spot.innerConeDeg : 8;
+  }
+
+  spotOuter(): number {
+    const p = this.light().params;
+    return p.mode === 'spotlight' || p.mode === 'flashlight' ? p.spot.outerConeDeg : 18;
+  }
+
+  spotSharpness(): number {
+    const p = this.light().params;
+    return p.mode === 'spotlight' || p.mode === 'flashlight' ? p.spot.apertureSharpness : 4;
+  }
+
+  onSpotParam(key: 'innerConeDeg' | 'outerConeDeg' | 'apertureSharpness', value: string): void {
+    const light = this.light();
+    if (light.params.mode !== 'spotlight' && light.params.mode !== 'flashlight') return;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    const mode = light.params.mode;
+    const defaults = defaultModeParams(mode);
+    const spotBase =
+      defaults.mode === 'spotlight' || defaults.mode === 'flashlight'
+        ? defaults.spot
+        : { innerConeDeg: 8, outerConeDeg: 18, apertureSharpness: 4 };
+    const spot = { ...spotBase, ...light.params.spot, [key]: n };
+    this.editor.updateLight({ params: { mode, spot } }, { coalesce: true });
+  }
+
+  omniSoftRadius(): number {
+    const p = this.light().params;
+    return p.mode === 'omni_lamp' ? p.omni.softRadiusM : 0.35;
+  }
+
+  omniFalloff(): number {
+    const p = this.light().params;
+    return p.mode === 'omni_lamp' ? p.omni.falloff : 2;
+  }
+
+  onOmniParam(key: 'softRadiusM' | 'falloff', value: string): void {
+    const light = this.light();
+    if (light.params.mode !== 'omni_lamp') return;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    this.editor.updateLight(
+      { params: { mode: 'omni_lamp', omni: { ...light.params.omni, [key]: n } } },
+      { coalesce: true },
+    );
+  }
+
+  parallelRadius(): number {
+    const p = this.light().params;
+    return p.mode === 'parallel' ? p.parallel.beamRadiusM : 0.04;
+  }
+
+  parallelResidual(): number {
+    const p = this.light().params;
+    return p.mode === 'parallel' ? p.parallel.residualMrad : 1;
+  }
+
+  onParallelParam(key: 'beamRadiusM' | 'residualMrad', value: string): void {
+    const light = this.light();
+    if (light.params.mode !== 'parallel') return;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    this.editor.updateLight(
+      {
+        params: {
+          mode: 'parallel',
+          parallel: { ...light.params.parallel, [key]: n },
+        },
+      },
+      { coalesce: true },
+    );
+  }
+
+  sunAngularDiameter(): number {
+    const p = this.light().params;
+    return p.mode === 'sun' ? p.sun.angularDiameterDeg : 0.53;
+  }
+
+  onSunAngularDiameter(value: string): void {
+    const light = this.light();
+    if (light.params.mode !== 'sun') return;
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    this.editor.updateLight(
+      {
+        params: {
+          mode: 'sun',
+          sun: normalizeSunParams({ ...light.params.sun, angularDiameterDeg: n }),
+        },
+      },
       { coalesce: true },
     );
   }

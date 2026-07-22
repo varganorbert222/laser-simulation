@@ -277,6 +277,36 @@ export const hu = {
   shadowQualityMedium: 'Közepes (2–4 lépés)',
   shadowQualityHigh: 'Magas (6–8 lépés)',
   renderPresentation: 'Kép / prezentáció',
+  lightMode: 'Fény mód',
+  tipLightMode: 'Lézer, elemlámpa, spot, pont, irányított (parallel), nap.',
+  hintLightMode:
+    'Minden mód volumetrikus. A Nap egyedi kulcsfény; több directional (parallel) lehet.',
+  modeLaser: 'Lézer',
+  modeFlashlight: 'Elemlámpa',
+  modeSpotlight: 'Spot',
+  modeOmni: 'Pont (omni)',
+  modeParallel: 'Irányított (directional)',
+  modeSun: 'Nap (Sun)',
+  warnSecondSun:
+    'Már van egy Nap a jelenetben — a további Nap objektum nem kerül kulcsfényként renderelésre.',
+  coneOptics: 'Kúp optika',
+  hintFlashlight: 'Elemlámpa: szélesebb, lágyabb kúp (szórt / „diffuse” nyaláb).',
+  hintSpotlight: 'Spotlight: irányított kúp a volumetrikus és felületi útvonalon.',
+  innerCone: 'Belső kúp',
+  outerCone: 'Külső kúp',
+  apertureSharpness: 'Apertúra élesség',
+  omniOptics: 'Pontlámpa',
+  softRadius: 'Lágy sugár',
+  falloff: 'Csökkenés',
+  parallelOptics: 'Irányított nyaláb',
+  hintParallel: 'Finite tube / kollimált directional — több is lehet egy jelenetben.',
+  beamRadius: 'Nyaláb sugár',
+  residualMrad: 'Maradék divergencia',
+  sunOptics: 'Nap',
+  hintSun:
+    'Opcionális egyedi kulcsfény: irány a transform +Z tengelyéből; volumetria + Babylon DirectionalLight.',
+  angularDiameter: 'Látszólagos átmérő',
+  addSun: 'Sun',
 } as const;
 
 export const en = {
@@ -558,6 +588,36 @@ export const en = {
   shadowQualityMedium: 'Medium (2–4 steps)',
   shadowQualityHigh: 'High (6–8 steps)',
   renderPresentation: 'Image / presentation',
+  lightMode: 'Light mode',
+  tipLightMode: 'Laser, flashlight, spot, point, directional (parallel), sun.',
+  hintLightMode:
+    'All modes are volumetric. Sun is a unique key light; multiple directionals (parallel) are allowed.',
+  modeLaser: 'Laser',
+  modeFlashlight: 'Flashlight',
+  modeSpotlight: 'Spot',
+  modeOmni: 'Point (omni)',
+  modeParallel: 'Directional',
+  modeSun: 'Sun',
+  warnSecondSun:
+    'A Sun already exists in the scene — additional Sun objects are not rendered as the key light.',
+  coneOptics: 'Cone optics',
+  hintFlashlight: 'Flashlight: wider, softer cone (diffuse / soft beam).',
+  hintSpotlight: 'Spotlight: directed cone on volumetric and surface paths.',
+  innerCone: 'Inner cone',
+  outerCone: 'Outer cone',
+  apertureSharpness: 'Aperture sharpness',
+  omniOptics: 'Point lamp',
+  softRadius: 'Soft radius',
+  falloff: 'Falloff',
+  parallelOptics: 'Directional beam',
+  hintParallel: 'Finite tube / collimated directional — many may exist in one scene.',
+  beamRadius: 'Beam radius',
+  residualMrad: 'Residual divergence',
+  sunOptics: 'Sun',
+  hintSun:
+    'Optional unique key light: direction from transform +Z; volumetrics + Babylon DirectionalLight.',
+  angularDiameter: 'Angular diameter',
+  addSun: 'Sun',
 } as const;
 
 export type LocaleKey = keyof typeof hu;

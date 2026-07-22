@@ -7,6 +7,7 @@ import {
   type GizmoMode,
   type HierarchyReorderEvent,
   type LightEmitter,
+  type LightMode,
   type MediaVolume,
   type SmokeEmitter,
   type PresentationMode,
@@ -54,6 +55,9 @@ export class EditorFacade {
   readonly gizmoMode = this.transform.gizmoMode;
   readonly selectedLight = this.light.selectedLight;
   readonly selectedLightMixed = this.light.selectedLightMixed;
+  readonly selectedSunSuppressed = this.light.selectedSunSuppressed;
+  readonly lightModes = this.light.lightModes;
+  readonly editorNotice = this.hierarchy.notice;
   readonly selectedMedia = this.media.selectedMedia;
   readonly selectedMediaMixed = this.media.selectedMediaMixed;
   readonly selectedSmoke = this.smoke.selectedSmoke;
@@ -154,12 +158,20 @@ export class EditorFacade {
     this.hierarchy.addSmokeEmitter(parentId);
   }
 
+  addSun(parentId: string | null = null): void {
+    this.hierarchy.addSun(parentId);
+  }
+
   addBelow(parentId: string): void {
     this.hierarchy.addBelow(parentId);
   }
 
   addSmokeEmitterBelow(parentId: string): void {
     this.hierarchy.addSmokeEmitterBelow(parentId);
+  }
+
+  addSunBelow(parentId: string): void {
+    this.hierarchy.addSunBelow(parentId);
   }
 
   deleteSelected(id?: string | null): void {
@@ -216,6 +228,14 @@ export class EditorFacade {
 
   updateLight(patch: Partial<LightEmitter>, opts?: { coalesce?: boolean }): void {
     this.light.updateLight(patch, opts);
+  }
+
+  setLightMode(mode: LightMode): void {
+    this.light.setLightMode(mode);
+  }
+
+  clearEditorNotice(): void {
+    this.hierarchy.clearNotice();
   }
 
   updateSurfaceMaterial(patch: Partial<SurfaceMaterial>, opts?: { coalesce?: boolean }): void {

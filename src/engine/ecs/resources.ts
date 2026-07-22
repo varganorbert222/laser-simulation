@@ -27,6 +27,16 @@ export {
   ENVIRONMENT_AMBIENT_DEFAULT,
 } from '../optics/environment-lighting';
 
+export type { SceneSunBinding } from '../optics/scene-sun';
+export {
+  createDefaultSceneSunBinding,
+  isSunEmitter,
+  isSuppressedSunEntity,
+  refreshSceneSunBinding,
+  resolveSceneSunBinding,
+  wouldSuppressAdditionalSun,
+} from '../optics/scene-sun';
+
 /** edit = gizmos/grid/wireframes; photo = clean shot view. */
 export type PresentationMode = 'edit' | 'photo';
 
