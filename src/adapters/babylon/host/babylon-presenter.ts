@@ -28,6 +28,7 @@ import {
   type CameraPose,
   type FramePresenter,
   type GizmoMode,
+  type GizmoSpace,
   type Transform,
   type World,
 } from '../../../engine';
@@ -385,6 +386,10 @@ export class BabylonPresenter implements FramePresenter {
 
   setGizmoMode(mode: GizmoMode): void {
     this.meshes.setGizmoMode(mode);
+  }
+
+  setGizmoSpace(space: GizmoSpace): void {
+    this.meshes.setGizmoSpace(space);
   }
 
   applyQualitySettings(): void {

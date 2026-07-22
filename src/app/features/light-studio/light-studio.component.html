@@ -138,17 +138,26 @@
     [title]="i18n.t('sceneLibrary')"
     titleId="scene-library-modal-title"
     [wide]="true"
-    (dismiss)="scenesModalOpen.set(false)"
+    [closeOnBackdrop]="!sceneLoading()"
+    (dismiss)="onScenesDismiss()"
   >
     <p class="hint">
       {{ i18n.t('sceneCurrent') }}:
       <strong>{{ editor.activeSceneLabel() }}</strong>
     </p>
     <div class="scene-toolbar">
-      <button type="button" class="primary" (click)="saveCurrent()">{{ i18n.t('sceneSave') }}</button>
-      <button type="button" (click)="saveAsNew()">{{ i18n.t('sceneSaveAs') }}</button>
-      <button type="button" (click)="exportFile()">{{ i18n.t('sceneExport') }}</button>
-      <button type="button" (click)="importClick()">{{ i18n.t('sceneImport') }}</button>
+      <button type="button" class="primary" [disabled]="sceneLoading()" (click)="saveCurrent()">
+        {{ i18n.t('sceneSave') }}
+      </button>
+      <button type="button" [disabled]="sceneLoading()" (click)="saveAsNew()">
+        {{ i18n.t('sceneSaveAs') }}
+      </button>
+      <button type="button" [disabled]="sceneLoading()" (click)="exportFile()">
+        {{ i18n.t('sceneExport') }}
+      </button>
+      <button type="button" [disabled]="sceneLoading()" (click)="importClick()">
+        {{ i18n.t('sceneImport') }}
+      </button>
     </div>
     <ul class="scene-list" role="listbox" [attr.aria-label]="i18n.t('sceneLibrary')">
       @for (scene of editor.sceneList(); track scene.id) {
@@ -158,6 +167,7 @@
             class="scene-row"
             [class.active]="selectedLibraryId() === scene.id"
             [class.current]="editor.activeSceneId() === scene.id"
+            [disabled]="sceneLoading()"
             (click)="selectedLibraryId.set(scene.id)"
             (dblclick)="selectedLibraryId.set(scene.id); loadSelected()"
           >
@@ -175,20 +185,51 @@
       }
     </ul>
     <div studioModalActions>
-      <button type="button" [disabled]="!selectedLibraryId()" (click)="loadSelected()">
+      <button
+        type="button"
+        [disabled]="!selectedLibraryId() || sceneLoading()"
+        (click)="loadSelected()"
+      >
         {{ i18n.t('sceneLoad') }}
       </button>
-      <button type="button" [disabled]="!selectedLibraryId()" (click)="renameSelected()">
+      <button
+        type="button"
+        [disabled]="!selectedLibraryId() || sceneLoading()"
+        (click)="renameSelected()"
+      >
         {{ i18n.t('sceneRename') }}
       </button>
-      <button type="button" [disabled]="!selectedLibraryId()" (click)="deleteSelected()">
+      <button
+        type="button"
+        [disabled]="!selectedLibraryId() || sceneLoading()"
+        (click)="deleteSelected()"
+      >
         {{ i18n.t('sceneDelete') }}
       </button>
-      <button type="button" class="primary" (click)="scenesModalOpen.set(false)">
+      <button
+        type="button"
+        class="primary"
+        [disabled]="sceneLoading()"
+        (click)="onScenesDismiss()"
+      >
         {{ i18n.t('modalClose') }}
       </button>
     </div>
   </app-studio-modal>
+
+  @if (sceneLoading()) {
+    <div
+      class="scene-loading-overlay"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <div class="scene-loading-card">
+        <span class="scene-spinner" aria-hidden="true"></span>
+        <span>{{ i18n.t('sceneLoading') }}</span>
+      </div>
+    </div>
+  }
 
   <div class="dock">
     <aside class="panel left" [style.width.px]="leftWidth()">

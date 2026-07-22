@@ -32,7 +32,8 @@ export type MediaPresetId =
   | 'fog'
   | 'smoke'
   | 'dust'
-  | 'haze';
+  | 'haze'
+  | 'cloud';
 
 /** @deprecated Legacy kind aliases — migrate via normalizeMediaVolume. */
 export type LegacyMediaKind =
@@ -56,6 +57,7 @@ export const MEDIA_PRESET_IDS: readonly MediaPresetId[] = [
   'smoke',
   'dust',
   'haze',
+  'cloud',
 ] as const;
 
 /** Clear-air molecular Rayleigh baseline [m⁻¹] (~0.1 km⁻¹). */

@@ -41,6 +41,7 @@ export const MEDIA_KINDS: readonly MediaKind[] = [
   'smoke',
   'dust',
   'haze',
+  'cloud',
 ];
 
 export interface MediaOpticalDefaults {
@@ -134,17 +135,21 @@ export const MEDIA_OPTICS_FOG = particulateDefaults(
   0.85,
 );
 
-export const MEDIA_OPTICS_SMOKE = particulateDefaults(
-  'smoke',
-  0.1,
-  0.055,
-  250,
-  [0.78, 0.74, 0.7],
-  0.55,
-  0.22,
-  0.12,
-  0.78,
-);
+export const MEDIA_OPTICS_SMOKE = {
+  ...particulateDefaults(
+    'smoke',
+    0.1,
+    0.055,
+    700,
+    [0.78, 0.74, 0.7],
+    0.55,
+    0.22,
+    0.12,
+    0.78,
+  ),
+  // Stronger Mie forward lobe (cloud-like) while keeping MS fill for rear view.
+  mieAnisotropy: 0.65,
+};
 
 export const MEDIA_OPTICS_DUST = particulateDefaults(
   'dust',
@@ -170,6 +175,23 @@ export const MEDIA_OPTICS_HAZE = particulateDefaults(
   0.9,
 );
 
+/** Sky-scale particulate — same marcher as smoke, larger AABB / softer FBM. */
+export const MEDIA_OPTICS_CLOUD = {
+  ...particulateDefaults(
+    'cloud',
+    0.035,
+    0.008,
+    1200,
+    [0.92, 0.94, 0.98],
+    0.1,
+    0.04,
+    0.28,
+    0.72,
+  ),
+  mieAnisotropy: 0.78,
+  density: 0.85,
+};
+
 /** @deprecated alias — clear night outdoor climate. */
 export const MEDIA_OPTICS_ATMOSPHERE = climateDefaults('clearNight');
 
@@ -187,6 +209,7 @@ const BY_PRESET: Record<MediaPresetId, MediaOpticalDefaults> = {
   smoke: MEDIA_OPTICS_SMOKE,
   dust: MEDIA_OPTICS_DUST,
   haze: MEDIA_OPTICS_HAZE,
+  cloud: MEDIA_OPTICS_CLOUD,
 };
 
 export function isMediaKind(value: unknown): value is MediaKind {
@@ -279,8 +302,11 @@ export function defaultMediaVolumeForKind(kind: MediaKind | string = 'fog'): Med
   halfExtents: [number, number, number];
 } {
   const fields = opticalFieldsForMediaKind(kind);
-  const half: [number, number, number] =
+  let half: [number, number, number] =
     fields.layer === 'outdoor' ? [40, 12, 40] : fields.layer === 'interior' ? [6, 3, 6] : [4, 2, 4];
+  if (fields.preset === 'cloud') {
+    half = [28, 6, 28];
+  }
   return { ...fields, halfExtents: half };
 }
 
@@ -294,7 +320,9 @@ export function opticalFieldsForScatterModel(
 ): MediaOpticalFields {
   const cur = resolveMediaPresetId(currentKind);
   const particulate: MediaPresetId =
-    cur === 'smoke' || cur === 'dust' || cur === 'fog' || cur === 'haze' ? cur : 'fog';
+    cur === 'smoke' || cur === 'dust' || cur === 'fog' || cur === 'haze' || cur === 'cloud'
+      ? cur
+      : 'fog';
   const base = opticalFieldsForMediaKind(particulate);
 
   if (model === 'tyndall') {

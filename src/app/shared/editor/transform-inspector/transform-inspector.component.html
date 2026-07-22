@@ -2,31 +2,51 @@
   <div class="head">
     <h3>Transform</h3>
     @if (showGizmo && !readonly) {
-      <div class="gizmo-modes">
-        <button
-          type="button"
-          [class.active]="gizmoMode === 'position'"
-          [attr.title]="i18n.t('tipPosition')"
-          (click)="gizmoModeChange.emit('position')"
-        >
-          Move
-        </button>
-        <button
-          type="button"
-          [class.active]="gizmoMode === 'rotation'"
-          [attr.title]="i18n.t('tipRotation')"
-          (click)="gizmoModeChange.emit('rotation')"
-        >
-          Rotate
-        </button>
-        <button
-          type="button"
-          [class.active]="gizmoMode === 'scale'"
-          [attr.title]="i18n.t('tipScale')"
-          (click)="gizmoModeChange.emit('scale')"
-        >
-          Scale
-        </button>
+      <div class="gizmo-toolbar">
+        <div class="gizmo-modes">
+          <button
+            type="button"
+            [class.active]="gizmoMode === 'position'"
+            [attr.title]="i18n.t('tipPosition')"
+            (click)="gizmoModeChange.emit('position')"
+          >
+            Move
+          </button>
+          <button
+            type="button"
+            [class.active]="gizmoMode === 'rotation'"
+            [attr.title]="i18n.t('tipRotation')"
+            (click)="gizmoModeChange.emit('rotation')"
+          >
+            Rotate
+          </button>
+          <button
+            type="button"
+            [class.active]="gizmoMode === 'scale'"
+            [attr.title]="i18n.t('tipScale')"
+            (click)="gizmoModeChange.emit('scale')"
+          >
+            Scale
+          </button>
+        </div>
+        <div class="gizmo-space" role="group" [attr.aria-label]="i18n.t('tipGizmoSpace')">
+          <button
+            type="button"
+            [class.active]="gizmoSpace === 'world'"
+            [attr.title]="i18n.t('tipGizmoWorld')"
+            (click)="gizmoSpaceChange.emit('world')"
+          >
+            World
+          </button>
+          <button
+            type="button"
+            [class.active]="gizmoSpace === 'local'"
+            [attr.title]="i18n.t('tipGizmoLocal')"
+            (click)="gizmoSpaceChange.emit('local')"
+          >
+            Local
+          </button>
+        </div>
       </div>
     }
   </div>

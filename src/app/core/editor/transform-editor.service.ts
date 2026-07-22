@@ -10,6 +10,7 @@ import {
   setTransformsCommand,
   vec3ToEditable,
   type GizmoMode,
+  type GizmoSpace,
   type Transform,
   type Vec3Editable,
 } from '../../../engine';
@@ -33,6 +34,11 @@ export class TransformEditorService {
   readonly gizmoMode = computed(() => {
     this.engine.epoch();
     return this.engine.world().resources.EditorTooling.gizmoMode;
+  });
+
+  readonly gizmoSpace = computed(() => {
+    this.engine.epoch();
+    return this.engine.world().resources.EditorTooling.gizmoSpace ?? 'world';
   });
 
   readonly selectedTransform = computed(() => {
@@ -82,6 +88,14 @@ export class TransformEditorService {
       world.bump();
     });
     this.engine.getHost()?.setGizmoMode(mode);
+  }
+
+  setGizmoSpace(space: GizmoSpace): void {
+    this.engine.mutate((world) => {
+      world.resources.EditorTooling.gizmoSpace = space;
+      world.bump();
+    });
+    this.engine.getHost()?.setGizmoSpace(space);
   }
 
   applyTransformFromView(

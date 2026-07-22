@@ -125,6 +125,8 @@ export class MediaVolumeSectionComponent {
         return this.i18n.t('mediaPresetDust');
       case 'haze':
         return this.i18n.t('mediaPresetHaze');
+      case 'cloud':
+        return this.i18n.t('mediaPresetCloud');
       default:
         return String(preset);
     }

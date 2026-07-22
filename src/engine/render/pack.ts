@@ -137,6 +137,7 @@ function mediaKindIndex(kind: string): number {
     lab: 10,
     hall: 11,
     haze: 12,
+    cloud: 13,
   };
   return map[kind] ?? 0;
 }

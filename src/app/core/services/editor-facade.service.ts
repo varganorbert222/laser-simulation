@@ -5,6 +5,7 @@ import {
   removeComponentFromSelectionCommand,
   sharedUserComponents,
   type GizmoMode,
+  type GizmoSpace,
   type HierarchyReorderEvent,
   type LightEmitter,
   type LightMode,
@@ -53,6 +54,7 @@ export class EditorFacade {
   readonly presentationMode = this.session.presentationMode;
   readonly isEditMode = this.session.isEditMode;
   readonly gizmoMode = this.transform.gizmoMode;
+  readonly gizmoSpace = this.transform.gizmoSpace;
   readonly selectedLight = this.light.selectedLight;
   readonly selectedLightMixed = this.light.selectedLightMixed;
   readonly selectedSunSuppressed = this.light.selectedSunSuppressed;
@@ -144,6 +146,10 @@ export class EditorFacade {
 
   setGizmoMode(mode: GizmoMode): void {
     this.transform.setGizmoMode(mode);
+  }
+
+  setGizmoSpace(space: GizmoSpace): void {
+    this.transform.setGizmoSpace(space);
   }
 
   reorder(event: HierarchyReorderEvent): void {

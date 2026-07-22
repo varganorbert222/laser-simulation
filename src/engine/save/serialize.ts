@@ -11,7 +11,7 @@ import {
   normalizeMediaVolume,
   normalizeSmokeEmitter,
 } from '../ecs/components';
-import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, normalizeShadowQuality, refreshSceneSunBinding, type Quality } from '../ecs/resources';
+import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, normalizeEditorTooling, normalizeShadowQuality, refreshSceneSunBinding, type Quality } from '../ecs/resources';
 import { World, SAVE_SCHEMA_VERSION, type SerializedWorld } from '../ecs/world';
 import { identity as matIdentity } from '../math/mat4';
 import {
@@ -91,7 +91,7 @@ export function migrateSave(data: SerializedWorld): SerializedWorld {
       ...data.resources,
       Quality: normalizeQuality(data.resources.Quality),
       PresentationMode: presentation,
-      EditorTooling: data.resources.EditorTooling ?? { gizmoMode: 'position' },
+      EditorTooling: normalizeEditorTooling(data.resources.EditorTooling),
       EditorSelection: normalizeEditorSelection(data.resources.EditorSelection),
       DisplayVision: normalizeDisplayVision(rawVision),
       EnvironmentLighting: normalizeEnvironmentLighting(rawEnv),
@@ -120,7 +120,7 @@ export function restoreWorldFromSerialized(world: World, data: SerializedWorld):
   );
   world.resources.PresentationMode = migrated.resources.PresentationMode;
   world.resources.EditorTooling = structuredClone(
-    migrated.resources.EditorTooling ?? { gizmoMode: 'position' },
+    normalizeEditorTooling(migrated.resources.EditorTooling),
   );
   world.resources.DisplayVision = structuredClone(
     migrated.resources.DisplayVision ?? createDefaultDisplayVision(),

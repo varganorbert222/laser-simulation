@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MEDIA_OPTICS_ATMOSPHERE,
+  MEDIA_OPTICS_CLOUD,
   MEDIA_OPTICS_DUST,
   MEDIA_OPTICS_FOG,
   MEDIA_OPTICS_SMOKE,
@@ -51,10 +52,9 @@ describe('media optical presets (physical)', () => {
       defaultMieAnisotropy('tyndall', MEDIA_OPTICS_FOG.particleSizeNm),
       5,
     );
-    expect(MEDIA_OPTICS_SMOKE.mieAnisotropy).toBeCloseTo(
-      defaultMieAnisotropy('tyndall', MEDIA_OPTICS_SMOKE.particleSizeNm),
-      5,
-    );
+    // Smoke/cloud override toward stronger forward Mie (cloud-like).
+    expect(MEDIA_OPTICS_SMOKE.mieAnisotropy).toBe(0.65);
+    expect(MEDIA_OPTICS_CLOUD.mieAnisotropy).toBe(0.78);
   });
 
   it('scatter-model UI stays on particulate (does not jump to climate)', () => {
@@ -90,6 +90,15 @@ describe('media optical presets (physical)', () => {
     expect(smoke.layer).toBe('particulate');
     expect(smoke.scatter).toBe(MEDIA_OPTICS_SMOKE.scatter);
     expect(smoke.absorption).toBe(MEDIA_OPTICS_SMOKE.absorption);
+    expect(smoke.mieAnisotropy).toBeGreaterThanOrEqual(0.6);
+  });
+
+  it('cloud preset is particulate at sky scale', () => {
+    const cloud = defaultMediaVolumeForKind('cloud');
+    expect(cloud.layer).toBe('particulate');
+    expect(cloud.mieAnisotropy).toBeGreaterThanOrEqual(0.7);
+    expect(cloud.halfExtents[0]).toBeGreaterThan(10);
+    expect(cloud.fbmScale).toBeLessThan(0.2);
   });
 
   it('default volumes match kind presets', () => {

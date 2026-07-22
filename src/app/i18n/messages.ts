@@ -65,6 +65,7 @@ export const hu = {
   mediaPresetSmoke: 'Füst',
   mediaPresetDust: 'Por',
   mediaPresetHaze: 'Haze (theatrical)',
+  mediaPresetCloud: 'Felhő',
   /** @deprecated legacy keys kept for older UI strings */
   mediaKind: 'Közeg típus',
   mediaKindFog: 'Köd / párás levegő',
@@ -104,7 +105,7 @@ export const hu = {
   hintScatterModel:
     'Rayleigh ↔ atmoszféra: λ⁻⁴ + fázis (1+cos²θ). Tyndall ↔ köd/füst/por: gyenge λ-függés + Mie HG. Láthatóság ≈ P×V(λ)×S×fázis×Q.',
   hintMieAnisotropy:
-    'Henyey–Greenstein fázis: g≈0 izotróp; köd/haze preset g≈0.4–0.55 (szemből fényesebb, oldalról/hátulról is látszik). g>0.85 egyetlen szórásnál „megöli” a hátsó nézetet.',
+    'Henyey–Greenstein fázis: g≈0 izotróp; füst/felhő preset g≈0.65–0.78 (előre szórt, MS tölti a hátat). g>0.85 egyetlen szórásnál „megöli” a hátsó nézetet.',
   hintMediaOptics:
     'σ_s és σ_a fizikai [m⁻¹] (Beer–Lambert). A density a koncentráció-szorzó (1 = irodalmi referencia). Atmoszféra ≈ 0.1 km⁻¹ — szobában a nyaláb alig látszik; köd/füst kell a show-hoz.',
   opticsSpill: 'Optikai residual (stray)',
@@ -157,6 +158,7 @@ export const hu = {
   sceneSave: 'Mentés',
   sceneSaveAs: 'Mentés másként',
   sceneLoad: 'Betöltés',
+  sceneLoading: 'Jelenet betöltése…',
   sceneRename: 'Átnevezés',
   sceneDelete: 'Törlés',
   sceneExport: 'Export JSON',
@@ -238,6 +240,9 @@ export const hu = {
   tipPosition: 'Helyi pozíció méterben, a szülőhöz képest.',
   tipRotation: 'Helyi Euler-forgatás fokban (X, Y, Z).',
   tipScale: 'Helyi skála (1 = eredeti méret).',
+  tipGizmoSpace: 'Gizmo tengelyek: világ vagy objektum helyi iránya.',
+  tipGizmoWorld: 'Gizmo tengelyek a világ X/Y/Z irányába.',
+  tipGizmoLocal: 'Gizmo tengelyek az objektum helyi X/Y/Z irányába.',
   tipQuality: 'Render minőség: lépésköz, max lépésszám, sűrűségküszöb a volumetriában.',
   tipAntiAliasing: 'MSAA / anti-aliasing a nézetporton.',
   tipTonemapMode: 'HDR → display tonemap: ACES (film) vagy Reinhard.',
@@ -382,6 +387,7 @@ export const en = {
   mediaPresetSmoke: 'Smoke',
   mediaPresetDust: 'Dust',
   mediaPresetHaze: 'Haze (theatrical)',
+  mediaPresetCloud: 'Cloud',
   /** @deprecated legacy keys kept for older UI strings */
   mediaKind: 'Media kind',
   mediaKindFog: 'Fog / mist',
@@ -421,7 +427,7 @@ export const en = {
   hintScatterModel:
     'Rayleigh ↔ atmosphere: λ⁻⁴ + phase (1+cos²θ). Tyndall ↔ fog/smoke/dust: weak λ dependence + Mie HG. Visibility ≈ P×V(λ)×S×phase×Q.',
   hintMieAnisotropy:
-    'Henyey–Greenstein phase: g≈0 isotropic; fog/haze presets use g≈0.4–0.55 (brighter into the beam, still visible from side/behind). g>0.85 kills rear view in single scatter.',
+    'Henyey–Greenstein phase: g≈0 isotropic; smoke/cloud presets use g≈0.65–0.78 (forward scatter, MS fills the rear). g>0.85 kills rear view in single scatter.',
   hintMediaOptics:
     'σ_s and σ_a are physical [m⁻¹] (Beer–Lambert). Density is a concentration multiplier (1 = literature reference). Atmosphere ≈ 0.1 km⁻¹ — room-scale beams stay faint; use fog/smoke for shows.',
   opticsSpill: 'Optical residual (stray)',
@@ -474,6 +480,7 @@ export const en = {
   sceneSave: 'Save',
   sceneSaveAs: 'Save as',
   sceneLoad: 'Load',
+  sceneLoading: 'Loading scene…',
   sceneRename: 'Rename',
   sceneDelete: 'Delete',
   sceneExport: 'Export JSON',
@@ -555,6 +562,9 @@ export const en = {
   tipPosition: 'Local position in metres, relative to the parent.',
   tipRotation: 'Local Euler rotation in degrees (X, Y, Z).',
   tipScale: 'Local scale (1 = original size).',
+  tipGizmoSpace: 'Gizmo axes: world or object-local orientation.',
+  tipGizmoWorld: 'Gizmo axes aligned to world X/Y/Z.',
+  tipGizmoLocal: 'Gizmo axes aligned to the object local X/Y/Z.',
   tipQuality: 'Render quality: step size, max steps, density threshold for volumetrics.',
   tipAntiAliasing: 'MSAA / anti-aliasing in the viewport.',
   tipTonemapMode: 'HDR → display tonemap: ACES (filmic) or Reinhard.',

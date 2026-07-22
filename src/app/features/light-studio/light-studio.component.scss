@@ -345,3 +345,42 @@ button.ghost {
   border: 1px solid rgba(196, 163, 90, 0.4);
   color: #e8d9a0;
 }
+
+.scene-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(6, 8, 12, 0.55);
+  pointer-events: all;
+}
+
+.scene-loading-card {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1.15rem;
+  border-radius: 8px;
+  border: 1px solid var(--ls-border);
+  background: var(--ls-panel);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  font-size: 0.9rem;
+  color: var(--ls-text);
+}
+
+.scene-spinner {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  border: 2px solid rgba(196, 163, 90, 0.25);
+  border-top-color: #e8d9a0;
+  animation: scene-spin 0.7s linear infinite;
+}
+
+@keyframes scene-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

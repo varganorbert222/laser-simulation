@@ -52,6 +52,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   rightWidth = signal(340);
   visionModalOpen = signal(false);
   scenesModalOpen = signal(false);
+  sceneLoading = signal(false);
   renderModalOpen = signal(false);
   selectedLibraryId = signal<string | null>(null);
   private resizeSide: 'left' | 'right' | null = null;
@@ -241,10 +242,25 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     this.selectedLibraryId.set(this.editor.activeSceneId());
   }
 
-  loadSelected(): void {
+  onScenesDismiss(): void {
+    if (this.sceneLoading()) return;
+    this.scenesModalOpen.set(false);
+  }
+
+  async loadSelected(): Promise<void> {
     const id = this.selectedLibraryId();
-    if (!id) return;
-    this.editor.loadFromLibrary(id);
+    if (!id || this.sceneLoading()) return;
+    this.sceneLoading.set(true);
+    try {
+      // Let the spinner paint before synchronous world replace blocks the main thread.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      this.editor.loadFromLibrary(id);
+    } finally {
+      this.scenesModalOpen.set(false);
+      this.sceneLoading.set(false);
+    }
   }
 
   renameSelected(): void {

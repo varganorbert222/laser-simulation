@@ -3,7 +3,7 @@ import type { Scene } from '@babylonjs/core';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { Material, Quaternion } from '@babylonjs/core';
 import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import type { GizmoMode, Transform } from '../../engine';
+import type { GizmoMode, GizmoSpace, Transform } from '../../engine';
 
 type DragGizmo = {
   onDragStartObservable: { add: (cb: () => void) => void };
@@ -25,6 +25,7 @@ const GIZMO_DISABLE_ALPHA = 0.35;
 export class StudioTransformGizmo {
   private readonly manager: GizmoManager;
   private mode: GizmoMode = 'none';
+  private space: GizmoSpace = 'world';
   private attachedNode: TransformNode | null = null;
   private attachedEntityId: string | null = null;
   private onDragStart: ((entityId: string) => void) | null = null;
@@ -56,12 +57,17 @@ export class StudioTransformGizmo {
     return this.mode;
   }
 
+  getSpace(): GizmoSpace {
+    return this.space;
+  }
+
   getAttachedEntityId(): string | null {
     return this.attachedEntityId;
   }
 
   setMode(mode: GizmoMode): void {
     if (this.mode === mode) {
+      this.applySpace();
       this.refresh();
       return;
     }
@@ -70,17 +76,23 @@ export class StudioTransformGizmo {
     this.manager.rotationGizmoEnabled = mode === 'rotation';
     this.manager.scaleGizmoEnabled = mode === 'scale';
     if (mode === 'position' && this.manager.gizmos.positionGizmo) {
-      this.manager.gizmos.positionGizmo.updateGizmoRotationToMatchAttachedMesh = false;
       this.manager.gizmos.positionGizmo.planarGizmoEnabled = true;
     }
-    if (mode === 'rotation' && this.manager.gizmos.rotationGizmo) {
-      this.manager.gizmos.rotationGizmo.updateGizmoRotationToMatchAttachedMesh = false;
-    }
+    this.applySpace();
     this.styleActiveGizmos();
     this.wire(this.manager.gizmos.positionGizmo as DragGizmo | null);
     this.wire(this.manager.gizmos.rotationGizmo as DragGizmo | null);
     this.wire(this.manager.gizmos.scaleGizmo as DragGizmo | null);
     this.refresh();
+  }
+
+  setSpace(space: GizmoSpace): void {
+    if (this.space === space) {
+      this.applySpace();
+      return;
+    }
+    this.space = space;
+    this.applySpace();
   }
 
   attach(
@@ -113,6 +125,20 @@ export class StudioTransformGizmo {
   dispose(): void {
     this.detach();
     this.manager.dispose();
+  }
+
+  private applySpace(): void {
+    const matchLocal = this.space === 'local';
+    const { positionGizmo, rotationGizmo, scaleGizmo } = this.manager.gizmos;
+    if (positionGizmo) {
+      positionGizmo.updateGizmoRotationToMatchAttachedMesh = matchLocal;
+    }
+    if (rotationGizmo) {
+      rotationGizmo.updateGizmoRotationToMatchAttachedMesh = matchLocal;
+    }
+    if (scaleGizmo) {
+      scaleGizmo.updateGizmoRotationToMatchAttachedMesh = matchLocal;
+    }
   }
 
   private wire(gizmo: DragGizmo | null): void {

@@ -56,7 +56,7 @@ describe('multi selection', () => {
         },
         EditorSelection: { entityId: 'laser_1' },
         PresentationMode: 'edit',
-        EditorTooling: { gizmoMode: 'position' },
+        EditorTooling: { gizmoMode: 'position', gizmoSpace: 'world' },
       },
       entities: [],
     } as unknown as SerializedWorld;

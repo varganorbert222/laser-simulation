@@ -1,6 +1,7 @@
 /**
  * CPU twin of volumetric Light→Medium Beer–Lambert shadowing.
- * Matches shader tiers: off / local σ·d / secondary AABB extinction (no FBM).
+ * Matches shader tiers: off / local σ·d / secondary AABB extinction
+ * (density × plume × height falloff — no FBM, same as GPU shadow path).
  */
 
 import type { Vec3 } from '../math/vec3';
@@ -34,6 +35,16 @@ export function lightMediaTransmittanceLocal(
   const dist = length(sub(lightOrigin, p));
   if (dist < 1e-4) return 1;
   return Math.exp(-Math.max(0, sigmaTLocal) * dist);
+}
+
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - edge0) / Math.max(1e-8, edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function heightFalloff(localY: number, halfY: number): number {
+  const ny = localY / Math.max(halfY, 1e-3);
+  return 0.55 + 0.45 * smoothstep(-0.9, 0.2, ny);
 }
 
 function extinctionFastAt(q: Vec3, volumes: readonly ShadowMediaVolume[]): number {
@@ -75,7 +86,8 @@ function extinctionFastAt(q: Vec3, volumes: readonly ShadowMediaVolume[]): numbe
       continue;
     }
     const plume = plumeEnvelope(local, vol.plumeDir, vol.coneCos, vol.plumeLengthM, vol.emissionRate);
-    const d = Math.max(0, vol.density) * plume;
+    const d =
+      Math.max(0, vol.density) * plume * heightFalloff(local[1], vol.halfExtents[1]);
     if (d <= 1e-8) continue;
     const sigma =
       (Math.max(0, vol.scatter) + Math.max(0, vol.scatterMie) + Math.max(0, vol.absorption)) * d;

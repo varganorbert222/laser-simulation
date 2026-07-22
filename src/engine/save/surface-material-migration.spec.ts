@@ -19,7 +19,7 @@ describe('surface material save migration', () => {
         },
         EditorSelection: { entityId: null, entityIds: [] },
         PresentationMode: 'edit',
-        EditorTooling: { gizmoMode: 'position' },
+        EditorTooling: { gizmoMode: 'position', gizmoSpace: 'world' },
       },
       entities: [
         {
@@ -88,7 +88,7 @@ describe('surface material save migration', () => {
         },
         EditorSelection: { entityId: null, entityIds: [] },
         PresentationMode: 'edit',
-        EditorTooling: { gizmoMode: 'position' },
+        EditorTooling: { gizmoMode: 'position', gizmoSpace: 'world' },
       },
       entities: [
         {

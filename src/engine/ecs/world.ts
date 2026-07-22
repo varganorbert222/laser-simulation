@@ -18,6 +18,7 @@ import {
   createDefaultEditorSelection,
   createDefaultEnvironmentLighting,
   createDefaultSceneSunBinding,
+  normalizeEditorTooling,
   createQuality,
   normalizeEditorSelection,
 } from './resources';
@@ -97,7 +98,7 @@ export class World {
         resources?.EditorSelection ?? createDefaultEditorSelection(),
       ),
       PresentationMode: resources?.PresentationMode ?? 'edit',
-      EditorTooling: resources?.EditorTooling ?? { gizmoMode: 'position' },
+      EditorTooling: normalizeEditorTooling(resources?.EditorTooling),
       DisplayVision: resources?.DisplayVision ?? createDefaultDisplayVision(),
       EnvironmentLighting: resources?.EnvironmentLighting ?? createDefaultEnvironmentLighting(),
       SceneSun: resources?.SceneSun ?? createDefaultSceneSunBinding(),

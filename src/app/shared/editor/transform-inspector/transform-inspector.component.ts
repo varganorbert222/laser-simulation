@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import type { GizmoMode, Vec3Editable } from '../../../../engine';
+import type { GizmoMode, GizmoSpace, Vec3Editable } from '../../../../engine';
 import { I18nService } from '../../../i18n/i18n.service';
 import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 
@@ -20,6 +20,7 @@ export class TransformInspectorComponent {
   @Input() rotationMixed = false;
   @Input() scaleMixed = false;
   @Input() gizmoMode: GizmoMode = 'position';
+  @Input() gizmoSpace: GizmoSpace = 'world';
   @Input() readonly = false;
   @Input() showGizmo = true;
 
@@ -27,5 +28,6 @@ export class TransformInspectorComponent {
   @Output() rotationChange = new EventEmitter<Vec3Editable>();
   @Output() scaleChange = new EventEmitter<Vec3Editable>();
   @Output() gizmoModeChange = new EventEmitter<GizmoMode>();
+  @Output() gizmoSpaceChange = new EventEmitter<GizmoSpace>();
   @Output() editStart = new EventEmitter<void>();
 }

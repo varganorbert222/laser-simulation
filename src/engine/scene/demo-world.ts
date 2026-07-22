@@ -13,7 +13,7 @@ export function createDemoWorld(): World {
     ActiveScene: { sceneId: 'room', label: 'Szoba labor' },
     Quality: createQuality('high'),
     PresentationMode: 'edit',
-    EditorTooling: { gizmoMode: 'position' },
+    EditorTooling: { gizmoMode: 'position', gizmoSpace: 'world' },
   });
 
   const root = createSceneEntity(world, {

@@ -22,12 +22,22 @@ h3 {
   color: var(--ls-muted);
 }
 
-.gizmo-modes {
+.gizmo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.gizmo-modes,
+.gizmo-space {
   display: flex;
   gap: 0.2rem;
 }
 
-.gizmo-modes button {
+.gizmo-modes button,
+.gizmo-space button {
   font: inherit;
   font-size: 0.68rem;
   padding: 0.2rem 0.4rem;
@@ -38,7 +48,8 @@ h3 {
   cursor: pointer;
 }
 
-.gizmo-modes button.active {
+.gizmo-modes button.active,
+.gizmo-space button.active {
   color: var(--ls-text);
   border-color: rgba(196, 163, 90, 0.55);
   background: rgba(196, 163, 90, 0.12);

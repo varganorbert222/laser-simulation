@@ -62,7 +62,8 @@ export function defaultParticleSizeNm(model: ScatterModel): number {
  * laser-in-haze observation — while still peaking when looking into the beam.
  *
  * Rayleigh uses `phaseRayleigh` (not HG); g is unused in that regime.
- * Tyndall: ~0.25 (10 nm) → ~0.55 (fog-scale μm).
+ * Tyndall: ~0.25 (10 nm) → ~0.62 (fog-scale μm). Smoke/cloud presets may set 0.65–0.78
+ * with volume multi-scatter filling rear views.
  */
 export function defaultMieAnisotropy(model: ScatterModel, particleSizeNm?: number): number {
   if (model === 'rayleigh') return 0;
@@ -71,8 +72,8 @@ export function defaultMieAnisotropy(model: ScatterModel, particleSizeNm?: numbe
   const logMax = Math.log(TYNDALL_PARTICLE_NM_MAX);
   const t = (Math.log(Math.max(size, TYNDALL_PARTICLE_NM_MIN)) - logMin) / (logMax - logMin);
   const u = Math.min(1, Math.max(0, t));
-  // ~0.25 near 10 nm → ~0.55 at 1000 nm (fog); smoke ~250 nm → ~0.40
-  return clampMieAnisotropy(0.25 * (1 - u) + 0.55 * u);
+  // ~0.25 near 10 nm → ~0.62 at 1000 nm (fog/cloud); smoke ~700 nm → ~0.55
+  return clampMieAnisotropy(0.25 * (1 - u) + 0.62 * u);
 }
 
 export function isScatterModel(value: unknown): value is ScatterModel {

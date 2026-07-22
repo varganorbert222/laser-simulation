@@ -82,7 +82,7 @@ function mediaSampleAccum(slots: number): string {
       float lowI${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
       float highI${i} = max(uMediaNoiseHigh${i}, lowI${i} + 0.001);
       float plumeI${i} = plumeEnvelope(localI${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
-      float fillI${i} = smoothstep(lowI${i}, highI${i}, fieldI${i}) * uMediaDensity${i} * plumeI${i};
+      float fillI${i} = densityRemap(fieldI${i}, lowI${i}, highI${i}, 1.2) * uMediaDensity${i} * plumeI${i};
       float turbI${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
       float shimmerI${i} = 1.0 + turbI${i} * (noise(localI${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
       float dI${i} = fillI${i} * shimmerI${i};
@@ -116,10 +116,15 @@ function mediaSampleAccum(slots: number): string {
       float lowP${i} = min(uMediaNoiseLow${i}, uMediaNoiseHigh${i} - 0.001);
       float highP${i} = max(uMediaNoiseHigh${i}, lowP${i} + 0.001);
       float plumeP${i} = plumeEnvelope(localP${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
-      float fillP${i} = smoothstep(lowP${i}, highP${i}, fieldP${i}) * uMediaDensity${i} * plumeP${i};
+      // Particulate: stronger remap (cloud-like puff contrast); climate softer.
+      float remPowP${i} = uMediaLayerKind${i} > 1.5 ? 1.45 : 1.2;
+      float fillP${i} = densityRemap(fieldP${i}, lowP${i}, highP${i}, remPowP${i}) * uMediaDensity${i} * plumeP${i};
+      // Height falloff — denser / darker lower band (cloud base / smoke settle).
+      float nyP${i} = localP${i}.y / max(uMediaHalfExt${i}.y, 1e-3);
+      float heightFallP${i} = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP${i}));
       float turbP${i} = clamp(uMediaTurbulence${i}, 0.0, 1.0);
       float shimmerP${i} = 1.0 + turbP${i} * (noise(localP${i} * 2.7 + vec3(uTime * 0.7, 0.0, 0.0)) - 0.5) * 0.2;
-      float dP${i} = fillP${i} * shimmerP${i};
+      float dP${i} = fillP${i} * heightFallP${i} * shimmerP${i};
       if (dP${i} > 1e-8) {
         float kind${i} = uMediaLayerKind${i};
         if (kind${i} > 1.5) {
@@ -201,8 +206,8 @@ function mediaIntersectUnion(slots: number): string {
 }
 
 /**
- * Cheap extinction for Light→Medium shadow rays: AABB + density × plume, NO FBM.
- * Full sampleMedia inside shadow loops times out WebGL compile.
+ * Cheap extinction for Light→Medium shadow rays: AABB + density × plume (+ height).
+ * No noise here — noise inside shadow×light×slot unrolls times out WebGL compile.
  */
 function mediaExtinctionFastAccum(slots: number): string {
   const pass1: string[] = [];
@@ -228,7 +233,9 @@ function mediaExtinctionFastAccum(slots: number): string {
     vec3 localP${i} = q - uMediaCenter${i};
     if (!any(greaterThan(abs(localP${i}), uMediaHalfExt${i}))) {
       float plumeP${i} = plumeEnvelope(localP${i}, uMediaPlumeDir${i}, uMediaConeCos${i}, uMediaPlumeLen${i}, uMediaEmission${i});
-      float dP${i} = max(uMediaDensity${i}, 0.0) * plumeP${i};
+      float nyP${i} = localP${i}.y / max(uMediaHalfExt${i}.y, 1e-3);
+      float heightFallP${i} = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP${i}));
+      float dP${i} = max(uMediaDensity${i}, 0.0) * plumeP${i} * heightFallP${i};
       if (dP${i} > 1e-8) {
         float kind${i} = uMediaLayerKind${i};
         float sigmaSlot${i} = (max(uMediaScatter${i}, 0.0) + max(uMediaScatterMie${i}, 0.0) + max(uMediaAbsorb${i}, 0.0)) * dP${i};
@@ -371,14 +378,21 @@ float noise(vec3 p) {
 }
 
 float fbm(vec3 p) {
+  // 2 octaves — 3+ with per-slot dual-pass + shadows times out WebGL compile.
   float v = 0.0;
   float a = 0.5;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 2; i++) {
     v += a * noise(p);
     p *= 2.0;
     a *= 0.5;
   }
   return v;
+}
+
+/** Remap soft FBM → puffier islands (cloud-like contrast, cheap). */
+float densityRemap(float field, float low, float high, float contrast) {
+  float s = smoothstep(min(low, high - 0.001), max(high, low + 0.001), field);
+  return pow(max(s, 0.0), max(contrast, 1.0));
 }
 
 float plumeEnvelope(vec3 localPos, vec3 plumeDir, float coneCos, float lengthM, float emissionRate) {
@@ -408,7 +422,7 @@ bool intersectBox(vec3 ro, vec3 rd, vec3 center, vec3 halfSize, out float tEnter
 }
 
 /**
- * Extinction σ_t at q for shadow rays — AABB + density×plume, no FBM.
+ * Extinction σ_t at q for shadow rays — AABB + density×plume (+ height), no FBM.
  */
 float mediaExtinctionFast(vec3 q) {
 ${mediaExtinctionFastAccum(VOLUMETRIC_MEDIA_SLOTS)}
@@ -575,10 +589,10 @@ ${mediaIntersectUnion(VOLUMETRIC_MEDIA_SLOTS)}
     float mieG;
     sampleMedia(p, dens, tint, sigmaSR, sigmaSM, sigmaA, spectralExpM, mieG);
 
-    // Empty-space skip: larger steps when density is negligible
+    // Empty-space skip: larger steps in voids (important for cloud-scale AABBs)
     float stepSize = baseStep;
     if (dens < uDensityThreshold) {
-      stepSize = baseStep * 2.5;
+      stepSize = baseStep * 3.5;
       t += stepSize;
       i++;
       continue;
@@ -601,6 +615,9 @@ ${mediaIntersectUnion(VOLUMETRIC_MEDIA_SLOTS)}
         / max(sigmaS, 1e-10);
       float sunT = sunMediaTransmittance(p, sigmaT);
       col += tint * uEnvSun * sigmaS * phaseSun * stepSize * T * sunT;
+      // Cheap multiple-scatter fill (same knob as emitter MS) — cloud glow in sun
+      float msEnv = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
+      col += tint * (uEnvHemi + uEnvSun * sunT) * msEnv * T;
     }
 
 ${lightEvalInMarch(VOLUMETRIC_LIGHT_SLOTS)}
