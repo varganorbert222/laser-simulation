@@ -6,9 +6,12 @@ import {
   normalizeDisplayResponseCurve,
   normalizeDisplayVision,
   normalizeEnvironmentLighting,
+  normalizeShadowQuality,
   type DisplayResponseCurve,
   type PresentationMode,
+  type Quality,
   type QualityPreset,
+  type ShadowQuality,
 } from '../../../engine';
 import {
   documentToWorld,
@@ -36,6 +39,12 @@ export class SessionService {
     return this.engine.world().resources.Quality.preset;
   });
 
+  /** Full Quality resource for the render-settings modal. */
+  readonly qualitySettings = computed((): Quality => {
+    this.engine.epoch();
+    return this.engine.world().resources.Quality;
+  });
+
   readonly antiAliasing = computed(() => {
     this.engine.epoch();
     return this.engine.world().resources.Quality.antiAliasing;
@@ -49,6 +58,11 @@ export class SessionService {
   readonly tonemapMode = computed(() => {
     this.engine.epoch();
     return this.engine.world().resources.Quality.tonemapMode;
+  });
+
+  readonly shadowQuality = computed(() => {
+    this.engine.epoch();
+    return this.engine.world().resources.Quality.shadowQuality;
   });
 
   readonly displayVision = computed(() => {
@@ -93,12 +107,41 @@ export class SessionService {
     this.engine.getHost()?.applyQualitySettings();
   }
 
-  setAntiAliasing(enabled: boolean): void {
+  /** Patch individual render settings; keeps last preset id. */
+  patchQuality(partial: Partial<Omit<Quality, 'preset'>>): void {
     this.engine.mutate((world) => {
-      world.resources.Quality = { ...world.resources.Quality, antiAliasing: enabled };
+      const cur = world.resources.Quality;
+      const next: Quality = { ...cur, ...partial, preset: cur.preset };
+      if (partial.shadowQuality !== undefined) {
+        next.shadowQuality = normalizeShadowQuality(partial.shadowQuality);
+      }
+      if (typeof partial.renderScale === 'number') {
+        next.renderScale = Math.min(1, Math.max(0.05, partial.renderScale));
+      }
+      if (typeof partial.stepSize === 'number') {
+        next.stepSize = Math.max(0.02, partial.stepSize);
+      }
+      if (typeof partial.maxSteps === 'number') {
+        next.maxSteps = Math.max(16, Math.min(512, Math.round(partial.maxSteps)));
+      }
+      if (typeof partial.densityThreshold === 'number') {
+        next.densityThreshold = Math.max(0, partial.densityThreshold);
+      }
+      if (typeof partial.transmittanceCut === 'number') {
+        next.transmittanceCut = Math.min(1, Math.max(0, partial.transmittanceCut));
+      }
+      world.resources.Quality = next;
       world.bump();
     });
     this.engine.getHost()?.applyQualitySettings();
+  }
+
+  setShadowQuality(shadowQuality: ShadowQuality): void {
+    this.patchQuality({ shadowQuality: normalizeShadowQuality(shadowQuality) });
+  }
+
+  setAntiAliasing(enabled: boolean): void {
+    this.patchQuality({ antiAliasing: enabled });
   }
 
   setTheatricalGlow(enabled: boolean): void {
@@ -109,10 +152,7 @@ export class SessionService {
   }
 
   setTonemapMode(mode: 'aces' | 'reinhard'): void {
-    this.engine.mutate((world) => {
-      world.resources.Quality = { ...world.resources.Quality, tonemapMode: mode };
-      world.bump();
-    });
+    this.patchQuality({ tonemapMode: mode });
   }
 
   setAmbientLevel(ambientLevel: number): void {

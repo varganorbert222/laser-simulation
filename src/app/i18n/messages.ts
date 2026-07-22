@@ -257,6 +257,26 @@ export const hu = {
   tipSmokeCone: 'Spray kúp félnyílásszöge fokban — keskenyebb = koncentráltabb sugar.',
   tipSmokePlumeLength: 'Lágy tengelymenti kifutás hossza méterben (a nozzle irányában).',
   shaderCompiling: 'Shader-ek fordítása…',
+  renderSettings: 'Renderelés',
+  tipRenderSettings: 'Látvány és teljesítmény: volumetria, Light→Medium árnyék, AA, tonemap.',
+  renderPreset: 'Preset',
+  hintRenderPreset:
+    'Low → Ultra: raymarch + Light→Medium árnyék csomag. Egyedi mezők utána felülírhatók.',
+  renderVolumetrics: 'Volumetria (raymarch)',
+  renderStepSize: 'Lépésköz',
+  renderMaxSteps: 'Max lépés',
+  renderDensityThreshold: 'Sűrűségküszöb',
+  renderTransmittanceCut: 'Transzmittancia vágás',
+  renderScale: 'Render scale',
+  renderShadow: 'Light→Medium árnyék',
+  hintRenderShadow:
+    'Camera→Medium T mindig aktív. Ez a fény→közeg shadowT (árnyékcsíkok a füstben).',
+  shadowQuality: 'Árnyék minőség',
+  shadowQualityOff: 'Ki',
+  shadowQualityLow: 'Alacsony (helyi σ·d)',
+  shadowQualityMedium: 'Közepes (2–4 lépés)',
+  shadowQualityHigh: 'Magas (6–8 lépés)',
+  renderPresentation: 'Kép / prezentáció',
 } as const;
 
 export const en = {
@@ -518,6 +538,26 @@ export const en = {
   tipSmokeCone: 'Spray cone half-angle in degrees — narrower = tighter jet.',
   tipSmokePlumeLength: 'Soft axial falloff length in metres along the nozzle.',
   shaderCompiling: 'Compiling shaders…',
+  renderSettings: 'Render',
+  tipRenderSettings: 'Look and performance: volumetrics, Light→Medium shadow, AA, tonemap.',
+  renderPreset: 'Preset',
+  hintRenderPreset:
+    'Low → Ultra packs raymarch + Light→Medium shadow. Individual fields can override after.',
+  renderVolumetrics: 'Volumetrics (raymarch)',
+  renderStepSize: 'Step size',
+  renderMaxSteps: 'Max steps',
+  renderDensityThreshold: 'Density threshold',
+  renderTransmittanceCut: 'Transmittance cut',
+  renderScale: 'Render scale',
+  renderShadow: 'Light→Medium shadow',
+  hintRenderShadow:
+    'Camera→Medium T is always on. This controls light→medium shadowT (bands in smoke/fog).',
+  shadowQuality: 'Shadow quality',
+  shadowQualityOff: 'Off',
+  shadowQualityLow: 'Low (local σ·d)',
+  shadowQualityMedium: 'Medium (2–4 steps)',
+  shadowQualityHigh: 'High (6–8 steps)',
+  renderPresentation: 'Image / presentation',
 } as const;
 
 export type LocaleKey = keyof typeof hu;

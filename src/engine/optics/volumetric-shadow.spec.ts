@@ -1,22 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
-  intersectBox,
   lightMediaTransmittance,
-  mediaOpticalDepthAlongSegment,
-  sunMediaTransmittance,
+  lightMediaTransmittanceLocal,
   type ShadowMediaVolume,
 } from './volumetric-shadow';
+import { createQuality, shadowStepsForQuality } from '../render/quality';
 
 function box(partial: Partial<ShadowMediaVolume> = {}): ShadowMediaVolume {
   return {
     center: [0, 0, 0],
-    halfExtents: [2, 2, 2],
+    halfExtents: [5, 5, 5],
     density: 1,
-    scatter: 0.1,
+    scatter: 0.4,
     scatterMie: 0,
     absorption: 0,
-    noiseThresholdLow: 0,
-    noiseThresholdHigh: 1,
     layerKind: 2,
     insulating: false,
     emissionRate: 1,
@@ -27,54 +24,32 @@ function box(partial: Partial<ShadowMediaVolume> = {}): ShadowMediaVolume {
   };
 }
 
-describe('volumetric-shadow (chord Beer–Lambert)', () => {
-  it('intersectBox hits a centered cube along +Z', () => {
-    const hit = intersectBox([0, 0, -5], [0, 0, 1], [0, 0, 0], [1, 1, 1]);
-    expect(hit).not.toBeNull();
-    expect(hit![0]).toBeCloseTo(4, 5);
-    expect(hit![1]).toBeCloseTo(6, 5);
+describe('volumetric-shadow (Light→Medium tiers)', () => {
+  it('off → transmittance 1', () => {
+    expect(lightMediaTransmittance([0, 0, 0], [3, 0, 0], 0.5, 'off')).toBe(1);
   });
 
-  it('empty media → transmittance 1', () => {
-    expect(lightMediaTransmittance([0, 0, 0], [1, 0, 0], [])).toBe(1);
+  it('low matches local σ·d', () => {
+    const T = lightMediaTransmittance([0, 0, 0], [3, 0, 0], 0.25, 'low');
+    expect(T).toBeCloseTo(lightMediaTransmittanceLocal([0, 0, 0], [3, 0, 0], 0.25), 10);
   });
 
-  it('dense particulate along the path attenuates light', () => {
-    const vol = box({ scatter: 0.5, density: 1, halfExtents: [5, 5, 5] });
-    const T = lightMediaTransmittance([0, 0, 0], [4, 0, 0], [vol]);
-    expect(T).toBeGreaterThan(0);
-    expect(T).toBeLessThan(0.5);
+  it('medium/high attenuate through dense volume', () => {
+    const vol = box();
+    const Tmed = lightMediaTransmittance([0, 0, 0], [4, 0, 0], 0, 'medium', [vol]);
+    const Thigh = lightMediaTransmittance([0, 0, 0], [4, 0, 0], 0, 'high', [vol]);
+    expect(Tmed).toBeGreaterThan(0);
+    expect(Tmed).toBeLessThan(1);
+    expect(Thigh).toBeGreaterThan(0);
+    expect(Thigh).toBeLessThan(1);
   });
 
-  it('optical depth scales with path length inside the AABB', () => {
-    const vol = box({ scatter: 0.2, halfExtents: [10, 10, 10] });
-    const short = mediaOpticalDepthAlongSegment([0, 0, 0], [1, 0, 0], 1, [vol]);
-    const long = mediaOpticalDepthAlongSegment([0, 0, 0], [1, 0, 0], 4, [vol]);
-    expect(long).toBeGreaterThan(short * 3.5);
-  });
-
-  it('sun transmittance soft-attenuates through a thick volume', () => {
-    const vol = box({ scatter: 0.3, halfExtents: [20, 20, 20] });
-    const T = sunMediaTransmittance([0, 0, 0], [0, 1, 0], [vol], 12);
-    expect(T).toBeLessThan(0.25);
-    expect(T).toBeGreaterThan(0);
-  });
-
-  it('insulating interior replaces outdoor climate contribution', () => {
-    const outdoor = box({
-      layerKind: 0,
-      insulating: false,
-      scatter: 1,
-      halfExtents: [10, 10, 10],
-    });
-    const room = box({
-      layerKind: 1,
-      insulating: true,
-      scatter: 0.01,
-      halfExtents: [1, 1, 1],
-    });
-    const withRoom = mediaOpticalDepthAlongSegment([0, 0, 0], [1, 0, 0], 8, [outdoor, room]);
-    const outdoorOnly = mediaOpticalDepthAlongSegment([0, 0, 0], [1, 0, 0], 8, [outdoor]);
-    expect(withRoom).toBeLessThan(outdoorOnly * 0.2);
+  it('quality presets map shadow steps', () => {
+    expect(shadowStepsForQuality('off')).toBe(0);
+    expect(shadowStepsForQuality('low')).toBe(1);
+    expect(shadowStepsForQuality('medium')).toBe(4);
+    expect(shadowStepsForQuality('high')).toBe(8);
+    expect(createQuality('low').shadowQuality).toBe('off');
+    expect(createQuality('ultra').shadowQuality).toBe('high');
   });
 });

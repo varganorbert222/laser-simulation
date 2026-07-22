@@ -32,8 +32,13 @@ import {
   PLUME_DISABLED_CONE_COS,
   coneCosFromHalfAngleDeg,
 } from '../optics/smoke-plume';
+import {
+  normalizeShadowQuality,
+  shadowQualityIndex,
+  shadowStepsForQuality,
+} from './quality';
 
-export const MAX_GPU_LIGHTS = 8;
+export const MAX_GPU_LIGHTS = 4;
 /** Max MediaVolume entities packed per frame (keep equal to VOLUMETRIC_MEDIA_SLOTS). */
 export const MAX_GPU_MEDIA = 4;
 /** GPU media slots for volumetric shader / binder (4 = stable; 8 froze). */
@@ -106,6 +111,8 @@ export interface GatheredFrame {
     maxSteps: number;
     densityThreshold: number;
     transmittanceCut: number;
+    shadowQuality: number;
+    shadowSteps: number;
   };
   env: {
     hemiRgb: Vec3;
@@ -274,6 +281,8 @@ export function gatherRenderPack(world: World): GatheredFrame {
       maxSteps: q.maxSteps,
       densityThreshold: q.densityThreshold,
       transmittanceCut: q.transmittanceCut,
+      shadowQuality: shadowQualityIndex(normalizeShadowQuality(q.shadowQuality)),
+      shadowSteps: shadowStepsForQuality(normalizeShadowQuality(q.shadowQuality)),
     },
     env: {
       hemiRgb: environmentVolumetricHemiRgb(envRes.ambientLevel),

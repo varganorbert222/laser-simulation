@@ -1,0 +1,124 @@
+<div class="render-settings">
+  <section>
+    <h4>{{ i18n.t('renderPreset') }}</h4>
+    <p class="hint">{{ i18n.t('hintRenderPreset') }}</p>
+    <div class="preset-row">
+      @for (p of ['low', 'medium', 'high', 'ultra']; track p) {
+        <button
+          type="button"
+          class="preset-btn"
+          [class.active]="editor.quality() === p"
+          (click)="setPreset($any(p))"
+        >
+          {{ p }}
+        </button>
+      }
+    </div>
+  </section>
+
+  <section>
+    <h4>{{ i18n.t('renderVolumetrics') }}</h4>
+    <label>
+      {{ i18n.t('renderStepSize') }}
+      <input
+        type="number"
+        min="0.02"
+        max="1"
+        step="0.01"
+        [value]="editor.qualitySettings().stepSize"
+        (change)="onNumber('stepSize', $any($event.target).value)"
+      />
+    </label>
+    <label>
+      {{ i18n.t('renderMaxSteps') }}
+      <input
+        type="number"
+        min="16"
+        max="512"
+        step="16"
+        [value]="editor.qualitySettings().maxSteps"
+        (change)="onNumber('maxSteps', $any($event.target).value)"
+      />
+    </label>
+    <label>
+      {{ i18n.t('renderDensityThreshold') }}
+      <input
+        type="number"
+        min="0"
+        max="0.1"
+        step="0.001"
+        [value]="editor.qualitySettings().densityThreshold"
+        (change)="onNumber('densityThreshold', $any($event.target).value)"
+      />
+    </label>
+    <label>
+      {{ i18n.t('renderTransmittanceCut') }}
+      <input
+        type="number"
+        min="0"
+        max="1"
+        step="0.005"
+        [value]="editor.qualitySettings().transmittanceCut"
+        (change)="onNumber('transmittanceCut', $any($event.target).value)"
+      />
+    </label>
+    <label>
+      {{ i18n.t('renderScale') }}
+      <input
+        type="number"
+        min="0.05"
+        max="1"
+        step="0.05"
+        [value]="editor.qualitySettings().renderScale"
+        (change)="onNumber('renderScale', $any($event.target).value)"
+      />
+    </label>
+  </section>
+
+  <section>
+    <h4>{{ i18n.t('renderShadow') }}</h4>
+    <p class="hint">{{ i18n.t('hintRenderShadow') }}</p>
+    <label>
+      {{ i18n.t('shadowQuality') }}
+      <select
+        [value]="editor.shadowQuality()"
+        (change)="onShadow($any($event.target).value)"
+      >
+        <option value="off">{{ i18n.t('shadowQualityOff') }}</option>
+        <option value="low">{{ i18n.t('shadowQualityLow') }}</option>
+        <option value="medium">{{ i18n.t('shadowQualityMedium') }}</option>
+        <option value="high">{{ i18n.t('shadowQualityHigh') }}</option>
+      </select>
+    </label>
+  </section>
+
+  <section>
+    <h4>{{ i18n.t('renderPresentation') }}</h4>
+    <label class="check">
+      <input
+        type="checkbox"
+        [checked]="editor.antiAliasing()"
+        (change)="editor.setAntiAliasing($any($event.target).checked)"
+      />
+      {{ i18n.t('antiAliasing') }}
+    </label>
+    <label class="check">
+      <input
+        type="checkbox"
+        [checked]="editor.theatricalGlow()"
+        (change)="editor.setTheatricalGlow($any($event.target).checked)"
+      />
+      {{ i18n.t('theatricalGlow') }}
+    </label>
+    <label>
+      {{ i18n.t('tonemapMode') }}
+      <select
+        [value]="editor.tonemapMode()"
+        (change)="onTonemap($any($event.target).value)"
+      >
+        <option value="aces">ACES</option>
+        <option value="reinhard">Reinhard</option>
+      </select>
+    </label>
+  </section>
+</div>

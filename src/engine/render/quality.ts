@@ -1,7 +1,10 @@
 /**
- * Unified quality presets: raymarch tune + volumetric render scale + AA.
+ * Unified quality presets: raymarch tune + volumetric render scale + AA + shadow.
  */
 export type QualityPreset = 'low' | 'medium' | 'high' | 'ultra';
+
+/** Light→Medium volumetric self-shadow quality (Camera→Medium T is always on). */
+export type ShadowQuality = 'off' | 'low' | 'medium' | 'high';
 
 export interface Quality {
   preset: QualityPreset;
@@ -9,6 +12,11 @@ export interface Quality {
   maxSteps: number;
   densityThreshold: number;
   transmittanceCut: number;
+  /**
+   * Light→Medium transmittance along light→sample.
+   * off / local-σ·d / secondary AABB march (2–4) / secondary (6–8).
+   */
+  shadowQuality: ShadowQuality;
   renderScale: number;
   /** Post-process FXAA (+ pipeline MSAA when on). Default true. */
   antiAliasing: boolean;
@@ -36,11 +44,72 @@ type QualityTune = Omit<
 const PRESET_ORDER: readonly QualityPreset[] = ['low', 'medium', 'high', 'ultra'];
 
 const QUALITY_TUNE: Record<QualityPreset, QualityTune> = {
-  low: { stepSize: 0.25, maxSteps: 64, densityThreshold: 0.01, transmittanceCut: 0.05 },
-  medium: { stepSize: 0.15, maxSteps: 128, densityThreshold: 0.005, transmittanceCut: 0.02 },
-  high: { stepSize: 0.1, maxSteps: 256, densityThreshold: 0.002, transmittanceCut: 0.01 },
-  ultra: { stepSize: 0.06, maxSteps: 512, densityThreshold: 0.001, transmittanceCut: 0.005 },
+  low: {
+    stepSize: 0.25,
+    maxSteps: 64,
+    densityThreshold: 0.01,
+    transmittanceCut: 0.05,
+    shadowQuality: 'off',
+  },
+  medium: {
+    stepSize: 0.15,
+    maxSteps: 128,
+    densityThreshold: 0.005,
+    transmittanceCut: 0.02,
+    shadowQuality: 'low',
+  },
+  high: {
+    stepSize: 0.1,
+    maxSteps: 256,
+    densityThreshold: 0.002,
+    transmittanceCut: 0.01,
+    shadowQuality: 'medium',
+  },
+  ultra: {
+    stepSize: 0.06,
+    maxSteps: 512,
+    densityThreshold: 0.001,
+    transmittanceCut: 0.005,
+    shadowQuality: 'high',
+  },
 };
+
+/** GPU secondary-march step count for Light→Medium (shader hard-cap 8). */
+export function shadowStepsForQuality(q: ShadowQuality): number {
+  switch (q) {
+    case 'off':
+      return 0;
+    case 'low':
+      return 1;
+    case 'medium':
+      return 4;
+    case 'high':
+      return 8;
+    default:
+      return 1;
+  }
+}
+
+/** Encode shadowQuality for the volumetric uniform (0=off … 3=high). */
+export function shadowQualityIndex(q: ShadowQuality): number {
+  switch (q) {
+    case 'off':
+      return 0;
+    case 'low':
+      return 1;
+    case 'medium':
+      return 2;
+    case 'high':
+      return 3;
+    default:
+      return 1;
+  }
+}
+
+export function normalizeShadowQuality(v: unknown): ShadowQuality {
+  if (v === 'off' || v === 'low' || v === 'medium' || v === 'high') return v;
+  return 'low';
+}
 
 let scaleConfig: QualityRenderScaleConfig = {
   renderScaleMin: 0.25,

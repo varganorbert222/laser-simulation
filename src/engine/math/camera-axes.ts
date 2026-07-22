@@ -28,13 +28,16 @@ export function computeViewportAxisGizmoLines(
   pose: CameraPose,
   size = 80,
 ): ViewportAxisGizmoLine[] {
+  // Match Babylon Matrix.LookAtLH: z = target−eye, x = cross(up, z), y = cross(z, x).
   const forward = normalize(sub(pose.target as Vec3, pose.position as Vec3));
-  let right = cross(forward, [0, 1, 0]);
+  const worldUp: Vec3 = [0, 1, 0];
+  let right = cross(worldUp, forward);
   if (right[0] * right[0] + right[1] * right[1] + right[2] * right[2] < 1e-10) {
-    right = cross(forward, [0, 0, 1]);
+    // Looking along ±Y — same fallback idea as LookAtLH (pick a stable side axis).
+    right = cross([0, 0, 1], forward);
   }
   right = normalize(right);
-  const up = normalize(cross(right, forward));
+  const up = normalize(cross(forward, right));
 
   const len = size * 0.38;
   const cx = size * 0.5;

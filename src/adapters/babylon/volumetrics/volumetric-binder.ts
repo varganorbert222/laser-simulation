@@ -230,6 +230,8 @@ export class VolumetricBinder {
     effect.setFloat('uMaxSteps', pack.quality.maxSteps);
     effect.setFloat('uDensityThreshold', pack.quality.densityThreshold);
     effect.setFloat('uTransmittanceCut', pack.quality.transmittanceCut);
+    effect.setFloat('uShadowQuality', pack.quality.shadowQuality);
+    effect.setFloat('uShadowSteps', pack.quality.shadowSteps);
 
     effect.setVector3('uEnvHemi', new Vector3(...pack.env.hemiRgb));
     effect.setVector3('uEnvSun', new Vector3(...pack.env.sunRgb));

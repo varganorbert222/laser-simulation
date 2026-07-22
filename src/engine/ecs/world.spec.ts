@@ -103,8 +103,7 @@ describe('render pack', () => {
     }
     worldTransformSystem(world);
     const pack = gatherRenderPack(world);
-    expect(pack.lights.length).toBeGreaterThanOrEqual(5);
-    expect(pack.lights.length).toBeLessThanOrEqual(MAX_GPU_LIGHTS);
+    expect(pack.lights.length).toBe(MAX_GPU_LIGHTS);
   });
 });
 

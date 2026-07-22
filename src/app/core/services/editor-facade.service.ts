@@ -11,6 +11,8 @@ import {
   type SmokeEmitter,
   type PresentationMode,
   type QualityPreset,
+  type ShadowQuality,
+  type Quality,
   type SurfaceMaterial,
   type UserAddableComponent,
   type ComponentName,
@@ -62,9 +64,11 @@ export class EditorFacade {
   readonly selectedTransformView = this.transform.selectedTransformView;
   readonly scienceReadout = this.light.scienceReadout;
   readonly quality = this.session.quality;
+  readonly qualitySettings = this.session.qualitySettings;
   readonly antiAliasing = this.session.antiAliasing;
   readonly theatricalGlow = this.session.theatricalGlow;
   readonly tonemapMode = this.session.tonemapMode;
+  readonly shadowQuality = this.session.shadowQuality;
   readonly ambientLevel = this.session.ambientLevel;
   readonly responseCurve = this.session.responseCurve;
   readonly powerPresets = this.light.powerPresets;
@@ -251,6 +255,14 @@ export class EditorFacade {
 
   setQuality(preset: QualityPreset): void {
     this.session.setQuality(preset);
+  }
+
+  patchQuality(partial: Partial<Omit<Quality, 'preset'>>): void {
+    this.session.patchQuality(partial);
+  }
+
+  setShadowQuality(quality: ShadowQuality): void {
+    this.session.setShadowQuality(quality);
   }
 
   setAntiAliasing(enabled: boolean): void {

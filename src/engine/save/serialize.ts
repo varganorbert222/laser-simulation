@@ -11,7 +11,7 @@ import {
   normalizeMediaVolume,
   normalizeSmokeEmitter,
 } from '../ecs/components';
-import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, type Quality } from '../ecs/resources';
+import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, normalizeShadowQuality, type Quality } from '../ecs/resources';
 import { World, SAVE_SCHEMA_VERSION, type SerializedWorld } from '../ecs/world';
 import { identity as matIdentity } from '../math/mat4';
 import {
@@ -33,6 +33,9 @@ function normalizeQuality(q: Quality | (Partial<Quality> & { preset?: Quality['p
     theatricalGlow:
       typeof q.theatricalGlow === 'boolean' ? q.theatricalGlow : base.theatricalGlow,
     tonemapMode: q.tonemapMode === 'reinhard' || q.tonemapMode === 'aces' ? q.tonemapMode : base.tonemapMode,
+    shadowQuality: normalizeShadowQuality(
+      (q as { shadowQuality?: unknown }).shadowQuality ?? base.shadowQuality,
+    ),
   };
 }
 

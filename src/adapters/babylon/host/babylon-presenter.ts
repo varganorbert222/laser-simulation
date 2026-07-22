@@ -218,17 +218,17 @@ export class BabylonPresenter implements FramePresenter {
    */
   private async warmupShadersThenStartLoop(): Promise<void> {
     this.emitCompileStatus({ compiling: true, ready: 0, total: 0 });
-    // Build meshes/materials before forcing compilation.
     this.sync(this.world);
 
     const materialJobs: { mesh: AbstractMesh; mat: Material }[] = [];
     for (const mesh of this.scene.meshes) {
       const mat = mesh.material;
       if (!mat || mesh.name.startsWith('__')) continue;
+      // Media wireframes skip SurfaceRadiance — no need to force-compile them early.
+      if (mat.name.startsWith('mediaMat_')) continue;
       materialJobs.push({ mesh, mat });
     }
 
-    // +1 volumetric raymarch, +1 compose post-process.
     const total = materialJobs.length + 2;
     let ready = 0;
     const bump = (): void => {
@@ -236,6 +236,10 @@ export class BabylonPresenter implements FramePresenter {
       this.emitCompileStatus({ compiling: true, ready, total });
     };
     this.emitCompileStatus({ compiling: true, ready: 0, total });
+
+    // Heaviest program first (volumetric raymarch + compose).
+    await this.waitVolumetricShaders(bump);
+    if (this.disposed) return;
 
     await Promise.all(
       materialJobs.map(({ mesh, mat }) =>
@@ -247,10 +251,6 @@ export class BabylonPresenter implements FramePresenter {
     );
     if (this.disposed) return;
 
-    await this.waitVolumetricShaders(bump);
-    if (this.disposed) return;
-
-    // Scene-level readiness (textures / remaining effects).
     try {
       await this.scene.whenReadyAsync();
     } catch {

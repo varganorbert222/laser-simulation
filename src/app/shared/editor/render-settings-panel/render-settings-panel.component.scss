@@ -1,0 +1,73 @@
+.render-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  max-width: 420px;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+h4 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #e8e2d4;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ls-muted, #9a9488);
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.preset-btn {
+  text-transform: capitalize;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+}
+
+.preset-btn.active {
+  border-color: rgba(196, 163, 90, 0.7);
+  background: rgba(196, 163, 90, 0.18);
+}
+
+label {
+  display: grid;
+  grid-template-columns: 1fr minmax(5.5rem, 7rem);
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #cfc8ba;
+}
+
+label.check {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+}
+
+input[type='number'],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.25rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+}

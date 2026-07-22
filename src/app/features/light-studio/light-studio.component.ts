@@ -13,6 +13,7 @@ import { EngineHostService } from '../../core/services/engine-host.service';
 import { EditorFacade } from '../../core/services/editor-facade.service';
 import { I18nService } from '../../i18n/i18n.service';
 import { DisplayResponseCurveComponent } from '../../shared/editor/display-response-curve/display-response-curve.component';
+import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
 import { StudioModalComponent } from '../../shared/editor/studio-modal/studio-modal.component';
 import {
   HierarchyPanelComponent,
@@ -32,6 +33,7 @@ import { editorUndoShortcut } from '../../../engine';
     ScienceReadoutComponent,
     ViewportAxesComponent,
     DisplayResponseCurveComponent,
+    RenderSettingsPanelComponent,
     StudioModalComponent,
   ],
   templateUrl: './light-studio.component.html',
@@ -50,6 +52,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   rightWidth = signal(340);
   visionModalOpen = signal(false);
   scenesModalOpen = signal(false);
+  renderModalOpen = signal(false);
   selectedLibraryId = signal<string | null>(null);
   private resizeSide: 'left' | 'right' | null = null;
   private resizeStartX = 0;

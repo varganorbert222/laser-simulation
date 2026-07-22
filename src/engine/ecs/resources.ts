@@ -4,14 +4,18 @@ export type {
   Quality,
   QualityPreset,
   QualityRenderScaleConfig,
+  ShadowQuality,
 } from '../render/quality';
 export {
   configureQualityRenderScale,
   createQuality,
   getQualityRenderScaleConfig,
+  normalizeShadowQuality,
   QUALITY_PRESETS,
   refreshQualityPresets,
   renderScaleForPreset,
+  shadowQualityIndex,
+  shadowStepsForQuality,
 } from '../render/quality';
 
 export type { DisplayVision } from '../optics/display-vision';
