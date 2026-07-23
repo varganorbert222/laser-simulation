@@ -1,124 +1,286 @@
 <div class="render-settings">
-  <section>
-    <h4>{{ l10n.t('renderPreset') }}</h4>
-    <p class="hint">{{ l10n.t('hintRenderPreset') }}</p>
-    <div class="preset-row">
-      @for (p of ['low', 'medium', 'high', 'ultra']; track p) {
-        <button
-          type="button"
-          class="preset-btn"
-          [class.active]="editor.quality() === p"
-          (click)="setPreset($any(p))"
-        >
-          {{ p }}
-        </button>
-      }
+  <details class="section" open>
+    <summary>{{ l10n.t('renderOverallQuality') }}</summary>
+    <div class="section-body">
+      <p class="hint">{{ l10n.t('hintRenderOverall') }}</p>
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.quality(), p)"
+            (click)="setOverall(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        @if (editor.quality() === 'custom') {
+          <span class="preset-custom">{{ presetLabel('custom') }}</span>
+        }
+      </div>
     </div>
-  </section>
+  </details>
 
-  <section>
-    <h4>{{ l10n.t('renderVolumetrics') }}</h4>
-    <label>
-      {{ l10n.t('renderStepSize') }}
-      <input
-        type="number"
-        min="0.02"
-        max="1"
-        step="0.01"
-        [value]="editor.qualitySettings().stepSize"
-        (change)="onNumber('stepSize', $any($event.target).value)"
-      />
-    </label>
-    <label>
-      {{ l10n.t('renderMaxSteps') }}
-      <input
-        type="number"
-        min="16"
-        max="512"
-        step="16"
-        [value]="editor.qualitySettings().maxSteps"
-        (change)="onNumber('maxSteps', $any($event.target).value)"
-      />
-    </label>
-    <label>
-      {{ l10n.t('renderDensityThreshold') }}
-      <input
-        type="number"
-        min="0"
-        max="0.1"
-        step="0.001"
-        [value]="editor.qualitySettings().densityThreshold"
-        (change)="onNumber('densityThreshold', $any($event.target).value)"
-      />
-    </label>
-    <label>
-      {{ l10n.t('renderTransmittanceCut') }}
-      <input
-        type="number"
-        min="0"
-        max="1"
-        step="0.005"
-        [value]="editor.qualitySettings().transmittanceCut"
-        (change)="onNumber('transmittanceCut', $any($event.target).value)"
-      />
-    </label>
-    <label>
-      {{ l10n.t('renderScale') }}
-      <input
-        type="number"
-        min="0.05"
-        max="1"
-        step="0.05"
-        [value]="editor.qualitySettings().renderScale"
-        (change)="onNumber('renderScale', $any($event.target).value)"
-      />
-    </label>
-  </section>
+  <details class="section" open>
+    <summary>{{ l10n.t('renderVolumetrics') }}</summary>
+    <div class="section-body">
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.qualitySettings().volumetricsPreset, p)"
+            (click)="setVolumetrics(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        @if (editor.qualitySettings().volumetricsPreset === 'custom') {
+          <span class="preset-custom">{{ presetLabel('custom') }}</span>
+        }
+      </div>
+      <label>
+        {{ l10n.t('renderStepSize') }}
+        <input
+          type="number"
+          min="0.02"
+          max="1"
+          step="0.01"
+          [value]="editor.qualitySettings().stepSize"
+          (change)="onNumber('stepSize', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('renderMaxSteps') }}
+        <input
+          type="number"
+          min="16"
+          max="512"
+          step="16"
+          [value]="editor.qualitySettings().maxSteps"
+          (change)="onNumber('maxSteps', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('renderDensityThreshold') }}
+        <input
+          type="number"
+          min="0"
+          max="0.1"
+          step="0.001"
+          [value]="editor.qualitySettings().densityThreshold"
+          (change)="onNumber('densityThreshold', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('renderTransmittanceCut') }}
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.005"
+          [value]="editor.qualitySettings().transmittanceCut"
+          (change)="onNumber('transmittanceCut', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('renderScale') }}
+        <input
+          type="number"
+          min="0.05"
+          max="1"
+          step="0.05"
+          [value]="editor.qualitySettings().renderScale"
+          (change)="onNumber('renderScale', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </details>
 
-  <section>
-    <h4>{{ l10n.t('renderShadow') }}</h4>
-    <p class="hint">{{ l10n.t('hintRenderShadow') }}</p>
-    <label>
-      {{ l10n.t('shadowQuality') }}
-      <select
-        [value]="editor.shadowQuality()"
-        (change)="onShadow($any($event.target).value)"
-      >
-        <option value="off">{{ l10n.t('shadowQualityOff') }}</option>
-        <option value="low">{{ l10n.t('shadowQualityLow') }}</option>
-        <option value="medium">{{ l10n.t('shadowQualityMedium') }}</option>
-        <option value="high">{{ l10n.t('shadowQualityHigh') }}</option>
-      </select>
-    </label>
-  </section>
+  <details class="section">
+    <summary>{{ l10n.t('renderShadow') }}</summary>
+    <div class="section-body">
+      <p class="hint">{{ l10n.t('hintRenderShadow') }}</p>
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.qualitySettings().shadowPreset, p)"
+            (click)="setShadow(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        @if (editor.qualitySettings().shadowPreset === 'custom') {
+          <span class="preset-custom">{{ presetLabel('custom') }}</span>
+        }
+      </div>
+      <label>
+        {{ l10n.t('shadowQuality') }}
+        <select
+          [value]="editor.shadowQuality()"
+          (change)="onShadow($any($event.target).value)"
+        >
+          <option value="off">{{ l10n.t('shadowQualityOff') }}</option>
+          <option value="low">{{ l10n.t('shadowQualityLow') }}</option>
+          <option value="medium">{{ l10n.t('shadowQualityMedium') }}</option>
+          <option value="high">{{ l10n.t('shadowQualityHigh') }}</option>
+        </select>
+      </label>
+    </div>
+  </details>
 
-  <section>
-    <h4>{{ l10n.t('renderPresentation') }}</h4>
-    <label class="check">
-      <input
-        type="checkbox"
-        [checked]="editor.antiAliasing()"
-        (change)="editor.setAntiAliasing($any($event.target).checked)"
-      />
-      {{ l10n.t('antiAliasing') }}
-    </label>
-    <label class="check">
-      <input
-        type="checkbox"
-        [checked]="editor.theatricalGlow()"
-        (change)="editor.setTheatricalGlow($any($event.target).checked)"
-      />
-      {{ l10n.t('theatricalGlow') }}
-    </label>
-    <label>
-      {{ l10n.t('tonemapMode') }}
-      <select
-        [value]="editor.tonemapMode()"
-        (change)="onTonemap($any($event.target).value)"
-      >
-        <option value="aces">ACES</option>
-        <option value="reinhard">Reinhard</option>
-      </select>
-    </label>
-  </section>
+  <details class="section" open>
+    <summary>{{ l10n.t('renderSkybox') }}</summary>
+    <div class="section-body">
+      <p class="hint">{{ l10n.t('hintRenderSkybox') }}</p>
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.atmosphere().enabled"
+          (change)="editor.setAtmosphereEnabled($any($event.target).checked)"
+        />
+        {{ l10n.t('atmosphereEnabled') }}
+      </label>
+
+      <p class="subhead">{{ l10n.t('renderSkyboxQuality') }}</p>
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.atmosphere().qualityPreset, p)"
+            [disabled]="!editor.atmosphere().enabled"
+            (click)="setSky(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        @if (editor.atmosphere().qualityPreset === 'custom') {
+          <span class="preset-custom">{{ presetLabel('custom') }}</span>
+        }
+      </div>
+
+      <label>
+        {{ l10n.t('skySunSize') }}
+        <input
+          type="number"
+          min="0.05"
+          max="8"
+          step="0.01"
+          [value]="editor.atmosphere().sunAngularDiameterDeg"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('sunAngularDiameterDeg', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('skyExposure') }}
+        <input
+          type="number"
+          min="0.05"
+          max="8"
+          step="0.05"
+          [value]="editor.atmosphere().exposure"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('exposure', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('skyLutBlend') }}
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="editor.atmosphere().lutBlend"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('lutBlend', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('skyReflectionLevel') }}
+        <input
+          type="number"
+          min="0"
+          max="2"
+          step="0.05"
+          [value]="editor.atmosphere().reflectionLevel"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('reflectionLevel', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('skyViewSamples') }}
+        <input
+          type="number"
+          min="8"
+          max="128"
+          step="4"
+          [value]="editor.atmosphere().skyViewSamples"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('skyViewSamples', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('skyTransmittanceSamples') }}
+        <input
+          type="number"
+          min="8"
+          max="128"
+          step="4"
+          [value]="editor.atmosphere().transmittanceSamples"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('transmittanceSamples', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </details>
+
+  <details class="section">
+    <summary>{{ l10n.t('renderPresentation') }}</summary>
+    <div class="section-body">
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.qualitySettings().presentationPreset, p)"
+            (click)="setPresentation(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        @if (editor.qualitySettings().presentationPreset === 'custom') {
+          <span class="preset-custom">{{ presetLabel('custom') }}</span>
+        }
+      </div>
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.antiAliasing()"
+          (change)="editor.setAntiAliasing($any($event.target).checked)"
+        />
+        {{ l10n.t('antiAliasing') }}
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.theatricalGlow()"
+          (change)="editor.setTheatricalGlow($any($event.target).checked)"
+        />
+        {{ l10n.t('theatricalGlow') }}
+      </label>
+      <label>
+        {{ l10n.t('tonemapMode') }}
+        <select
+          [value]="editor.tonemapMode()"
+          (change)="onTonemap($any($event.target).value)"
+        >
+          <option value="aces">ACES</option>
+          <option value="reinhard">Reinhard</option>
+        </select>
+      </label>
+    </div>
+  </details>
 </div>

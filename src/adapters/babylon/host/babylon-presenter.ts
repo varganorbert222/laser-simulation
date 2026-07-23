@@ -24,7 +24,10 @@ import {
   environmentSunDirUnit,
   environmentSunIntensity,
   lightWorldPose,
+  resolveAtmosphereSolarPosition,
   resolveEmitterAppearance,
+  skyIrradianceApprox,
+  sunIrradianceRgb,
   type CameraPose,
   type FramePresenter,
   type GizmoMode,
@@ -38,6 +41,9 @@ import {
   configureBlenderPointerInputs,
   type WorldAxis,
 } from '../camera/blender-camera-controls';
+import { AtmosphereEnvCubemap } from '../atmosphere/atmosphere-env-cubemap';
+import { AtmosphereLutBaker } from '../atmosphere/atmosphere-lut-baker';
+import { AtmosphereSkybox } from '../atmosphere/atmosphere-skybox';
 import { SurfaceLightSync } from '../lights/surface-lights';
 import { SceneMeshSync } from '../mesh/scene-mesh-sync';
 import { bindViewportPicking } from '../picking/viewport-picking';
@@ -78,6 +84,9 @@ export class BabylonPresenter implements FramePresenter {
   private readonly lights: SurfaceLightSync;
   private readonly pipeline: StudioPipeline;
   private readonly volumetrics: VolumetricBinder;
+  private readonly atmosphereBaker: AtmosphereLutBaker;
+  private readonly atmosphereSkybox: AtmosphereSkybox;
+  private readonly atmosphereEnv: AtmosphereEnvCubemap;
   private readonly depthRenderer: DepthRenderer;
   private readonly hemi: HemisphericLight;
   private readonly sun: DirectionalLight;
@@ -165,6 +174,16 @@ export class BabylonPresenter implements FramePresenter {
       this.world.resources.Quality.renderScale,
     );
     this.volumetrics.bindWorld(this.world, this.camera);
+    this.atmosphereBaker = new AtmosphereLutBaker(this.engine, this.scene);
+    this.atmosphereSkybox = new AtmosphereSkybox(this.scene, this.atmosphereBaker);
+    this.atmosphereEnv = new AtmosphereEnvCubemap(this.scene, this.atmosphereBaker);
+    this.meshes.setReflectionHook((mat, sm) => {
+      if (!sm) {
+        mat.reflectionTexture = null;
+        return;
+      }
+      this.atmosphereEnv.applyToMaterial(mat, sm.metalness, sm.roughness);
+    });
     // Camera-space Z depth — opaque surfaces stop volumetric beams; transparent (transmission) skip depth write.
     this.depthRenderer = this.scene.enableDepthRenderer(
       this.camera,
@@ -312,6 +331,7 @@ export class BabylonPresenter implements FramePresenter {
   sync(world: World): void {
     this.world = world;
     this.syncCameraToResource();
+    this.syncAtmosphere(world);
     this.syncEnvironmentLighting(world);
     this.meshes.sync();
     this.lights.sync(world);
@@ -320,9 +340,74 @@ export class BabylonPresenter implements FramePresenter {
     this.volumetrics.applyRenderScale(world.resources.Quality.renderScale);
   }
 
-  /** Apply environment ambient + optional primary Sun entity to fill lights. */
+  /** Bake sky LUTs + drive skybox / aerial compose + IBL cubemap when Atmosphere.enabled. */
+  private syncAtmosphere(world: World): void {
+    const atmo = world.resources.Atmosphere;
+    if (!atmo?.enabled) {
+      this.atmosphereSkybox.setEnabled(false);
+      this.atmosphereEnv.clear();
+      this.meshes.reapplyReflections();
+      this.volumetrics.setAerialPerspectiveLut(null);
+      return;
+    }
+    const spa = resolveAtmosphereSolarPosition(atmo);
+    this.atmosphereBaker.sync(atmo, spa.lightDirWorld);
+    this.atmosphereSkybox.setEnabled(true);
+    const ambientLevel = world.resources.EnvironmentLighting.ambientLevel;
+    const skyOpts = {
+      ambientLevel,
+      exposure: atmo.exposure,
+      sunAngularDiameterDeg: atmo.sunAngularDiameterDeg,
+      lutBlend: atmo.lutBlend,
+      lutReady: this.atmosphereBaker.skyLutsReady,
+      reflectionLevel: atmo.reflectionLevel,
+    };
+    this.atmosphereSkybox.sync(
+      this.camera,
+      atmo.model,
+      spa.lightDirWorld,
+      skyOpts,
+    );
+    this.atmosphereEnv.sync(atmo.model, spa.lightDirWorld, skyOpts);
+    this.meshes.reapplyReflections();
+    this.volumetrics.setAerialPerspectiveLut(
+      this.atmosphereBaker.aerialPerspectiveLut,
+    );
+  }
+
+  /** Apply environment ambient + optional primary Sun entity / SPA to fill lights. */
   private syncEnvironmentLighting(world: World): void {
     const ambientLevel = world.resources.EnvironmentLighting.ambientLevel;
+    const atmo = world.resources.Atmosphere;
+
+    if (atmo?.enabled) {
+      const spa = resolveAtmosphereSolarPosition(atmo);
+      // Horizon-tint clear so empty pixels never stay pitch-black under the sky pass.
+      const hemi = skyIrradianceApprox(atmo.model, spa.lightDirWorld, ambientLevel);
+      const scale = 1.8;
+      this.scene.clearColor = new Color4(
+        Math.min(1, hemi[0] * scale),
+        Math.min(1, hemi[1] * scale),
+        Math.min(1, hemi[2] * scale),
+        1,
+      );
+      this.hemi.intensity = environmentHemiIntensity(ambientLevel) * 0.85;
+      this.sun.direction = new Vector3(
+        spa.lightDirWorld[0],
+        spa.lightDirWorld[1],
+        spa.lightDirWorld[2],
+      );
+      const sunRgb = sunIrradianceRgb(atmo.model, spa.lightDirWorld, ambientLevel);
+      const sunEnergy = Math.max(sunRgb[0], sunRgb[1], sunRgb[2], 1e-6);
+      this.sun.intensity = environmentSunIntensity(ambientLevel) * (0.4 + sunEnergy * 2.5);
+      this.sun.diffuse = new Color3(
+        Math.min(1, sunRgb[0] / sunEnergy),
+        Math.min(1, sunRgb[1] / sunEnergy),
+        Math.min(1, sunRgb[2] / sunEnergy),
+      );
+      return;
+    }
+
     const [r, g, b] = environmentClearRgb(ambientLevel);
     this.scene.clearColor = new Color4(r, g, b, 1);
     this.hemi.intensity = environmentHemiIntensity(ambientLevel);
@@ -428,6 +513,9 @@ export class BabylonPresenter implements FramePresenter {
     this.meshes.dispose();
     this.lights.dispose();
     this.pipeline.dispose();
+    this.atmosphereSkybox.dispose();
+    this.atmosphereEnv.dispose();
+    this.atmosphereBaker.dispose();
     this.volumetrics.dispose();
     this.scene.disableDepthRenderer(this.camera);
     this.scene.dispose();

@@ -5,6 +5,7 @@ import {
   EffectWrapper,
   Matrix,
   PostProcess,
+  RawTexture3D,
   RenderTargetTexture,
   Vector2,
   Vector3,
@@ -73,6 +74,9 @@ export class VolumetricBinder {
   private _world: World | null = null;
   private _camera: Camera | null = null;
   private _sceneDepth: BaseTexture | null = null;
+  /** Optional atmosphere aerial-perspective 3D LUT (distant haze in compose). */
+  private _aerialLut: BaseTexture | null = null;
+  private readonly _aerialDummy: RawTexture3D;
 
   constructor(
     private readonly engine: Engine,
@@ -84,6 +88,19 @@ export class VolumetricBinder {
     const vol = this.volumetricSize(scale);
 
     this.noiseTextures = new NoiseTextureCache(scene);
+
+    this._aerialDummy = new RawTexture3D(
+      new Uint8Array([0, 0, 0, 255]),
+      1,
+      1,
+      1,
+      Constants.TEXTUREFORMAT_RGBA,
+      scene,
+      false,
+      false,
+      Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+      Constants.TEXTURETYPE_UNSIGNED_BYTE,
+    );
 
     this.volumetricTarget = new RenderTargetTexture(
       'volumetricLights',
@@ -121,8 +138,8 @@ export class VolumetricBinder {
     this.compose = new PostProcess(
       'volumetricCompose',
       'volumetricCompose',
-      ['uTonemapMode'],
-      ['volumetricTexture'],
+      ['uTonemapMode', 'uAerialEnabled'],
+      ['volumetricTexture', 'uAerialPerspectiveLUT'],
       1.0,
       camera,
       Constants.TEXTURE_BILINEAR_SAMPLINGMODE,
@@ -134,6 +151,9 @@ export class VolumetricBinder {
       fx.setTexture('volumetricTexture', this.volumetricTarget);
       const mode = this._world?.resources.Quality.tonemapMode === 'reinhard' ? 1 : 0;
       fx.setFloat('uTonemapMode', mode);
+      const aerialOn = this._aerialLut && this._world?.resources.Atmosphere?.enabled ? 1 : 0;
+      fx.setFloat('uAerialEnabled', aerialOn);
+      fx.setTexture('uAerialPerspectiveLUT', this._aerialLut ?? this._aerialDummy);
     };
 
     this.lastRenderScale = scale;
@@ -149,6 +169,11 @@ export class VolumetricBinder {
   /** Scene depth (camera-space Z) for solid occlusion — typically from DepthRenderer. */
   setSceneDepthTexture(texture: BaseTexture | null): void {
     this._sceneDepth = texture;
+  }
+
+  /** Bind Atmosphere aerial perspective volume for compose haze (null disables). */
+  setAerialPerspectiveLut(texture: BaseTexture | null): void {
+    this._aerialLut = texture;
   }
 
   /** Sync baked noise library assets onto the GPU (2D / 3D). */
@@ -209,6 +234,7 @@ export class VolumetricBinder {
     this.effectRenderer.dispose();
     this.volumetricTarget.dispose();
     this.noiseTextures.dispose();
+    this._aerialDummy.dispose();
   }
 
   private syncVolumetricSize(scale: number, force: boolean): void {

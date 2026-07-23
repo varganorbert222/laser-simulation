@@ -22,6 +22,11 @@ import {
   environmentVolumetricHemiRgb,
   environmentVolumetricSunRgb,
 } from '../physics/optics/environment-lighting';
+import {
+  skyIrradianceApprox,
+  sunIrradianceRgb,
+} from '../physics/optics/atmosphere-model';
+import { resolveAtmosphereSolarPosition } from '../physics/optics/atmosphere-settings';
 import { isSunEmitter, refreshSceneSunBinding } from '../physics/optics/scene-sun';
 import { resolveEmitterAppearance } from '../physics/optics/light-appearance';
 import {
@@ -254,26 +259,36 @@ export function gatherRenderPack(world: World): GatheredFrame {
 
   const q = world.resources.Quality;
   const envRes = world.resources.EnvironmentLighting;
+  const atmo = world.resources.Atmosphere;
   let sunDirCam = normalize(environmentSunDirUnit() as Vec3);
   let sunRgb = environmentVolumetricSunRgb(envRes.ambientLevel);
-  const primarySunId = sunBinding.primaryId;
-  if (primarySunId) {
-    const sunEm = world.get(primarySunId, 'LightEmitter');
-    if (sunEm?.enabled) {
-      const pose = lightWorldPose(world, primarySunId);
-      sunDirCam = normalize(pose.direction);
-      const appearance = resolveEmitterAppearance(sunEm, {
-        ambientLevel: envRes.ambientLevel,
-      });
-      const base = environmentVolumetricSunRgb(envRes.ambientLevel);
-      const k = Math.min(4, 0.35 + appearance.powerLinear * 0.002);
-      sunRgb = [
-        base[0] * k * appearance.chroma[0],
-        base[1] * k * appearance.chroma[1],
-        base[2] * k * appearance.chroma[2],
-      ];
-    } else {
-      sunRgb = [0, 0, 0];
+  let hemiRgb = environmentVolumetricHemiRgb(envRes.ambientLevel);
+
+  if (atmo?.enabled) {
+    const spa = resolveAtmosphereSolarPosition(atmo);
+    sunDirCam = normalize(spa.lightDirWorld as Vec3);
+    sunRgb = sunIrradianceRgb(atmo.model, spa.lightDirWorld, envRes.ambientLevel);
+    hemiRgb = skyIrradianceApprox(atmo.model, spa.lightDirWorld, envRes.ambientLevel);
+  } else {
+    const primarySunId = sunBinding.primaryId;
+    if (primarySunId) {
+      const sunEm = world.get(primarySunId, 'LightEmitter');
+      if (sunEm?.enabled) {
+        const pose = lightWorldPose(world, primarySunId);
+        sunDirCam = normalize(pose.direction);
+        const appearance = resolveEmitterAppearance(sunEm, {
+          ambientLevel: envRes.ambientLevel,
+        });
+        const base = environmentVolumetricSunRgb(envRes.ambientLevel);
+        const k = Math.min(4, 0.35 + appearance.powerLinear * 0.002);
+        sunRgb = [
+          base[0] * k * appearance.chroma[0],
+          base[1] * k * appearance.chroma[1],
+          base[2] * k * appearance.chroma[2],
+        ];
+      } else {
+        sunRgb = [0, 0, 0];
+      }
     }
   }
 
@@ -291,7 +306,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
       shadowSteps: shadowStepsForQuality(normalizeShadowQuality(q.shadowQuality)),
     },
     env: {
-      hemiRgb: environmentVolumetricHemiRgb(envRes.ambientLevel),
+      hemiRgb,
       sunRgb,
       sunDirCam,
       multiScatter: envRes.volumeMultiScatter,

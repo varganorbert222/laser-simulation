@@ -31,29 +31,19 @@ import {
   createDefaultEnvironmentLighting,
   normalizeEnvironmentLighting,
 } from '../physics/optics/environment-lighting';
+import type { AtmosphereSettings } from '../physics/optics/atmosphere-settings';
+import {
+  createDefaultAtmosphereSettings,
+  normalizeAtmosphereSettings,
+} from '../physics/optics/atmosphere-settings';
 import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
 import {
-  createQuality,
-  normalizeShadowQuality,
+  normalizeQualityResource,
   type Quality,
 } from '../render/quality';
 
 function normalizeQuality(q: Quality | (Partial<Quality> & { preset?: Quality['preset'] })): Quality {
-  const preset = q.preset ?? 'medium';
-  const base = createQuality(preset);
-  return {
-    ...base,
-    ...q,
-    preset,
-    renderScale: typeof q.renderScale === 'number' ? q.renderScale : base.renderScale,
-    antiAliasing: typeof q.antiAliasing === 'boolean' ? q.antiAliasing : base.antiAliasing,
-    theatricalGlow:
-      typeof q.theatricalGlow === 'boolean' ? q.theatricalGlow : base.theatricalGlow,
-    tonemapMode: q.tonemapMode === 'reinhard' || q.tonemapMode === 'aces' ? q.tonemapMode : base.tonemapMode,
-    shadowQuality: normalizeShadowQuality(
-      (q as { shadowQuality?: unknown }).shadowQuality ?? base.shadowQuality,
-    ),
-  };
+  return normalizeQualityResource(q);
 }
 
 function normalizeEntityComponents(
@@ -100,6 +90,7 @@ export function migrateSave(data: SerializedWorld): SerializedWorld {
   const rawVision = (data.resources as { DisplayVision?: Partial<DisplayVision> }).DisplayVision;
   const rawEnv = (data.resources as { EnvironmentLighting?: Partial<EnvironmentLighting> })
     .EnvironmentLighting;
+  const rawAtmo = (data.resources as { Atmosphere?: Partial<AtmosphereSettings> }).Atmosphere;
 
   return {
     ...data,
@@ -112,6 +103,7 @@ export function migrateSave(data: SerializedWorld): SerializedWorld {
       EditorSelection: normalizeEditorSelection(data.resources.EditorSelection),
       DisplayVision: normalizeDisplayVision(rawVision),
       EnvironmentLighting: normalizeEnvironmentLighting(rawEnv),
+      Atmosphere: normalizeAtmosphereSettings(rawAtmo),
     },
     entities: data.entities.map((e) => ({
       ...e,
@@ -144,6 +136,9 @@ export function restoreWorldFromSerialized(world: World, data: SerializedWorld):
   );
   world.resources.EnvironmentLighting = structuredClone(
     migrated.resources.EnvironmentLighting ?? createDefaultEnvironmentLighting(),
+  );
+  world.resources.Atmosphere = structuredClone(
+    migrated.resources.Atmosphere ?? createDefaultAtmosphereSettings(),
   );
 
   for (const entity of migrated.entities) {
@@ -187,6 +182,7 @@ export function deserializeWorld(json: string): World {
     EditorTooling: data.resources.EditorTooling,
     DisplayVision: data.resources.DisplayVision,
     EnvironmentLighting: data.resources.EnvironmentLighting,
+    Atmosphere: data.resources.Atmosphere ?? createDefaultAtmosphereSettings(),
   });
   restoreWorldFromSerialized(world, data);
   return world;

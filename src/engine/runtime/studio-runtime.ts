@@ -2,6 +2,8 @@ import { Schedule } from '../ecs/schedule';
 import { gatherRenderPackSystem } from '../ecs/systems/gather-render-pack';
 import { worldTransformSystem } from '../ecs/systems/world-transform';
 import type { World } from '../ecs/world';
+import { atmosphereAdvanceTime } from '../physics/optics/atmosphere-settings';
+import { syncPrimarySunFromAtmosphere } from '../physics/optics/atmosphere-scene-sun';
 import { gatherRenderPack } from '../render/pack';
 import type { FramePresenter } from './frame-presenter';
 
@@ -60,6 +62,15 @@ export class StudioRuntime {
    * Advance ECS schedule, then sync + render via presenter (present outside schedule).
    */
   tick(dt: number): void {
+    const atmo = this.world.resources.Atmosphere;
+    if (atmo?.enabled && atmo.timeAnimating) {
+      // Do not bump epoch — mesh sync treats bump as a full rebuild.
+      this.world.resources.Atmosphere = atmosphereAdvanceTime(atmo, dt);
+    }
+    if (this.world.resources.Atmosphere?.enabled) {
+      const created = syncPrimarySunFromAtmosphere(this.world);
+      if (created) this.world.bump();
+    }
     this.schedule.run(this.world, dt);
     const presenter = this.presenter;
     if (!presenter) return;

@@ -18,6 +18,8 @@ import type { DisplayVision } from '../physics/optics/display-vision';
 import { createDefaultDisplayVision } from '../physics/optics/display-vision';
 import type { EnvironmentLighting } from '../physics/optics/environment-lighting';
 import { createDefaultEnvironmentLighting } from '../physics/optics/environment-lighting';
+import type { AtmosphereSettings } from '../physics/optics/atmosphere-settings';
+import { createDefaultAtmosphereSettings } from '../physics/optics/atmosphere-settings';
 import type { SceneSunBinding } from '../physics/optics/scene-sun';
 import { createDefaultSceneSunBinding } from '../physics/optics/scene-sun';
 import type { Quality } from '../render/quality';
@@ -36,6 +38,8 @@ export interface WorldResources {
   EditorTooling: EditorTooling;
   DisplayVision: DisplayVision;
   EnvironmentLighting: EnvironmentLighting;
+  /** Procedural sky + SPA site/time (optional). */
+  Atmosphere: AtmosphereSettings;
   /** Primary / suppressed sun emitters (refreshed on pack / load). */
   SceneSun: SceneSunBinding;
   /**
@@ -61,6 +65,7 @@ export interface SerializedWorld {
     EditorTooling: EditorTooling;
     DisplayVision: DisplayVision;
     EnvironmentLighting: EnvironmentLighting;
+    Atmosphere?: AtmosphereSettings;
     SceneSun?: SceneSunBinding;
   };
   entities: SerializedEntity[];
@@ -106,6 +111,7 @@ export class World {
       EditorTooling: normalizeEditorTooling(resources?.EditorTooling),
       DisplayVision: resources?.DisplayVision ?? createDefaultDisplayVision(),
       EnvironmentLighting: resources?.EnvironmentLighting ?? createDefaultEnvironmentLighting(),
+      Atmosphere: resources?.Atmosphere ?? createDefaultAtmosphereSettings(),
       SceneSun: resources?.SceneSun ?? createDefaultSceneSunBinding(),
       RenderFrame: resources?.RenderFrame ?? null,
       epoch: resources?.epoch ?? 0,
@@ -164,6 +170,19 @@ export class World {
     this.bump();
   }
 
+  /**
+   * Replace a component without bumping epoch (per-frame animation / SPA sun sync).
+   * Use when meshes should update transforms in place, not rebuild.
+   */
+  setQuiet<C extends ComponentName>(
+    id: EntityId,
+    name: C,
+    value: ComponentMap[C],
+  ): void {
+    if (!this.entities.has(id)) return;
+    this.stores[name].set(id, value);
+  }
+
   remove<C extends ComponentName>(id: EntityId, name: C): void {
     this.stores[name].delete(id);
     this.bump();
@@ -211,6 +230,7 @@ export class World {
         EditorTooling: structuredClone(this.resources.EditorTooling),
         DisplayVision: structuredClone(this.resources.DisplayVision),
         EnvironmentLighting: structuredClone(this.resources.EnvironmentLighting),
+        Atmosphere: structuredClone(this.resources.Atmosphere),
       },
       entities,
     };

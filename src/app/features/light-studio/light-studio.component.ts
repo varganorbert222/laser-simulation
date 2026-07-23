@@ -15,6 +15,7 @@ import { EditorFacade } from '../../core/services/editor-facade.service';
 import { LocalizationService } from '../../core/services/localization.service';
 import { DisplayResponseCurveComponent } from '../../shared/editor/display-response-curve/display-response-curve.component';
 import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
+import { TimeOfDayPanelComponent } from '../../shared/editor/time-of-day-panel/time-of-day-panel.component';
 import { NoiseEditorComponent } from '../../shared/editor/noise-editor/noise-editor.component';
 import { StudioModalComponent } from '../../shared/editor/studio-modal/studio-modal.component';
 import {
@@ -37,6 +38,7 @@ import { NoiseVolumeService } from '../../core/editor/noise-volume.service';
     ViewportAxesComponent,
     DisplayResponseCurveComponent,
     RenderSettingsPanelComponent,
+    TimeOfDayPanelComponent,
     NoiseEditorComponent,
     StudioModalComponent,
   ],
@@ -56,6 +58,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   leftWidth = signal(280);
   rightWidth = signal(340);
   visionModalOpen = signal(false);
+  timeOfDayModalOpen = signal(false);
   scenesModalOpen = signal(false);
   sceneLoading = signal(false);
   renderModalOpen = signal(false);

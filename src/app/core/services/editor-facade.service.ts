@@ -12,7 +12,9 @@ import {
   type MediaVolume,
   type SmokeEmitter,
   type PresentationMode,
+  type QualityLadder,
   type QualityPreset,
+  type QualityPresetSelection,
   type ShadowQuality,
   type Quality,
   type SurfaceMaterial,
@@ -20,6 +22,9 @@ import {
   type ComponentName,
   type Vec3Editable,
   type DisplayResponseCurve,
+  type AtmosphereSettings,
+  type AtmosphereTimePresetId,
+  type AtmosphereSeasonPresetId,
 } from '@engine';
 import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
@@ -76,6 +81,7 @@ export class EditorFacade {
   readonly tonemapMode = this.session.tonemapMode;
   readonly shadowQuality = this.session.shadowQuality;
   readonly ambientLevel = this.session.ambientLevel;
+  readonly atmosphere = this.session.atmosphere;
   readonly responseCurve = this.session.responseCurve;
   readonly powerPresets = this.light.powerPresets;
   readonly sceneList = this.session.sceneList;
@@ -283,11 +289,23 @@ export class EditorFacade {
     this.transform.applyTransformFromView(partial, opts);
   }
 
-  setQuality(preset: QualityPreset): void {
+  setQuality(preset: QualityLadder): void {
     this.session.setQuality(preset);
   }
 
-  patchQuality(partial: Partial<Omit<Quality, 'preset'>>): void {
+  setVolumetricsPreset(preset: QualityLadder): void {
+    this.session.setVolumetricsPreset(preset);
+  }
+
+  setShadowPreset(preset: QualityLadder): void {
+    this.session.setShadowPreset(preset);
+  }
+
+  setPresentationPreset(preset: QualityLadder): void {
+    this.session.setPresentationPreset(preset);
+  }
+
+  patchQuality(partial: Partial<Quality>): void {
     this.session.patchQuality(partial);
   }
 
@@ -309,6 +327,38 @@ export class EditorFacade {
 
   setAmbientLevel(ambientLevel: number): void {
     this.session.setAmbientLevel(ambientLevel);
+  }
+
+  setAtmosphereEnabled(enabled: boolean): void {
+    this.session.setAtmosphereEnabled(enabled);
+  }
+
+  patchAtmosphere(partial: Partial<AtmosphereSettings>): void {
+    this.session.patchAtmosphere(partial);
+  }
+
+  setAtmosphereQuality(preset: QualityLadder): void {
+    this.session.setAtmosphereQuality(preset);
+  }
+
+  setAtmosphereTimeOfDay(hourOfDay: number): void {
+    this.session.setAtmosphereTimeOfDay(hourOfDay);
+  }
+
+  setAtmosphereTimePreset(id: AtmosphereTimePresetId): void {
+    this.session.setAtmosphereTimePreset(id);
+  }
+
+  setAtmosphereSeasonPreset(id: AtmosphereSeasonPresetId): void {
+    this.session.setAtmosphereSeasonPreset(id);
+  }
+
+  setAtmosphereTimeAnimating(animating: boolean): void {
+    this.session.setAtmosphereTimeAnimating(animating);
+  }
+
+  setAtmosphereNow(): void {
+    this.session.setAtmosphereNow();
   }
 
   setResponseCurve(curve: DisplayResponseCurve): void {

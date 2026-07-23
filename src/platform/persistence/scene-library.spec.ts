@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoWorld, serializeWorld } from '@engine';
+import { createDemoWorld, createQuality, serializeWorld } from '@engine';
 import { documentToWorld } from './scene-io';
 import {
   createEmptySceneLibrary,
@@ -41,7 +41,10 @@ describe('scene library', () => {
     lib = library;
     writeSceneLibrary(lib, storage);
 
-    world.resources.Quality.preset = 'ultra';
+    world.resources.Quality = {
+      ...world.resources.Quality,
+      ...createQuality('ultra'),
+    };
     world.bump();
     lib = upsertSceneInLibrary(lib, world, { id, label: 'Lab v2' }).library;
     writeSceneLibrary(lib, storage);
@@ -50,6 +53,7 @@ describe('scene library', () => {
     expect(Object.keys(loaded.scenes)).toHaveLength(1);
     expect(loaded.scenes[id]!.label).toBe('Lab v2');
     const w = loadWorldFromLibrary(loaded, id)!;
+    expect(w.resources.Quality.overallPreset).toBe('ultra');
     expect(w.resources.Quality.preset).toBe('ultra');
     expect(w.resources.ActiveScene.sceneId).toBe(id);
   });

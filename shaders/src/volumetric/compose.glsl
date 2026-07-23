@@ -1,9 +1,12 @@
 precision highp float;
+precision highp sampler3D;
 
 varying vec2 vUV;
 uniform sampler2D textureSampler;
 uniform sampler2D volumetricTexture;
 uniform float uTonemapMode; // 0 = ACES, 1 = Reinhard
+uniform float uAerialEnabled;
+uniform sampler3D uAerialPerspectiveLUT;
 
 float acesFilmCurve(float x) {
   float a = 2.51;
@@ -36,6 +39,14 @@ vec3 reinhardLuminance(vec3 hdr) {
 
 void main(void) {
   vec3 scene = texture2D(textureSampler, vUV).rgb;
+  // Optional distant aerial haze (Atmosphere LUT) — screen-space approx until depth-aware path.
+  if (uAerialEnabled > 0.5) {
+    float zen = clamp(1.0 - vUV.y, 0.0, 1.0);
+    // WebGL2: texture(); precision highp sampler3D required (see raymarch.tpl.glsl).
+    vec4 ap = texture(uAerialPerspectiveLUT, vec3(zen, 0.4, 0.25));
+    float haze = (1.0 - ap.a) * 0.35;
+    scene = mix(scene, scene * ap.a + ap.rgb, haze);
+  }
   vec3 vol = texture2D(volumetricTexture, vUV).rgb;
   vec3 volMapped = uTonemapMode > 0.5 ? reinhardLuminance(vol) : acesLuminance(vol);
   vec3 outc = scene + volMapped;

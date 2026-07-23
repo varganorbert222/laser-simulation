@@ -61,6 +61,16 @@ export function forward(q: Quat): Vec3 {
   return normalizeVec3(rotateVec(q, [0, 0, 1]));
 }
 
+/**
+ * Quaternion that maps local +Z onto `dir` (light / emitter aim convention).
+ */
+export function fromDirection(dir: Vec3): Quat {
+  const d = normalizeVec3(dir);
+  const o = out();
+  gquat.rotationTo(o, [0, 0, 1], [d[0], d[1], d[2]]);
+  return normalize(o);
+}
+
 export function clone(q: Quat): Quat {
   return [q[0], q[1], q[2], q[3]];
 }

@@ -35,6 +35,11 @@ export class EngineHostService {
   readonly undoLabel = signal<string | null>(null);
   readonly redoLabel = signal<string | null>(null);
   readonly cameraPose = signal<CameraPose | null>(null);
+  /**
+   * Bumped while atmosphere time-of-day animation runs so Angular UI can track
+   * civil clock without a full world epoch / mesh rebuild.
+   */
+  readonly atmosphereRevision = signal(0);
   /** True while the Babylon host warms up / waits for shader compile before the render loop. */
   readonly shadersCompiling = signal(false);
   readonly shaderCompileReady = signal(0);
@@ -58,7 +63,16 @@ export class EngineHostService {
       onTransformDragStart: (entityId) => this.beginGizmoDrag(entityId),
       onTransformDragEnd: (entityId, transform) => this.applyGizmoTransform(entityId, transform),
       onFrame: (pose) => this.cameraPose.set(pose),
-      onTick: (dt) => this.runtime?.tick(dt),
+      onTick: (dt) => {
+        const epochBefore = this.world().resources.epoch;
+        this.runtime?.tick(dt);
+        if (this.world().resources.epoch !== epochBefore) {
+          this.tickEpoch();
+        }
+        if (this.world().resources.Atmosphere?.timeAnimating) {
+          this.atmosphereRevision.update((n) => n + 1);
+        }
+      },
       onShaderCompileStatus: (status) => {
         this.shadersCompiling.set(status.compiling);
         this.shaderCompileReady.set(status.ready);

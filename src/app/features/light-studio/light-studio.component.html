@@ -62,6 +62,15 @@
       <button
         type="button"
         class="mode-btn"
+        [class.active]="timeOfDayModalOpen()"
+        (click)="timeOfDayModalOpen.set(true)"
+        [attr.title]="l10n.t('tipTimeOfDayPanel')"
+      >
+        {{ l10n.t('timeOfDayPanel') }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
         [class.active]="noiseModalOpen()"
         (click)="noiseModalOpen.set(true)"
         [attr.title]="l10n.t('tipNoiseEditor')"
@@ -73,7 +82,7 @@
         class="mode-btn"
         [class.active]="visionModalOpen()"
         (click)="visionModalOpen.set(true)"
-        [attr.title]="l10n.t('toggleVisionPanel')"
+        [attr.title]="l10n.t('tipVisionPanel')"
       >
         {{ l10n.t('toggleVisionPanel') }}
       </button>
@@ -129,6 +138,20 @@
     <app-noise-editor />
     <div studioModalActions>
       <button type="button" class="primary" (click)="noiseModalOpen.set(false)">
+        {{ l10n.t('modalClose') }}
+      </button>
+    </div>
+  </app-studio-modal>
+
+  <app-studio-modal
+    [open]="timeOfDayModalOpen()"
+    [title]="l10n.t('timeOfDayPanel')"
+    titleId="time-of-day-modal-title"
+    (dismiss)="timeOfDayModalOpen.set(false)"
+  >
+    <app-time-of-day-panel />
+    <div studioModalActions>
+      <button type="button" class="primary" (click)="timeOfDayModalOpen.set(false)">
         {{ l10n.t('modalClose') }}
       </button>
     </div>

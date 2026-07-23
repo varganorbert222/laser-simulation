@@ -37,6 +37,10 @@ export class SceneMeshSync {
   private onSurfaceMaterial:
     | ((mat: StandardMaterial, sm: SurfaceMaterial | null) => void)
     | null = null;
+  /** Optional IBL / cubemap reflection binder (atmosphere env capture). */
+  private onReflection:
+    | ((mat: StandardMaterial, sm: SurfaceMaterial | null) => void)
+    | null = null;
 
   constructor(
     private readonly scene: Scene,
@@ -58,6 +62,23 @@ export class SceneMeshSync {
     hook: (mat: StandardMaterial, sm: SurfaceMaterial | null) => void,
   ): void {
     this.onSurfaceMaterial = hook;
+  }
+
+  /** Bind / clear environment cubemap reflections on surface StandardMaterials. */
+  setReflectionHook(
+    hook: ((mat: StandardMaterial, sm: SurfaceMaterial | null) => void) | null,
+  ): void {
+    this.onReflection = hook;
+    this.reapplyReflections();
+  }
+
+  /** Re-run reflection binder on all current surface materials (e.g. after cubemap bake). */
+  reapplyReflections(): void {
+    for (const [id, mesh] of this.meshes) {
+      if (!(mesh.material instanceof StandardMaterial)) continue;
+      const sm = this.world.get(id, 'SurfaceMaterial') ?? null;
+      this.onReflection?.(mesh.material, sm);
+    }
   }
 
   setWorld(world: World): void {
@@ -273,6 +294,7 @@ export class SceneMeshSync {
     mat.specularPower = w.shininess;
     this.applyTransmission(mat, sm.transmission);
     this.onSurfaceMaterial?.(mat, sm);
+    this.onReflection?.(mat, sm);
   }
 
   /** Opaque blocks volumetric beams (depth write); transmission lets beams continue. */

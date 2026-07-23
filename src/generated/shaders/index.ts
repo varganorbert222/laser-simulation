@@ -10,3 +10,9 @@ export { SURFACE_RADIANCE_BEFORE_FRAGCOLOR } from './surface_radiance_before_fra
 export { SURFACE_RADIANCE_UNIFORMS } from './surface_radiance_uniforms';
 export { NOISE_PREVIEW_VERT } from './noise_preview_vert';
 export { NOISE_PREVIEW_FRAG } from './noise_preview_frag';
+export { ATMOSPHERE_TRANSMITTANCE_FRAGMENT } from './atmosphere_transmittance';
+export { ATMOSPHERE_SKY_VIEW_FRAGMENT } from './atmosphere_sky_view';
+export { ATMOSPHERE_AERIAL_PERSPECTIVE_FRAGMENT } from './atmosphere_aerial_perspective';
+export { ATMOSPHERE_SKYBOX_VERT } from './atmosphere_skybox_vert';
+export { ATMOSPHERE_SKYBOX_FRAG } from './atmosphere_skybox_frag';
+export { ATMOSPHERE_ENV_CAPTURE_VERT } from './atmosphere_env_capture_vert';
