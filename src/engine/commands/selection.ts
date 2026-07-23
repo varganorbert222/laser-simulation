@@ -4,7 +4,6 @@ import {
   normalizeEditorSelection,
   type EditorSelection,
 } from '../ecs/resources';
-import type { Command } from './stack';
 
 export type SelectionMode = 'replace' | 'toggle' | 'add' | 'range';
 
@@ -120,29 +119,4 @@ export function applySelection(
     entityId: ids[ids.length - 1]!,
     entityIds: ids,
   });
-}
-
-/** Remove a destroyed entity from selection without clearing others. */
-export function pruneSelectionEntity(world: World, entityId: EntityId): void {
-  const cur = normalizeEditorSelection(world.resources.EditorSelection);
-  if (!cur.entityIds.includes(entityId) && cur.entityId !== entityId) return;
-  const ids = cur.entityIds.filter((id) => id !== entityId);
-  const primary =
-    cur.entityId === entityId ? (ids[ids.length - 1] ?? null) : cur.entityId;
-  writeSelection(world, {
-    entityId: primary && ids.includes(primary) ? primary : (ids[ids.length - 1] ?? null),
-    entityIds: ids,
-  });
-}
-
-export function setSelectionCommand(
-  world: World,
-  entityId: EntityId | null,
-): Command {
-  const before = snapshotSelection(world);
-  return {
-    label: 'Kijelölés',
-    execute: () => applySelection(world, entityId),
-    undo: () => applySelection(world, before),
-  };
 }

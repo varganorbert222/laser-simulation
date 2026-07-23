@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  MEDIA_OPTICS_ATMOSPHERE,
+import {
   MEDIA_OPTICS_CLOUD,
   MEDIA_OPTICS_DUST,
   MEDIA_OPTICS_FOG,
@@ -10,34 +9,33 @@ import {
   opticalFieldsForMediaKind,
   opticalFieldsForScatterModel,
   scatterModelForMediaKind,
-  singleScatteringAlbedo,
 } from './media-optical-presets';
 import { defaultMieAnisotropy, defaultParticleSizeNm } from './scatter-model';
-import { normalizeMediaVolume } from '../ecs/components';
+import { normalizeMediaVolume } from '../../ecs/components';
 
 describe('media optical presets (physical)', () => {
   it('uses m⁻¹-scale coefficients (not theatrical 0–1 knobs)', () => {
     expect(MEDIA_OPTICS_FOG.scatter).toBeLessThan(0.1);
     expect(MEDIA_OPTICS_FOG.scatter).toBeGreaterThan(0.005);
-    expect(MEDIA_OPTICS_ATMOSPHERE.scatter).toBeLessThan(0.001);
-    expect(MEDIA_OPTICS_ATMOSPHERE.scatter).toBeGreaterThan(1e-6);
+    expect(mediaOpticalDefaults('clearNight').scatter).toBeLessThan(0.001);
+    expect(mediaOpticalDefaults('clearNight').scatter).toBeGreaterThan(1e-6);
   });
 
   it('fog is almost purely scattering; smoke absorbs more', () => {
-    const fogW = singleScatteringAlbedo(MEDIA_OPTICS_FOG.scatter, MEDIA_OPTICS_FOG.absorption);
-    const smokeW = singleScatteringAlbedo(
-      MEDIA_OPTICS_SMOKE.scatter,
-      MEDIA_OPTICS_SMOKE.absorption,
-    );
+    const fogW =
+      MEDIA_OPTICS_FOG.scatter / (MEDIA_OPTICS_FOG.scatter + MEDIA_OPTICS_FOG.absorption);
+    const smokeW =
+      MEDIA_OPTICS_SMOKE.scatter /
+      (MEDIA_OPTICS_SMOKE.scatter + MEDIA_OPTICS_SMOKE.absorption);
     expect(fogW).toBeGreaterThan(0.95);
     expect(smokeW).toBeLessThan(0.8);
     expect(smokeW).toBeGreaterThan(0.5);
   });
 
   it('clearNight is Rayleigh-labelled; fog/smoke/dust are Tyndall/Mie', () => {
-    expect(MEDIA_OPTICS_ATMOSPHERE.scatterModel).toBe('rayleigh');
-    expect(MEDIA_OPTICS_ATMOSPHERE.layer).toBe('outdoor');
-    expect(MEDIA_OPTICS_ATMOSPHERE.scatterMie).toBeGreaterThan(0);
+    expect(mediaOpticalDefaults('clearNight').scatterModel).toBe('rayleigh');
+    expect(mediaOpticalDefaults('clearNight').layer).toBe('outdoor');
+    expect(mediaOpticalDefaults('clearNight').scatterMie).toBeGreaterThan(0);
     expect(MEDIA_OPTICS_FOG.scatterModel).toBe('tyndall');
     expect(MEDIA_OPTICS_FOG.layer).toBe('particulate');
     expect(MEDIA_OPTICS_SMOKE.scatterModel).toBe('tyndall');
@@ -47,7 +45,7 @@ describe('media optical presets (physical)', () => {
   it('aligns scatter-model helpers with media presets', () => {
     expect(defaultParticleSizeNm('rayleigh')).toBe(0.3);
     expect(defaultParticleSizeNm('tyndall')).toBe(MEDIA_OPTICS_FOG.particleSizeNm);
-    expect(MEDIA_OPTICS_ATMOSPHERE.particleSizeNm).toBeGreaterThan(10);
+    expect(mediaOpticalDefaults('clearNight').particleSizeNm).toBeGreaterThan(10);
     expect(MEDIA_OPTICS_FOG.mieAnisotropy).toBeCloseTo(
       defaultMieAnisotropy('tyndall', MEDIA_OPTICS_FOG.particleSizeNm),
       5,
@@ -62,7 +60,7 @@ describe('media optical presets (physical)', () => {
     expect(ray.kind).toBe('fog');
     expect(ray.layer).toBe('particulate');
     expect(ray.scatterModel).toBe('rayleigh');
-    expect(ray.scatter).toBe(MEDIA_OPTICS_ATMOSPHERE.scatter);
+    expect(ray.scatter).toBe(mediaOpticalDefaults('clearNight').scatter);
 
     const back = opticalFieldsForScatterModel('tyndall', 'fog');
     expect(back.kind).toBe('fog');

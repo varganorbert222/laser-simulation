@@ -13,7 +13,7 @@ import {
   type GizmoSpace,
   type Transform,
   type Vec3Editable,
-} from '../../../engine';
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
 

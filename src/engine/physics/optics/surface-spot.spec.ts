@@ -1,15 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { surfaceBrdfWeights } from './beam-model';
 import { defaultGroundSurfaceMaterial, surfaceMaterialFromPreset } from './surface-material';
-import {
-  blinnSpecular,
-  fresnelTerm,
-  gaussianBeamProfile,
-  laserSpotIntensity,
-  laserSpotTerms,
-  materialSpotFactor,
-  phongSpecular,
-} from './surface-spot';
+import { gaussianTem00Profile } from './laser';
+import { laserSpotTerms } from './surface-spot';
 
 describe('surface spot BRDF', () => {
   it('maps chrome to high reflectivity / low absorption / high shininess', () => {
@@ -39,20 +32,9 @@ describe('surface spot BRDF', () => {
     expect(al.specularWeight).toBeGreaterThan(0.15);
   });
 
-  it('Fresnel peaks at grazing angles', () => {
-    expect(fresnelTerm(1)).toBeCloseTo(0, 5);
-    expect(fresnelTerm(0)).toBeCloseTo(1, 5);
-  });
-
-  it('specular peaks when halfway vector aligns with normal', () => {
-    expect(phongSpecular(1, 64)).toBeCloseTo(1, 5);
-    expect(blinnSpecular(1, 64)).toBeCloseTo(1, 5);
-    expect(blinnSpecular(0.95, 64)).toBeGreaterThan(blinnSpecular(0.5, 64));
-  });
-
   it('Gaussian is brightest on axis', () => {
-    expect(gaussianBeamProfile(0, 0.01)).toBeCloseTo(1, 5);
-    expect(gaussianBeamProfile(0.01, 0.01)).toBeLessThan(0.4);
+    expect(gaussianTem00Profile(0, 0.01)).toBeCloseTo(1, 5);
+    expect(gaussianTem00Profile(0.01, 0.01)).toBeLessThan(0.4);
   });
 
   it('Lambert diffuse is view-independent (same nDotL, any view)', () => {
@@ -99,7 +81,7 @@ describe('surface spot BRDF', () => {
   it('spot vanishes without irradiance (nDotL=0)', () => {
     const matte = surfaceBrdfWeights(surfaceMaterialFromPreset('painted_plastic'));
     expect(
-      laserSpotIntensity({
+      laserSpotTerms({
         powerDisplay: 1,
         radialM: 0,
         beamRadiusM: 0.01,
@@ -110,15 +92,15 @@ describe('surface spot BRDF', () => {
         shininess: matte.shininess,
         diffuseWeight: matte.diffuseWeight,
         specularWeight: matte.specularWeight,
-      }),
+      }).total,
     ).toBe(0);
   });
 
   it('darker materials absorb more', () => {
     const chrome = surfaceBrdfWeights(surfaceMaterialFromPreset('chrome'));
     const black = surfaceBrdfWeights(surfaceMaterialFromPreset('matte_black'));
-    expect(materialSpotFactor(chrome.reflectivity, chrome.absorption)).toBeGreaterThan(
-      materialSpotFactor(black.reflectivity, black.absorption),
+    expect(chrome.reflectivity * (1 - chrome.absorption)).toBeGreaterThan(
+      black.reflectivity * (1 - black.absorption),
     );
   });
 });

@@ -1,10 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import {
-  clampRgb,
-  hexToRgb,
-  rgbToHex,
-  type Rgb01,
-} from '../../../../engine';
+import { hexToRgb, rgbToHex, type Rgb01 } from '@engine';
+import { patchRgbChannel } from '../color-channel';
 
 /**
  * Color inspector: native picker + RGB (0–1) + hex.
@@ -37,11 +33,9 @@ export class ColorFieldComponent {
   }
 
   onChannel(index: 0 | 1 | 2, raw: string): void {
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return;
+    const next = patchRgbChannel(this.rgb, index, raw);
+    if (!next) return;
     this.editStart.emit();
-    const next = clampRgb(this.rgb);
-    next[index] = Math.min(1, Math.max(0, n));
     this.rgbChange.emit(next);
   }
 

@@ -1,5 +1,6 @@
 import { ArcRotateCamera, Camera, Vector3 } from '@babylonjs/core';
 import { ArcRotateCameraPointersInput } from '@babylonjs/core/Cameras/Inputs/arcRotateCameraPointersInput';
+import { clampRange } from '@engine';
 
 const MIN_BETA = 0.01;
 const MAX_BETA = Math.PI - 0.01;
@@ -157,7 +158,7 @@ export class BlenderCameraControls {
     this.camera.inertialAlphaOffset = 0;
     this.camera.inertialBetaOffset = 0;
     this.camera.alpha -= dx / sens;
-    this.camera.beta = Math.min(MAX_BETA, Math.max(MIN_BETA, this.camera.beta + dy / sens));
+    this.camera.beta = clampRange(this.camera.beta + dy / sens, MIN_BETA, MAX_BETA);
     if (this.camera.mode === Camera.ORTHOGRAPHIC_CAMERA) {
       this.syncOrthographicFrustum();
     }
@@ -300,7 +301,7 @@ export class BlenderCameraControls {
     event.preventDefault();
     event.stopPropagation();
     const factor = event.deltaY > 0 ? 1.1 : 1 / 1.1;
-    this.orthoRadius = Math.min(2000, Math.max(0.5, this.orthoRadius * factor));
+    this.orthoRadius = clampRange(this.orthoRadius * factor, 0.5, 2000);
     this.camera.radius = this.orthoRadius;
     this.syncOrthographicFrustum();
   }

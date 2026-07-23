@@ -1,5 +1,6 @@
 import { C, EV, H, VISIBLE_NM_MAX, VISIBLE_NM_MIN } from './constants';
-import { clamp01, type Rgb01 } from './color';
+import { clamp01, clampRange } from '../../math/clamp';
+import type { Rgb01 } from './color';
 
 export interface WavelengthDerived {
   wavelengthNm: number;
@@ -31,7 +32,7 @@ export function deriveFromWavelengthNm(wavelengthNm: number): WavelengthDerived 
  * Tagged as visualized / approximated — not a calibrated colorimetric transform.
  */
 export function wavelengthToRgb(nm: number): readonly [number, number, number] {
-  const w = Math.min(Math.max(nm, VISIBLE_NM_MIN), 809);
+  const w = clampRange(nm, VISIBLE_NM_MIN, 809);
   let red = 0;
   let green = 0;
   let blue = 0;
@@ -110,14 +111,6 @@ export function rgbToWavelengthNm(rgb: Rgb01): number {
  * Educational weight only — not a full atmospheric model.
  */
 export function rayleighScatterWeight(nm: number, refNm = 550): number {
-  const clamped = Math.min(Math.max(nm, VISIBLE_NM_MIN), VISIBLE_NM_MAX);
+  const clamped = clampRange(nm, VISIBLE_NM_MIN, VISIBLE_NM_MAX);
   return Math.pow(refNm / clamped, 4);
-}
-
-/**
- * Compressive display curve for monitor brightness from power in watts.
- * Always labeled as tone-mapped — not linear perceived brightness.
- */
-export function displayPowerCurve(powerW: number, gamma = 0.7): number {
-  return Math.pow(Math.max(powerW, 0), gamma);
 }

@@ -1,17 +1,25 @@
 import { Schedule } from '../ecs/schedule';
+import { gatherRenderPackSystem } from '../ecs/systems/gather-render-pack';
 import { worldTransformSystem } from '../ecs/systems/world-transform';
 import type { World } from '../ecs/world';
 import { gatherRenderPack } from '../render/pack';
 import type { FramePresenter } from './frame-presenter';
 
+/**
+ * Default sim schedule.
+ * - worldTransform: hierarchical TRS → WorldXform
+ * - gather: GPU RenderFrame pack cache
+ * - present: intentionally NOT scheduled — StudioRuntime calls presenter.sync/render
+ *   after schedule.run (adapter-owned presentation).
+ * - input / adapt / render: extension points (empty by default)
+ */
 export function createDefaultSchedule(): Schedule {
   const schedule = new Schedule();
   schedule.add('worldTransform', (world) => {
     worldTransformSystem(world);
   });
   schedule.add('gather', (world) => {
-    // Pack is computed in presenter sync for GPU; mark camera clean after sim step.
-    world.resources.Camera.dirty = false;
+    gatherRenderPackSystem(world);
   });
   return schedule;
 }
@@ -48,7 +56,9 @@ export class StudioRuntime {
     return this.presenter;
   }
 
-  /** Advance ECS, then sync + render via presenter. */
+  /**
+   * Advance ECS schedule, then sync + render via presenter (present outside schedule).
+   */
   tick(dt: number): void {
     this.schedule.run(this.world, dt);
     const presenter = this.presenter;
@@ -57,9 +67,9 @@ export class StudioRuntime {
     presenter.render();
   }
 
-  /** Gather pack without presenting (tests / tooling). */
+  /** Gather pack without presenting (tests / tooling). Uses cache if gather already ran. */
   gatherPack() {
-    return gatherRenderPack(this.world);
+    return this.world.resources.RenderFrame ?? gatherRenderPack(this.world);
   }
 
   resize(): void {

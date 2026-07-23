@@ -6,7 +6,7 @@ import { vec3 } from '../math/vec3';
 import { getTranslation } from '../math/mat4';
 import { serializeWorld, deserializeWorld } from '../save/serialize';
 import { createDemoWorld } from '../scene/demo-world';
-import { gatherRenderPack, MAX_GPU_LIGHTS, VOLUMETRIC_LIGHT_SLOTS } from '../render/pack';
+import { gatherRenderPack, MAX_GPU_LIGHTS, VOLUMETRIC_LIGHT_SLOTS } from '../index';
 import { CommandStack } from '../commands/stack';
 import { setLightEmitterCommand } from '../commands/handlers';
 import { buildHierarchyTree } from '../hierarchy/tree';

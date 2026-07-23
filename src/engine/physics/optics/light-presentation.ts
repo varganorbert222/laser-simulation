@@ -3,16 +3,12 @@
  * is co-located with a LightEmitter. Spot intensity uses light gains only.
  */
 
+import { clampRange, clampUnit } from '../../math/clamp';
 import {
-  clampUnit,
   normalizeSurfaceMaterial,
   specularLike,
   type SurfaceMaterial,
 } from './surface-material';
-
-function clampRange(v: number, lo: number, hi: number): number {
-  return Math.min(hi, Math.max(lo, Number.isFinite(v) ? v : lo));
-}
 
 /**
  * Emissive scale for fixture housing mesh (multiplies λ RGB).

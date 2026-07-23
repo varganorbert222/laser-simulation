@@ -11,6 +11,7 @@
  * luminous product. Physical irradiance in BeamModel stays ∝ P; this curve is
  * only the display scalar. Beam radius is NOT grown with power (étendue).
  */
+import { clamp01, clampRange } from '../../math/clamp';
 import { POWER_W_MAX, clampPowerW, powerWFromSliderT, sliderTFromPowerW } from './power';
 
 /** Soft HDR ceiling for GPU / ACES headroom. */
@@ -24,18 +25,6 @@ export const DISPLAY_LUMINOUS_LOG_REF = 1;
 
 /** Upper luminous product for the log map (500 kW at V=1). */
 export const DISPLAY_LUMINOUS_LOG_MAX = POWER_W_MAX * 1000;
-
-/**
- * @deprecated Kept for save/UI compatibility; scientific map is Weber–Fechner log.
- * Stevens γ was the previous default and crushed multi-kW into the soft ceiling.
- */
-export const DISPLAY_SCIENCE_POWER_GAMMA = 1;
-
-/** @deprecated HDR at 1 W under the old Stevens map — unused by Weber–Fechner. */
-export const DISPLAY_SCIENCE_HDR_AT_REF = 16;
-
-/** Luminous product ref: 1 W at V=1 → 1000 mW·V. */
-export const DISPLAY_SCIENCE_LUMINOUS_REF = 1000;
 
 export interface DisplayResponsePoint {
   /** Log-power parameter in [0, 1] (see sliderTFromPowerW). */
@@ -69,24 +58,16 @@ export function scientificDisplayLuminousToneMap(luminousProduct: number): numbe
   if (L <= 0) return 0;
   const num = Math.log10(1 + L / DISPLAY_LUMINOUS_LOG_REF);
   const den = Math.log10(1 + DISPLAY_LUMINOUS_LOG_MAX / DISPLAY_LUMINOUS_LOG_REF);
-  const t = Math.min(1, Math.max(0, num / Math.max(den, 1e-12)));
+  const t = clamp01(num / Math.max(den, 1e-12));
   return DISPLAY_RESPONSE_HDR_MAX * t;
 }
 
-/** Simple Reinhard luminance map for optional display path comparisons. */
-export function reinhardDisplayToneMap(hdrLinear: number): number {
-  const x = Math.max(0, hdrLinear);
-  return x / (1 + x);
-}
-
 export function clampHdr(hdr: number): number {
-  if (!Number.isFinite(hdr)) return 0;
-  return Math.min(DISPLAY_RESPONSE_HDR_MAX, Math.max(0, hdr));
+  return clampRange(hdr, 0, DISPLAY_RESPONSE_HDR_MAX, 0);
 }
 
 export function clampCurveT(t: number): number {
-  if (!Number.isFinite(t)) return 0;
-  return Math.min(1, Math.max(0, t));
+  return clamp01(Number.isFinite(t) ? t : 0);
 }
 
 /** Normalize / sort / clamp control points. */
@@ -175,10 +156,6 @@ export function evaluateDisplayResponse(
 /** Label helper for UI ticks (W at a log-t). */
 export function powerWAtCurveT(t: number): number {
   return powerWFromSliderT(clampCurveT(t));
-}
-
-export function curveTAtPowerW(powerW: number): number {
-  return sliderTFromPowerW(clampPowerW(powerW));
 }
 
 export { POWER_W_MAX };

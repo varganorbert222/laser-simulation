@@ -10,7 +10,8 @@
  * remain visible at room/yard scale (molecular Rayleigh alone is too weak).
  */
 
-import type { Vec3 } from '../math/vec3';
+import type { Vec3 } from '../../math/vec3';
+import { clampRange } from '../../math/clamp';
 import { clampMieAnisotropy, defaultMieAnisotropy } from './scatter-model';
 
 /** Media stack layer. */
@@ -34,14 +35,6 @@ export type MediaPresetId =
   | 'dust'
   | 'haze'
   | 'cloud';
-
-/** @deprecated Legacy kind aliases — migrate via normalizeMediaVolume. */
-export type LegacyMediaKind =
-  | 'atmosphere'
-  | 'summer'
-  | 'autumn'
-  | 'winter'
-  | MediaPresetId;
 
 export const MEDIA_PRESET_IDS: readonly MediaPresetId[] = [
   'clearNight',
@@ -303,13 +296,11 @@ export function climatePresetDefaults(preset: MediaPresetId): ClimatePresetDefau
 }
 
 export function clampRelativeHumidity(rh: number): number {
-  if (!Number.isFinite(rh)) return 0.4;
-  return Math.min(RELATIVE_HUMIDITY_MAX, Math.max(RELATIVE_HUMIDITY_MIN, rh));
+  return clampRange(rh, RELATIVE_HUMIDITY_MIN, RELATIVE_HUMIDITY_MAX, 0.4);
 }
 
 export function clampTemperatureC(t: number): number {
-  if (!Number.isFinite(t)) return 20;
-  return Math.min(TEMPERATURE_C_MAX, Math.max(TEMPERATURE_C_MIN, t));
+  return clampRange(t, TEMPERATURE_C_MIN, TEMPERATURE_C_MAX, 20);
 }
 
 export function humidityMieFactor(relativeHumidity: number): number {
@@ -319,7 +310,7 @@ export function humidityMieFactor(relativeHumidity: number): number {
 
 export function temperatureTurbulence(temperatureC: number): number {
   const t = clampTemperatureC(temperatureC);
-  return Math.min(0.35, Math.max(0, (t - 5) * 0.012));
+  return clampRange((t - 5) * 0.012, 0, 0.35, 0);
 }
 
 /**
@@ -362,7 +353,7 @@ export function climateOpticalRates(
   const scatterRayleigh = CLIMATE_BASE_RAYLEIGH_M * rayleighScale;
 
   const absorption = scatterRayleigh * 0.05 + scatterMie * 0.02;
-  const particleSizeNm = Math.min(1000, Math.max(50, 80 + mieF * 900));
+  const particleSizeNm = clampRange(80 + mieF * 900, 50, 1000);
   const mieAnisotropy = clampMieAnisotropy(
     defaultMieAnisotropy('tyndall', particleSizeNm) * (0.85 + 0.15 * mieF),
   );
@@ -444,19 +435,4 @@ export function sampleLayeredMediaRates(
     absorption,
     usedInterior: bestInterior != null,
   };
-}
-
-/** @deprecated Use isClimatePreset / migrateLegacyPresetId. */
-export type AtmosphereClimateKind =
-  | 'atmosphere'
-  | 'spring'
-  | 'summer'
-  | 'autumn'
-  | 'winter'
-  | 'room';
-
-/** @deprecated Prefer isClimatePreset(resolveMediaPresetId(...)). */
-export function isAtmosphereClimateKind(value: unknown): boolean {
-  const id = migrateLegacyPresetId(value);
-  return id != null && isClimatePreset(id);
 }

@@ -9,13 +9,13 @@ import {
   temperatureTurbulence,
 } from './atmosphere-climate';
 import {
-  MEDIA_OPTICS_ATMOSPHERE,
   MEDIA_OPTICS_FOG,
   defaultMediaVolumeForKind,
+  mediaOpticalDefaults,
   opticalFieldsForMediaKind,
   opticalFieldsFromClimate,
 } from './media-optical-presets';
-import { normalizeMediaVolume } from '../ecs/components';
+import { normalizeMediaVolume } from '../../ecs/components';
 
 describe('atmosphere climate', () => {
   it('Mie factor follows RH^1.3', () => {
@@ -88,7 +88,7 @@ describe('atmosphere climate', () => {
     const atm = defaultMediaVolumeForKind('atmosphere');
     expect(atm.preset).toBe('clearNight');
     expect(atm.layer).toBe('outdoor');
-    expect(atm.scatter).toBe(MEDIA_OPTICS_ATMOSPHERE.scatter);
+    expect(atm.scatter).toBe(mediaOpticalDefaults('clearNight').scatter);
     expect(atm.scatterMie).toBeGreaterThan(0);
     expect(opticalFieldsForMediaKind('fog').scatter).toBe(MEDIA_OPTICS_FOG.scatter);
     expect(opticalFieldsForMediaKind('fog').scatterMie).toBe(0);

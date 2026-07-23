@@ -29,7 +29,7 @@ import {
   type MediaVolume,
   type ScatterModel,
   type Vec3Editable,
-} from '../../../../engine';
+} from '@engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { NoiseVolumeService } from '../../../core/editor/noise-volume.service';

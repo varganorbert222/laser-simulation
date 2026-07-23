@@ -3,8 +3,10 @@
  * When coneCos < 0 the envelope is disabled (uniform AABB fill).
  */
 
-import type { Vec3 } from '../math/vec3';
-import { dot, length } from '../math/vec3';
+import { clampRange } from '../../math/clamp';
+import { smoothstep } from '../../math/smoothstep';
+import type { Vec3 } from '../../math/vec3';
+import { dot, length } from '../../math/vec3';
 
 export const SMOKE_EMISSION_RATE_MIN = 0;
 export const SMOKE_EMISSION_RATE_MAX = 3;
@@ -16,19 +18,9 @@ export const SMOKE_PLUME_LENGTH_M_MAX = 20;
 /** Sentinel: plume disabled → fill uses full AABB FBM. */
 export const PLUME_DISABLED_CONE_COS = -1;
 
-function clamp01(x: number): number {
-  return Math.min(1, Math.max(0, x));
-}
-
-function smoothstep(edge0: number, edge1: number, x: number): number {
-  const t = clamp01((x - edge0) / Math.max(1e-8, edge1 - edge0));
-  return t * t * (3 - 2 * t);
-}
-
 export function coneCosFromHalfAngleDeg(coneAngleDeg: number): number {
-  const rad = (Math.min(SMOKE_CONE_ANGLE_DEG_MAX, Math.max(SMOKE_CONE_ANGLE_DEG_MIN, coneAngleDeg)) *
-    Math.PI) /
-    180;
+  const rad =
+    (clampRange(coneAngleDeg, SMOKE_CONE_ANGLE_DEG_MIN, SMOKE_CONE_ANGLE_DEG_MAX) * Math.PI) / 180;
   return Math.cos(rad);
 }
 

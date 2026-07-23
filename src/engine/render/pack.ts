@@ -6,8 +6,8 @@ import { normalize, sub } from '../math/vec3';
 import {
   beamModelFromEmitter,
   beamModelToGpuParams,
-} from '../optics/beam-model';
-import { mediaSpectralExponent } from '../optics/scatter-model';
+} from '../physics/optics/beam-model';
+import { mediaSpectralExponent } from '../physics/optics/scatter-model';
 import {
   GPU_LAYER_INTERIOR,
   GPU_LAYER_OUTDOOR,
@@ -15,36 +15,25 @@ import {
   GPU_SCATTER_MODEL_CLIMATE,
   GPU_SCATTER_MODEL_RAYLEIGH,
   GPU_SCATTER_MODEL_TYNDALL,
-} from '../optics/atmosphere-climate';
-import { isClimatePreset } from '../optics/media-optical-presets';
+} from '../physics/optics/atmosphere-climate';
+import { isClimatePreset } from '../physics/optics/media-optical-presets';
 import {
   environmentSunDirUnit,
   environmentVolumetricHemiRgb,
   environmentVolumetricSunRgb,
-} from '../optics/environment-lighting';
-import { isSunEmitter, refreshSceneSunBinding } from '../optics/scene-sun';
-import { resolveEmitterAppearance } from '../optics/light-appearance';
+} from '../physics/optics/environment-lighting';
+import { isSunEmitter, refreshSceneSunBinding } from '../physics/optics/scene-sun';
+import { resolveEmitterAppearance } from '../physics/optics/light-appearance';
 import {
   PLUME_DISABLED_CONE_COS,
   coneCosFromHalfAngleDeg,
-} from '../optics/smoke-plume';
+} from '../physics/optics/smoke-plume';
 import {
   normalizeShadowQuality,
   shadowQualityIndex,
   shadowStepsForQuality,
 } from './quality';
-
-export const MAX_GPU_LIGHTS = 4;
-/** Max MediaVolume entities packed per frame (keep equal to VOLUMETRIC_MEDIA_SLOTS). */
-export const MAX_GPU_MEDIA = 4;
-/** GPU media slots for volumetric shader / binder (4 = stable; 8 froze). */
-export const VOLUMETRIC_LIGHT_SLOTS = MAX_GPU_LIGHTS;
-export const VOLUMETRIC_MEDIA_SLOTS = 4;
-
-export const SURFACE_ENV_LIGHTS = 2;
-export const SURFACE_LIGHT_SLOTS = MAX_GPU_LIGHTS;
-/** Env hemi/sun only — emitters use SurfaceRadiancePlugin, not Babylon lights. */
-export const SURFACE_MAX_SIMULTANEOUS_LIGHTS = SURFACE_ENV_LIGHTS;
+import { MAX_GPU_LIGHTS, MAX_GPU_MEDIA } from './contract/slots';
 
 export interface GpuLight {
   originCam: Vec3;

@@ -2,8 +2,8 @@
  * Scene Sun entity discovery — at most one primary sun is active for rendering.
  */
 
-import type { LightEmitter } from '../ecs/components';
-import type { World } from '../ecs/world';
+import type { LightEmitter } from '../../ecs/components';
+import type { World } from '../../ecs/world';
 import { isSunMode } from './modes';
 
 export interface SceneSunBinding {

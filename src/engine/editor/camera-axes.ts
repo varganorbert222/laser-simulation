@@ -1,5 +1,5 @@
 import type { CameraPose } from '../runtime/frame-presenter';
-import { cross, normalize, sub, type Vec3 } from './vec3';
+import { cross, normalize, sub, type Vec3 } from '../math/vec3';
 
 const AXIS_COLORS = {
   x: '#e85d5d',

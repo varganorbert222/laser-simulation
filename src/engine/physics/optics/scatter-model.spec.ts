@@ -3,12 +3,9 @@ import { rayleighScatterWeight } from './wavelength';
 import {
   clampParticleSizeForModel,
   clampParticleSizeNm,
-  blendPhaseByScatterWeight,
   defaultMieAnisotropy,
   defaultParticleSizeNm,
-  dualChannelInScatter,
   mediaSpectralExponent,
-  phaseForScatterModel,
   phaseHG,
   phaseRayleigh,
   spectralWeightFromRayleigh,
@@ -62,29 +59,6 @@ describe('scatter model', () => {
     expect(side).toBeCloseTo(3 / (16 * Math.PI), 10);
   });
 
-  it('phaseForScatterModel branches Rayleigh vs Mie HG', () => {
-    expect(phaseForScatterModel('rayleigh', 0)).toBeCloseTo(phaseRayleigh(0), 10);
-    expect(phaseForScatterModel('tyndall', 0.5, 0.4)).toBeCloseTo(phaseHG(0.5, 0.4), 10);
-  });
-
-  it('dual-channel in-scatter adds Rayleigh and Mie lobes', () => {
-    const w = rayleighScatterWeight(532);
-    const onlyR = dualChannelInScatter(1, 0, 0.5, w, 0.2, 0.5);
-    const onlyM = dualChannelInScatter(0, 1, 0.5, w, 0.2, 0.5);
-    const both = dualChannelInScatter(1, 1, 0.5, w, 0.2, 0.5);
-    expect(onlyR).toBeGreaterThan(0);
-    expect(onlyM).toBeGreaterThan(0);
-    expect(both).toBeCloseTo(onlyR + onlyM, 10);
-  });
-
-  it('blendPhaseByScatterWeight is σ-weighted mean of absolute phases', () => {
-    const mu = 0.7;
-    const g = 0.5;
-    const blended = blendPhaseByScatterWeight(2, 1, mu, g);
-    const expected = (2 * phaseRayleigh(mu) + 1 * phaseHG(mu, g)) / 3;
-    expect(blended).toBeCloseTo(expected, 10);
-  });
-
   it('Henyey–Greenstein is isotropic at g=0 and mildly forward for fog g', () => {
     const inv4pi = 1 / (4 * Math.PI);
     expect(phaseHG(0, 0)).toBeCloseTo(inv4pi, 6);
@@ -99,7 +73,6 @@ describe('scatter model', () => {
     const back = phaseHG(-1, g);
     expect(forward).toBeGreaterThan(side);
     expect(side).toBeGreaterThan(back);
-    // Single-scatter must keep rear/side visible (raw water-droplet g≈0.9 would not).
     expect(forward / back).toBeLessThan(80);
     expect(side / back).toBeGreaterThan(1.5);
     expect(side / inv4pi).toBeGreaterThan(0.35);

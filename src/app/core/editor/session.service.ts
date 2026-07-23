@@ -3,6 +3,9 @@ import {
   createDemoWorld,
   createDefaultDisplayResponseCurve,
   createQuality,
+  clamp01,
+  clampRange,
+  clampRenderScale,
   normalizeDisplayResponseCurve,
   normalizeDisplayVision,
   normalizeEnvironmentLighting,
@@ -12,13 +15,13 @@ import {
   type Quality,
   type QualityPreset,
   type ShadowQuality,
-} from '../../../engine';
+} from '@engine';
 import {
   documentToWorld,
   downloadSceneJson,
   readFileAsText,
   sanitizeSceneFilename,
-} from '../../../platform/persistence';
+} from '@platform/persistence';
 import { EngineHostService } from '../services/engine-host.service';
 import { SceneLibraryService } from './scene-library.service';
 
@@ -116,19 +119,19 @@ export class SessionService {
         next.shadowQuality = normalizeShadowQuality(partial.shadowQuality);
       }
       if (typeof partial.renderScale === 'number') {
-        next.renderScale = Math.min(1, Math.max(0.05, partial.renderScale));
+        next.renderScale = clampRenderScale(partial.renderScale);
       }
       if (typeof partial.stepSize === 'number') {
         next.stepSize = Math.max(0.02, partial.stepSize);
       }
       if (typeof partial.maxSteps === 'number') {
-        next.maxSteps = Math.max(16, Math.min(512, Math.round(partial.maxSteps)));
+        next.maxSteps = Math.round(clampRange(partial.maxSteps, 16, 512));
       }
       if (typeof partial.densityThreshold === 'number') {
         next.densityThreshold = Math.max(0, partial.densityThreshold);
       }
       if (typeof partial.transmittanceCut === 'number') {
-        next.transmittanceCut = Math.min(1, Math.max(0, partial.transmittanceCut));
+        next.transmittanceCut = clamp01(partial.transmittanceCut);
       }
       world.resources.Quality = next;
       world.bump();

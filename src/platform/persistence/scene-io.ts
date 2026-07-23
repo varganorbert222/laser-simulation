@@ -1,5 +1,5 @@
-import type { SerializedWorld } from '../../engine';
-import { deserializeWorld, serializeWorld, type World } from '../../engine';
+import type { SerializedWorld } from '@engine';
+import { deserializeWorld, serializeWorld, type World } from '@engine';
 
 /** Scene document DTO — shared contract for client I/O and future HTTP API. */
 export type SceneDocument = SerializedWorld;

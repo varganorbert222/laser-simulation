@@ -3,13 +3,16 @@ import path from 'node:path';
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@engine': path.resolve(__dirname, 'src/engine/index.ts'),
-      '@engine/': path.resolve(__dirname, 'src/engine') + '/',
-      '@adapters': path.resolve(__dirname, 'src/adapters'),
-      '@platform': path.resolve(__dirname, 'src/platform'),
-      '@app': path.resolve(__dirname, 'src/app'),
-    },
+    alias: [
+      {
+        find: /^@engine\/(.*)$/,
+        replacement: path.resolve(__dirname, 'src/engine') + '/$1',
+      },
+      { find: '@engine', replacement: path.resolve(__dirname, 'src/engine/index.ts') },
+      { find: /^@adapters\/(.*)$/, replacement: path.resolve(__dirname, 'src/adapters') + '/$1' },
+      { find: /^@platform\/(.*)$/, replacement: path.resolve(__dirname, 'src/platform') + '/$1' },
+      { find: /^@app\/(.*)$/, replacement: path.resolve(__dirname, 'src/app') + '/$1' },
+    ],
   },
   test: {
     include: ['src/engine/**/*.spec.ts', 'src/platform/**/*.spec.ts'],

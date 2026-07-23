@@ -6,9 +6,9 @@ import {
   defaultSmokeEmitter,
   defaultSunLightEmitter,
 } from '../ecs/components';
-import { defaultMediaVolumeForKind } from '../optics/media-optical-presets';
-import { defaultSurfaceMaterial } from '../optics/surface-material';
-import { refreshSceneSunBinding, wouldSuppressAdditionalSun } from '../optics/scene-sun';
+import { defaultMediaVolumeForKind } from '../physics/optics/media-optical-presets';
+import { defaultSurfaceMaterial } from '../physics/optics/surface-material';
+import { refreshSceneSunBinding, wouldSuppressAdditionalSun } from '../physics/optics/scene-sun';
 import type { World } from '../ecs/world';
 import { applySelection } from './selection';
 import { createSceneEntity } from '../hierarchy/entity-factory';
@@ -174,22 +174,6 @@ export function createSunEntityCommand(
   return { command, suppressed };
 }
 
-export function addComponentCommand(
-  world: World,
-  entityId: EntityId,
-  component: UserAddableComponent,
-): Command | null {
-  if (world.has(entityId, component)) return null;
-  const before = world.cloneSerializable();
-  addComponentToEntity(world, entityId, component);
-  const after = world.cloneSerializable();
-  return {
-    label: `Komponens: ${component}`,
-    execute: () => restoreWorldFromSerialized(world, after),
-    undo: () => restoreWorldFromSerialized(world, before),
-  };
-}
-
 export function addComponentToSelectionCommand(
   world: World,
   entityIds: readonly EntityId[],
@@ -204,33 +188,6 @@ export function addComponentToSelectionCommand(
   const after = world.cloneSerializable();
   return {
     label: `Komponens: ${component}`,
-    execute: () => restoreWorldFromSerialized(world, after),
-    undo: () => restoreWorldFromSerialized(world, before),
-  };
-}
-
-export function removeComponentCommand(
-  world: World,
-  entityId: EntityId,
-  component: ComponentName,
-): Command | null {
-  if (
-    component === 'Transform' ||
-    component === 'Parent' ||
-    component === 'Name' ||
-    component === 'SiblingOrder' ||
-    component === 'WorldXform' ||
-    component === 'Selectable' ||
-    component === 'EditorFlags'
-  ) {
-    return null;
-  }
-  if (!world.has(entityId, component)) return null;
-  const before = world.cloneSerializable();
-  world.remove(entityId, component);
-  const after = world.cloneSerializable();
-  return {
-    label: `Komponens eltávolítás: ${component}`,
     execute: () => restoreWorldFromSerialized(world, after),
     undo: () => restoreWorldFromSerialized(world, before),
   };
@@ -267,10 +224,6 @@ export function removeComponentFromSelectionCommand(
     execute: () => restoreWorldFromSerialized(world, after),
     undo: () => restoreWorldFromSerialized(world, before),
   };
-}
-
-export function duplicateEntityCommand(world: World, entityId: EntityId): Command | null {
-  return duplicateEntitiesCommand(world, [entityId]);
 }
 
 export function duplicateEntitiesCommand(

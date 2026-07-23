@@ -3,7 +3,7 @@ import type { Scene } from '@babylonjs/core';
 import type { TransformNode } from '@babylonjs/core/Meshes/transformNode';
 import { Material, Quaternion } from '@babylonjs/core';
 import type { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
-import type { GizmoMode, GizmoSpace, Transform } from '../../engine';
+import type { GizmoMode, GizmoSpace, Transform } from '@engine';
 
 type DragGizmo = {
   onDragStartObservable: { add: (cb: () => void) => void };

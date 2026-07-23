@@ -7,7 +7,7 @@ import {
   createDefaultDisplayResponseCurve,
   normalizeDisplayResponseCurve,
   type DisplayResponseCurve,
-} from '../optics/display-response-curve';
+} from './display-response-curve';
 
 export interface DisplayVision {
   /** Editable log-power → HDR intensity curve (scientific default). */

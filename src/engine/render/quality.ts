@@ -1,3 +1,5 @@
+import { clampRange } from '../math/clamp';
+
 /**
  * Unified quality presets: raymarch tune + volumetric render scale + AA + shadow.
  */
@@ -124,10 +126,9 @@ export function configureQualityRenderScale(partial: Partial<QualityRenderScaleC
   const min = partial.renderScaleMin ?? scaleConfig.renderScaleMin;
   const max = partial.renderScaleMax ?? scaleConfig.renderScaleMax;
   scaleConfig = {
-    renderScaleMin: clampScale(Math.min(min, max)),
-    renderScaleMax: clampScale(Math.max(min, max)),
+    renderScaleMin: clampRenderScale(Math.min(min, max)),
+    renderScaleMax: clampRenderScale(Math.max(min, max)),
   };
-  refreshQualityPresets();
 }
 
 export function renderScaleForPreset(preset: QualityPreset): number {
@@ -148,25 +149,6 @@ export function createQuality(preset: QualityPreset = 'medium'): Quality {
   };
 }
 
-export const QUALITY_PRESETS: Record<QualityPreset, Omit<Quality, 'preset'>> = {
-  low: omitPreset(createQuality('low')),
-  medium: omitPreset(createQuality('medium')),
-  high: omitPreset(createQuality('high')),
-  ultra: omitPreset(createQuality('ultra')),
-};
-
-export function refreshQualityPresets(): void {
-  (Object.keys(QUALITY_TUNE) as QualityPreset[]).forEach((preset) => {
-    QUALITY_PRESETS[preset] = omitPreset(createQuality(preset));
-  });
-}
-
-function omitPreset(q: Quality): Omit<Quality, 'preset'> {
-  const { preset: _p, ...rest } = q;
-  return rest;
-}
-
-function clampScale(v: number): number {
-  if (!Number.isFinite(v)) return 0.25;
-  return Math.min(1, Math.max(0.05, v));
+export function clampRenderScale(v: number): number {
+  return clampRange(v, 0.05, 1, 0.25);
 }

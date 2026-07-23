@@ -4,7 +4,7 @@ import {
   lightMediaTransmittanceLocal,
   type ShadowMediaVolume,
 } from './volumetric-shadow';
-import { createQuality, shadowStepsForQuality } from '../render/quality';
+import { createQuality, shadowStepsForQuality } from '../../render/quality';
 
 function box(partial: Partial<ShadowMediaVolume> = {}): ShadowMediaVolume {
   return {

@@ -20,7 +20,7 @@ import {
   type ComponentName,
   type Vec3Editable,
   type DisplayResponseCurve,
-} from '../../../engine';
+} from '@engine';
 import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
 import { LightEditorService } from '../editor/light-editor.service';

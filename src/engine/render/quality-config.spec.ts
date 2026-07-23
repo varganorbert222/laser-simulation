@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   configureQualityRenderScale,
   createQuality,
-  getQualityRenderScaleConfig,
-  refreshQualityPresets,
+  getQualityRenderScaleConfig,
   renderScaleForPreset,
 } from './quality';
 
@@ -25,7 +24,6 @@ describe('quality render scale', () => {
     const cfg = getQualityRenderScaleConfig();
     expect(cfg.renderScaleMin).toBeCloseTo(0.2);
     expect(cfg.renderScaleMax).toBeCloseTo(0.6);
-    configureQualityRenderScale({ renderScaleMin: 0.25, renderScaleMax: 0.5 });
-    refreshQualityPresets();
+    configureQualityRenderScale({ renderScaleMin: 0.25, renderScaleMax: 0.5 });
   });
 });

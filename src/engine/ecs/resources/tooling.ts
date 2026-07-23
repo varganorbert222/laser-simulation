@@ -1,66 +1,8 @@
-import type { Vec3 } from '../math/vec3';
-
-export type {
-  Quality,
-  QualityPreset,
-  QualityRenderScaleConfig,
-  ShadowQuality,
-} from '../render/quality';
-export {
-  configureQualityRenderScale,
-  createQuality,
-  getQualityRenderScaleConfig,
-  normalizeShadowQuality,
-  QUALITY_PRESETS,
-  refreshQualityPresets,
-  renderScaleForPreset,
-  shadowQualityIndex,
-  shadowStepsForQuality,
-} from '../render/quality';
-
-export type { DisplayVision } from '../optics/display-vision';
-export { createDefaultDisplayVision, normalizeDisplayVision } from '../optics/display-vision';
-export type { EnvironmentLighting } from '../optics/environment-lighting';
-export {
-  createDefaultEnvironmentLighting,
-  normalizeEnvironmentLighting,
-  ENVIRONMENT_AMBIENT_DEFAULT,
-} from '../optics/environment-lighting';
-
-export type { SceneSunBinding } from '../optics/scene-sun';
-export {
-  createDefaultSceneSunBinding,
-  isSunEmitter,
-  isSuppressedSunEntity,
-  refreshSceneSunBinding,
-  resolveSceneSunBinding,
-  wouldSuppressAdditionalSun,
-} from '../optics/scene-sun';
-
 /** edit = gizmos/grid/wireframes; photo = clean shot view. */
 export type PresentationMode = 'edit' | 'photo';
 
 export type GizmoMode = 'position' | 'rotation' | 'scale' | 'none';
 export type GizmoSpace = 'local' | 'world';
-
-export interface ActiveScene {
-  sceneId: string;
-  label: string;
-}
-
-export interface TimeResource {
-  elapsedS: number;
-  deltaS: number;
-}
-
-export interface CameraResource {
-  position: Vec3;
-  target: Vec3;
-  fovYDeg: number;
-  near: number;
-  far: number;
-  dirty: boolean;
-}
 
 export interface EditorSelection {
   /** Primary / last-clicked — gizmo pivot, paste parent default. */
@@ -123,15 +65,4 @@ export function normalizeEditorTooling(raw: unknown): EditorTooling {
     out.gizmoSpace = r.gizmoSpace;
   }
   return out;
-}
-
-export function createDefaultCamera(): CameraResource {
-  return {
-    position: [4, 2.5, 6],
-    target: [0, 0.5, 0],
-    fovYDeg: 60,
-    near: 0.05,
-    far: 5000,
-    dirty: true,
-  };
 }

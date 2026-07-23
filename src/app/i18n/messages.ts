@@ -1,15 +1,13 @@
 export const hu = {
   appTitle: 'Volumetric Light Studio',
   appSubtitle: 'Interaktív 3D fénylaboratórium',
-  hierarchy: 'Hierarchia',
+
   inspector: 'Inspector',
   science: 'Tudományos kiolvasás',
-  viewport: 'Nézet',
-  quality: 'Minőség',
+
+
   antiAliasing: 'Anti-aliasing',
   theatricalGlow: 'Theatrical glow / bloom',
-  hintTheatricalGlow:
-    'Művészeti réteg: ház-glow és bloom. A tudományos radiance útvonal ettől független.',
   tonemapMode: 'Tonemap',
   laserOptics: 'Lézer optika',
   hintLaserOptics:
@@ -25,8 +23,8 @@ export const hu = {
   coma: 'Kóma',
   astigmatism: 'Asztigmatizmus',
   capture: 'Képernyőkép',
-  save: 'Mentés',
-  load: 'Betöltés',
+
+
   undo: 'Visszavonás',
   redo: 'Újra',
   wavelength: 'Hullámhossz',
@@ -42,11 +40,11 @@ export const hu = {
   hintEditorMode:
     'Bal: kijelölés · Középső: forgatás · Shift+középső / Jobb: pan · Görgő: zoom · Numpad 1/3/7/9: tengely · Numpad 5: ortho/persp · Tengelygizmo: húzás/forgás, tengelyklikk: nézet',
   hintPhotoMode: 'Photo mode: tiszta nézet (nincs gizmo / rács / wireframe).',
-  surfaceGlow: 'Felületi fény / glow',
-  surfaceIntensity: 'Felületi spot intenzitás',
-  glowIntensity: 'Glow (emisszív)',
-  bloomIntensity: 'Bloom',
-  hintGlow: 'A spot, glow és bloom a fény színétől és teljesítményétől is függ.',
+
+
+
+
+
   mediaLayer: 'Réteg',
   mediaLayerOutdoor: 'Kültér (klíma)',
   mediaLayerInterior: 'Beltér (szigetelő klíma)',
@@ -66,17 +64,6 @@ export const hu = {
   mediaPresetDust: 'Por',
   mediaPresetHaze: 'Haze (theatrical)',
   mediaPresetCloud: 'Felhő',
-  /** @deprecated legacy keys kept for older UI strings */
-  mediaKind: 'Közeg típus',
-  mediaKindFog: 'Köd / párás levegő',
-  mediaKindSmoke: 'Füst / haze',
-  mediaKindDust: 'Por',
-  mediaKindAtmosphere: 'Atmoszféra (tiszta levegő)',
-  mediaKindSpring: 'Tavasz (közepes páratartalom)',
-  mediaKindSummer: 'Nyár (párás levegő)',
-  mediaKindAutumn: 'Ősz (ködös / párás)',
-  mediaKindWinter: 'Tél (száraz levegő)',
-  mediaKindRoom: 'Szoba (por + aeroszol)',
   relativeHumidity: 'Relatív páratartalom',
   temperatureC: 'Hőmérséklet',
   scatterRayleigh: 'Rayleigh σ_s (számított)',
@@ -112,7 +99,7 @@ export const hu = {
   strayPowerFraction: 'Stray teljesítményarány',
   hintOpticsSpill:
     'A tervezett módból kieső energiaarány (0–85%): core×(1−f). A residual ghosts (belső reflexió), Tyndall-halo, apertúra-edge és flare-csík — volumetriában és a felületi spotban is. Aberrációk (kóma/asztigmatizmus/gömb) külön a Lézer optika alatt, a core alakját változtatják.',
-  fixtureSurface: 'Fixture felület (anyag)',
+
   surfaceMaterial: 'Felület anyag',
   fixtureFinish: 'Felületkezelés',
   finishMatteBlack: 'Matt fekete',
@@ -125,15 +112,12 @@ export const hu = {
   metalness: 'Metalness',
   roughness: 'Érdesség',
   transmission: 'Áteresztés',
-  housingCoupling: 'Apertúra–ház coupling',
-  apertureCoupling: 'Apertúra–ház coupling',
-  hintFixtureSurface:
-    'A theatrical glow a ház anyagából (albedó, metalness, érdesség) és a teljesítményből számolódik, ha a theatrical glow be van kapcsolva.',
+
   hintSurfaceMaterial:
     'Optikai spot: BeamModel (TEM₀₀/w₀/M²/aberráció) × Cook–Torrance GGX a SurfaceRadiancePluginben — nem Babylon StandardMaterial specular.',
   hintTransmission:
     'Áteresztés 0 = átlátszatlan (a volumetrikus nyaláb megáll a felületen). 1 ≈ üveg: a nyaláb áthalad.',
-  derivedPresentation: 'Számított megjelenés',
+
   displayVision: 'Látás / megjelenítés',
   environmentAmbient: 'Környezeti fény',
   ambientDark: 'Sötét lab',
@@ -166,7 +150,7 @@ export const hu = {
   sceneEmpty: 'Még nincs mentett jelenet. Mentés után újraindításkor visszatöltődik.',
   sceneNamePrompt: 'Jelenet neve',
   sceneDeleteConfirm: 'Biztosan törlöd ezt a jelenetet?',
-  sceneUpdated: 'Mentve',
+
   demoReset: 'Demo',
 
   // Parameter tooltips (hover on control labels)
@@ -198,8 +182,6 @@ export const hu = {
     'Réteg: kültéri klíma, szigetelő beltér, vagy additív részecske (köd/füst). A beltér kiszorítja a kültérit a dobozában.',
   tipMediaPreset:
     'Paraméter-készlet a választott réteghez (RH/T vagy theatrical σ). Nem új szórási modell.',
-  tipMediaKind:
-    'Közegpreset: fog/smoke/dust (Tyndall) vagy levegő-klíma (Rayleigh+Mie). Beltér szigetel; részecske mindig additív.',
   tipRelativeHumidity:
     'Relatív páratartalom RH (0–100%). Mie σ_s ∝ RH^1.3 — párásabb levegő → vastagabb, fényesebb nyaláb.',
   tipTemperatureC:
@@ -243,9 +225,9 @@ export const hu = {
   tipGizmoSpace: 'Gizmo tengelyek: világ vagy objektum helyi iránya.',
   tipGizmoWorld: 'Gizmo tengelyek a világ X/Y/Z irányába.',
   tipGizmoLocal: 'Gizmo tengelyek az objektum helyi X/Y/Z irányába.',
-  tipQuality: 'Render minőség: lépésköz, max lépésszám, sűrűségküszöb a volumetriában.',
-  tipAntiAliasing: 'MSAA / anti-aliasing a nézetporton.',
-  tipTonemapMode: 'HDR → display tonemap: ACES (film) vagy Reinhard.',
+
+
+
   tipLocale: 'Felület nyelve (HU / EN).',
   tipCapture: 'Képernyőkép a jelenlegi nézetről.',
   tipDemoReset: 'Demo jelenet visszatöltése (alap lézer + köd).',
@@ -364,7 +346,7 @@ export const hu = {
   hintSun:
     'Opcionális egyedi kulcsfény: irány a transform +Z tengelyéből; volumetria + Babylon DirectionalLight.',
   angularDiameter: 'Látszólagos átmérő',
-  addSun: 'Sun',
+
   lightColor: 'Szín',
   tipLightColor: 'Unity-szerű HDR szín: RGB filter vagy színhőmérséklet (Kelvin).',
   hintLightColor:
@@ -376,15 +358,13 @@ export const hu = {
 export const en = {
   appTitle: 'Volumetric Light Studio',
   appSubtitle: 'Interactive 3D light laboratory',
-  hierarchy: 'Hierarchy',
+
   inspector: 'Inspector',
   science: 'Science readout',
-  viewport: 'Viewport',
-  quality: 'Quality',
+
+
   antiAliasing: 'Anti-aliasing',
   theatricalGlow: 'Theatrical glow / bloom',
-  hintTheatricalGlow:
-    'Artistic layer: housing glow and bloom. The scientific radiance path is independent.',
   tonemapMode: 'Tonemap',
   laserOptics: 'Laser optics',
   hintLaserOptics:
@@ -400,8 +380,8 @@ export const en = {
   coma: 'Coma',
   astigmatism: 'Astigmatism',
   capture: 'Screenshot',
-  save: 'Save',
-  load: 'Load',
+
+
   undo: 'Undo',
   redo: 'Redo',
   wavelength: 'Wavelength',
@@ -417,11 +397,11 @@ export const en = {
   hintEditorMode:
     'LMB: select · MMB: orbit · Shift+MMB / RMB: pan · Wheel: zoom · Numpad 1/3/7/9: axis views · Numpad 5: ortho/persp · Axis gizmo: drag orbit, click axis to snap',
   hintPhotoMode: 'Photo mode: clean view (no gizmos / grid / wireframes).',
-  surfaceGlow: 'Surface light / glow',
-  surfaceIntensity: 'Surface spot intensity',
-  glowIntensity: 'Glow (emissive)',
-  bloomIntensity: 'Bloom',
-  hintGlow: 'Spot, glow and bloom also follow light color and power.',
+
+
+
+
+
   mediaLayer: 'Layer',
   mediaLayerOutdoor: 'Outdoor (climate)',
   mediaLayerInterior: 'Interior (insulating climate)',
@@ -441,17 +421,6 @@ export const en = {
   mediaPresetDust: 'Dust',
   mediaPresetHaze: 'Haze (theatrical)',
   mediaPresetCloud: 'Cloud',
-  /** @deprecated legacy keys kept for older UI strings */
-  mediaKind: 'Media kind',
-  mediaKindFog: 'Fog / mist',
-  mediaKindSmoke: 'Smoke / haze',
-  mediaKindDust: 'Dust',
-  mediaKindAtmosphere: 'Atmosphere (clear air)',
-  mediaKindSpring: 'Spring (moderate humidity)',
-  mediaKindSummer: 'Summer (humid air)',
-  mediaKindAutumn: 'Autumn (misty / humid)',
-  mediaKindWinter: 'Winter (dry air)',
-  mediaKindRoom: 'Room (dust + aerosol)',
   relativeHumidity: 'Relative humidity',
   temperatureC: 'Temperature',
   scatterRayleigh: 'Rayleigh σ_s (derived)',
@@ -487,7 +456,7 @@ export const en = {
   strayPowerFraction: 'Stray power fraction',
   hintOpticsSpill:
     'Energy fraction leaving the designed mode (0–85%): core×(1−f). Residual = ghosts (internal reflection), Tyndall halo, aperture edge leak and flare streak — in volumetrics and the surface spot. Aberrations (coma/astigmatism/spherical) are separate Laser optics controls that reshape the core.',
-  fixtureSurface: 'Fixture surface (material)',
+
   surfaceMaterial: 'Surface material',
   fixtureFinish: 'Finish',
   finishMatteBlack: 'Matte black',
@@ -500,15 +469,12 @@ export const en = {
   metalness: 'Metalness',
   roughness: 'Roughness',
   transmission: 'Transmission',
-  housingCoupling: 'Aperture–housing coupling',
-  apertureCoupling: 'Aperture–housing coupling',
-  hintFixtureSurface:
-    'Theatrical glow is derived from housing material (albedo, metalness, roughness) and source power when theatrical glow is enabled.',
+
   hintSurfaceMaterial:
     'Optical spot: BeamModel (TEM₀₀/w₀/M²/aberrations) × Cook–Torrance GGX in SurfaceRadiancePlugin — not Babylon StandardMaterial specular.',
   hintTransmission:
     'Transmission 0 = opaque (volumetric beam stops at the surface). 1 ≈ glass: the beam continues through.',
-  derivedPresentation: 'Derived presentation',
+
   displayVision: 'Vision / display',
   environmentAmbient: 'Environment light',
   ambientDark: 'Dark lab',
@@ -541,7 +507,7 @@ export const en = {
   sceneEmpty: 'No saved scenes yet. After saving, the scene restores on restart.',
   sceneNamePrompt: 'Scene name',
   sceneDeleteConfirm: 'Delete this scene?',
-  sceneUpdated: 'Saved',
+
   demoReset: 'Demo',
 
   // Parameter tooltips (hover on control labels)
@@ -573,8 +539,6 @@ export const en = {
     'Layer: outdoor climate, insulating interior, or additive particulate (fog/smoke). Interior replaces outdoor inside its AABB.',
   tipMediaPreset:
     'Parameter set for the selected layer (RH/T or theatrical σ). Not a separate scatter model.',
-  tipMediaKind:
-    'Media preset: fog/smoke/dust (Tyndall) or air climate (Rayleigh+Mie). Interior insulates; particulate always adds.',
   tipRelativeHumidity:
     'Relative humidity RH (0–100%). Mie σ_s ∝ RH^1.3 — more humid → thicker, brighter beam.',
   tipTemperatureC:
@@ -618,9 +582,9 @@ export const en = {
   tipGizmoSpace: 'Gizmo axes: world or object-local orientation.',
   tipGizmoWorld: 'Gizmo axes aligned to world X/Y/Z.',
   tipGizmoLocal: 'Gizmo axes aligned to the object local X/Y/Z.',
-  tipQuality: 'Render quality: step size, max steps, density threshold for volumetrics.',
-  tipAntiAliasing: 'MSAA / anti-aliasing in the viewport.',
-  tipTonemapMode: 'HDR → display tonemap: ACES (filmic) or Reinhard.',
+
+
+
   tipLocale: 'UI language (HU / EN).',
   tipCapture: 'Screenshot of the current view.',
   tipDemoReset: 'Reload the demo scene (default laser + fog).',
@@ -739,7 +703,7 @@ export const en = {
   hintSun:
     'Optional unique key light: direction from transform +Z; volumetrics + Babylon DirectionalLight.',
   angularDiameter: 'Angular diameter',
-  addSun: 'Sun',
+
   lightColor: 'Color',
   tipLightColor: 'Unity-like HDR color: RGB filter or color temperature (Kelvin).',
   hintLightColor:

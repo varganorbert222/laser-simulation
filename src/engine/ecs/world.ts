@@ -3,25 +3,26 @@ import { SERIALIZABLE_COMPONENTS } from './components';
 import type {
   ActiveScene,
   CameraResource,
-  DisplayVision,
   EditorSelection,
   EditorTooling,
-  EnvironmentLighting,
   PresentationMode,
-  Quality,
-  SceneSunBinding,
   TimeResource,
 } from './resources';
 import {
   createDefaultCamera,
-  createDefaultDisplayVision,
   createDefaultEditorSelection,
-  createDefaultEnvironmentLighting,
-  createDefaultSceneSunBinding,
   normalizeEditorTooling,
-  createQuality,
   normalizeEditorSelection,
 } from './resources';
+import type { DisplayVision } from '../physics/optics/display-vision';
+import { createDefaultDisplayVision } from '../physics/optics/display-vision';
+import type { EnvironmentLighting } from '../physics/optics/environment-lighting';
+import { createDefaultEnvironmentLighting } from '../physics/optics/environment-lighting';
+import type { SceneSunBinding } from '../physics/optics/scene-sun';
+import { createDefaultSceneSunBinding } from '../physics/optics/scene-sun';
+import type { Quality } from '../render/quality';
+import { createQuality } from '../render/quality';
+import type { GatheredFrame } from '../render/pack';
 
 export const SAVE_SCHEMA_VERSION = 2;
 
@@ -37,6 +38,10 @@ export interface WorldResources {
   EnvironmentLighting: EnvironmentLighting;
   /** Primary / suppressed sun emitters (refreshed on pack / load). */
   SceneSun: SceneSunBinding;
+  /**
+   * Last frame's GPU pack from the gather schedule phase (runtime-only, not saved).
+   */
+  RenderFrame: GatheredFrame | null;
   epoch: number;
 }
 
@@ -102,6 +107,7 @@ export class World {
       DisplayVision: resources?.DisplayVision ?? createDefaultDisplayVision(),
       EnvironmentLighting: resources?.EnvironmentLighting ?? createDefaultEnvironmentLighting(),
       SceneSun: resources?.SceneSun ?? createDefaultSceneSunBinding(),
+      RenderFrame: resources?.RenderFrame ?? null,
       epoch: resources?.epoch ?? 0,
     };
   }

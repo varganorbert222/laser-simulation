@@ -8,7 +8,7 @@ import {
   type LinesMesh,
   type Scene,
 } from '@babylonjs/core';
-import type { LightEmitter, World } from '../../../engine';
+import type { LightEmitter, World } from '@engine';
 
 /** Unity-like yellow for light helpers. */
 const GIZMO_COLOR = new Color3(1, 0.92, 0.16);

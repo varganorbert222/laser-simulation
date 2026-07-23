@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import type { World } from '../../../engine';
+import type { World } from '@engine';
 import {
   defaultSceneStorage,
   deleteSceneFromLibrary,
@@ -13,7 +13,7 @@ import {
   type SceneLibrary,
   type SceneLibraryMeta,
   type SceneStorage,
-} from '../../../platform/persistence';
+} from '@platform/persistence';
 
 /**
  * Browser-persisted multi-scene library (localStorage).

@@ -3,7 +3,8 @@
  * vs spectral lasers (wavelengthNm + powerW).
  */
 
-import { clamp01, clampRgb, normalizeChromaticity, type Rgb01 } from './color';
+import { clamp01, clampRange } from '../../math/clamp';
+import { clampRgb, normalizeChromaticity, type Rgb01 } from './color';
 import {
   displayLuminousToneMap,
   eyeAdaptationGainFromAmbient,
@@ -20,10 +21,6 @@ import { rayleighScatterWeight, wavelengthToRgb } from './wavelength';
 /** Lasers stay spectral (λ + W). All other emitters use HDR lamp fields. */
 export function isSpectralLightMode(mode: LightMode): boolean {
   return mode === 'laser';
-}
-
-export function usesHdrLightAppearance(mode: LightMode): boolean {
-  return !isSpectralLightMode(mode);
 }
 
 /** Divide lumen×exposure into volumetric GPU scale (≈800 lm → similar fill to a 1 W green pointer). */
@@ -91,13 +88,11 @@ export function defaultHdrAppearance(mode: LightMode = 'omni_lamp'): LightHdrApp
 }
 
 export function clampColorTemperatureK(k: number, fallback = 6500): number {
-  if (!Number.isFinite(k)) return fallback;
-  return Math.min(COLOR_TEMP_K_MAX, Math.max(COLOR_TEMP_K_MIN, k));
+  return clampRange(k, COLOR_TEMP_K_MIN, COLOR_TEMP_K_MAX, fallback);
 }
 
 export function clampIntensityLm(v: number, fallback = 800): number {
-  if (!Number.isFinite(v)) return fallback;
-  return Math.min(INTENSITY_LM_MAX, Math.max(0, v));
+  return clampRange(v, 0, INTENSITY_LM_MAX, fallback);
 }
 
 /**
@@ -199,7 +194,7 @@ export function scatterNmFromHdr(hdr: LightHdrAppearance): number {
   if (hdr.useColorTemperature) {
     const t = hdr.colorTemperatureK;
     // Map 2000–10000 K → ~650–450 nm.
-    const u = Math.min(1, Math.max(0, (t - 2000) / 8000));
+    const u = clamp01((t - 2000) / 8000);
     return 650 - u * 200;
   }
   const [r, g, b] = hdr.colorRgb;

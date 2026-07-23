@@ -1,6 +1,5 @@
 export {
   downloadSceneJson,
-  downloadTextFile,
   documentToWorld,
   readFileAsText,
   worldToDocument,
@@ -8,14 +7,12 @@ export {
 } from './scene-io';
 export {
   SCENE_LIBRARY_STORAGE_KEY,
-  SCENE_LIBRARY_VERSION,
   createEmptySceneLibrary,
   createMemorySceneStorage,
   defaultSceneStorage,
   deleteSceneFromLibrary,
   listSceneMeta,
   loadWorldFromLibrary,
-  newSceneId,
   normalizeSceneLibrary,
   readSceneLibrary,
   renameSceneInLibrary,

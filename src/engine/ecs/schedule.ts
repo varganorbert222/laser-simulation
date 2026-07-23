@@ -10,6 +10,11 @@ export type SchedulePhase =
 
 export type SystemFn = (world: World, dt: number) => void;
 
+/**
+ * Ordered ECS phases.
+ * `present` is reserved; the default StudioRuntime keeps presentation in the
+ * adapter (sync/render after `Schedule.run`) so Babylon stays outside systems.
+ */
 export class Schedule {
   private readonly phases: Record<SchedulePhase, SystemFn[]> = {
     input: [],

@@ -8,7 +8,7 @@ import {
   SMOKE_PLUME_LENGTH_M_MAX,
   SMOKE_PLUME_LENGTH_M_MIN,
   type SmokeEmitter,
-} from '../../../../engine';
+} from '@engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
 

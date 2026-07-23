@@ -5,26 +5,27 @@ import {
   buildScienceReadout,
   clampIntensityLm,
   clampPowerW,
-  collectComponentValues,
   defaultHdrAppearance,
   defaultModeParams,
   estimateIntensityLmFromSpectral,
-  fieldStateJson,
   isSpectralLightMode,
   isSuppressedSunEntity,
   refreshSceneSunBinding,
-  restoreWorldFromSerialized,
-  selectionHasComponent,
   setLightEmitterCommand,
   wavelengthToRgb,
   wouldSuppressAdditionalSun,
   type LightEmitter,
   type LightMode,
-} from '../../../engine';
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
 import { HierarchyEditorService } from './hierarchy-editor.service';
 import { LocalizationService } from '../services/localization.service';
+import {
+  patchSelectedComponents,
+  selectionComponentMixed,
+  selectionComponentPrimary,
+} from './patch-component';
 
 @Injectable({ providedIn: 'root' })
 export class LightEditorService {
@@ -39,20 +40,21 @@ export class LightEditorService {
   /** Display light when all selected have LightEmitter (primary values if mixed). */
   readonly selectedLight = computed(() => {
     this.engine.epoch();
-    const ids = this.selection.selectedIds();
-    const world = this.engine.world();
-    if (!selectionHasComponent(world, ids, 'LightEmitter')) return null;
-    const values = collectComponentValues(world, ids, 'LightEmitter');
-    return values[0] ?? null;
+    return selectionComponentPrimary(
+      this.engine.world(),
+      this.selection.selectedIds(),
+      'LightEmitter',
+    );
   });
 
   /** True when all selected have LightEmitter but values differ (section disabled). */
   readonly selectedLightMixed = computed(() => {
     this.engine.epoch();
-    const ids = this.selection.selectedIds();
-    const world = this.engine.world();
-    if (!selectionHasComponent(world, ids, 'LightEmitter')) return false;
-    return fieldStateJson(collectComponentValues(world, ids, 'LightEmitter')).kind === 'mixed';
+    return selectionComponentMixed(
+      this.engine.world(),
+      this.selection.selectedIds(),
+      'LightEmitter',
+    );
   });
 
   /** Selected entity is an extra sun (not rendered as key light). */
@@ -93,56 +95,16 @@ export class LightEditorService {
     const ids = this.selection.selectedIds().filter((id) =>
       this.engine.world().has(id, 'LightEmitter'),
     );
-    if (!ids.length) return;
-    const world = this.engine.world();
-
-    if (ids.length === 1) {
-      const id = ids[0]!;
-      const before = world.get(id, 'LightEmitter');
-      if (!before) return;
-      const after = mergeLight(before, patch);
-      if (opts?.coalesce) {
-        this.engine.coalesceSnapshot({
-          key: `LightEmitter:${id}`,
-          label: 'Fény paraméterek',
-          before,
-          after,
-          apply: (v) => {
-            world.set(id, 'LightEmitter', structuredClone(v));
-            refreshSceneSunBinding(world);
-          },
-        });
-        return;
-      }
-      this.engine.executeCommand(setLightEmitterCommand(world, id, before, after));
-      refreshSceneSunBinding(world);
-      return;
-    }
-
-    const beforeSnap = world.cloneSerializable();
-    for (const id of ids) {
-      const before = world.get(id, 'LightEmitter');
-      if (!before) continue;
-      world.set(id, 'LightEmitter', mergeLight(before, patch));
-    }
-    refreshSceneSunBinding(world);
-    const afterSnap = world.cloneSerializable();
-    if (opts?.coalesce) {
-      this.engine.coalesceSnapshot({
-        key: `LightEmitter:multi:${ids.join(',')}`,
-        label: `Fény (${ids.length})`,
-        before: beforeSnap,
-        after: afterSnap,
-        apply: (v) => {
-          restoreWorldFromSerialized(world, v);
-        },
-      });
-      return;
-    }
-    this.engine.executeCommand({
-      label: `Fény (${ids.length})`,
-      execute: () => restoreWorldFromSerialized(world, afterSnap),
-      undo: () => restoreWorldFromSerialized(world, beforeSnap),
+    patchSelectedComponents({
+      engine: this.engine,
+      ids,
+      component: 'LightEmitter',
+      label: 'Fény paraméterek',
+      multiLabel: `Fény (${ids.length})`,
+      coalesce: opts?.coalesce,
+      merge: (before) => mergeLight(before, patch),
+      singleCommand: setLightEmitterCommand,
+      afterApply: refreshSceneSunBinding,
     });
   }
 

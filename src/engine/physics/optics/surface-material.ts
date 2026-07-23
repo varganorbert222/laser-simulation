@@ -3,6 +3,8 @@
  * Educational / display-oriented — not a calibrated radiometric BRDF.
  */
 
+import { clampUnit } from '../../math/clamp';
+
 export type SurfaceFinishPreset =
   | 'matte_black'
   | 'anodized_aluminum'
@@ -58,11 +60,6 @@ const PRESET_APERTURE_COUPLING: Record<Exclude<SurfaceFinishPreset, 'custom'>, n
   brushed_metal: 0.38,
   chrome: 0.55,
 };
-
-export function clampUnit(v: number, fallback = 0): number {
-  if (!Number.isFinite(v)) return fallback;
-  return Math.min(1, Math.max(0, v));
-}
 
 export function surfaceMaterialFromPreset(
   preset: Exclude<SurfaceFinishPreset, 'custom'>,

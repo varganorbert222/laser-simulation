@@ -1,12 +1,12 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
-  clampRgb,
   colorTemperatureToRgb,
   hexToRgb,
   rgbToHex,
   type LightHdrAppearance,
-} from '../../../../engine';
+} from '@engine';
+import { patchRgbChannel } from '../color-channel';
 
 /**
  * Unity-HDR-like lamp color: RGB filter + optional color temperature (Kelvin).
@@ -60,10 +60,8 @@ export class HdrColorFieldComponent {
   }
 
   onChannel(index: 0 | 1 | 2, raw: string): void {
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return;
-    const next = clampRgb(this.colorRgb);
-    next[index] = Math.min(1, Math.max(0, n));
+    const next = patchRgbChannel(this.colorRgb, index, raw);
+    if (!next) return;
     this.editStart.emit();
     this.appearanceChange.emit({
       colorRgb: next,

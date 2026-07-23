@@ -12,13 +12,14 @@ import {
 import '@babylonjs/core/Materials/standardMaterial.js';
 import {
   SURFACE_MAX_SIMULTANEOUS_LIGHTS,
+  clamp01,
   surfaceBrdfWeights,
   type GizmoMode,
   type GizmoSpace,
   type SurfaceMaterial,
   type Transform,
   type World,
-} from '../../../engine';
+} from '@engine';
 import { DebugFloor } from '../debug-floor';
 import { LightSelectionGizmos } from '../lights/light-selection-gizmo';
 import { StudioTransformGizmo } from '../transform-gizmo';
@@ -276,7 +277,7 @@ export class SceneMeshSync {
 
   /** Opaque blocks volumetric beams (depth write); transmission lets beams continue. */
   private applyTransmission(mat: StandardMaterial, transmission: number): void {
-    const t = Math.min(1, Math.max(0, transmission));
+    const t = clamp01(transmission);
     if (t > 0.02) {
       mat.alpha = Math.max(0.1, 1 - t * 0.9);
       mat.transparencyMode = Material.MATERIAL_ALPHABLEND;

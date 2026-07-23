@@ -32,7 +32,7 @@ import {
   type Transform,
   type World,
   type BakedNoiseVolume,
-} from '../../../engine';
+} from '@engine';
 import {
   BlenderCameraControls,
   configureBlenderPointerInputs,
@@ -402,11 +402,6 @@ export class BabylonPresenter implements FramePresenter {
   /** Sync baked noise library (2D/3D) to volumetric GPU cache. */
   syncNoiseLibrary(entries: ReadonlyArray<{ id: string; baked: BakedNoiseVolume }>): void {
     this.volumetrics.syncNoiseLibrary(entries);
-  }
-
-  /** @deprecated Prefer syncNoiseLibrary. */
-  setNoiseVolume(_baked: BakedNoiseVolume): void {
-    // no-op
   }
 
   applyPresentationMode(): void {

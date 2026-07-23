@@ -5,7 +5,7 @@
  * This module only chooses the unit vector L used in n·L and the half-vector —
  * the same convention as Unity Point / Spot / Directional lights.
  *
- * GPU modes (beamModeCode):
+ * GPU mode codes (uniform uLightMode / uSrMode):
  *   0 omni     → Point
  *   1 cone     → Spot  (angular mask stays in the radiance field)
  *   2 tube     → Directional
@@ -40,22 +40,4 @@ export function incidentLightDirection(
   const dz = origin[2] - worldPos[2];
   const len = Math.hypot(dx, dy, dz) || 1;
   return [dx / len, dy / len, dz / len];
-}
-
-/** GLSL twin of incidentLightDirection (srLightDir). */
-export function incidentLightDirGlsl(): string {
-  return `
-// Unity-like L: Point/Spot from emitter; Directional (tube/laser) = -beamDir.
-vec3 srLightDir(vec3 worldPos, vec3 o, vec3 dIn, float mode) {
-  if (mode < 1.5) {
-    // 0 = Point (omni), 1 = Spot (cone)
-    vec3 toLight = o - worldPos;
-    float len = length(toLight);
-    if (len < 1e-6) return normalize(-dIn);
-    return toLight / len;
-  }
-  // 2 = Directional tube, 3 = Directional laser
-  return normalize(-dIn);
-}
-`;
 }

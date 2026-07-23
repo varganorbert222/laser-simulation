@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
-import type { QualityPreset, ShadowQuality } from '../../../../engine';
+import type { QualityPreset, ShadowQuality } from '@engine';
 
 @Component({
   selector: 'app-render-settings-panel',

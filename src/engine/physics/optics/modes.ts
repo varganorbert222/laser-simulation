@@ -1,5 +1,6 @@
 /** Light emission mode parameters (domain types — no science readout dependency). */
 
+import { clampRange, clampUnit } from '../../math/clamp';
 import { clampM2, m2FromParallelness } from './laser';
 
 /**
@@ -122,38 +123,31 @@ export function isSunMode(mode: LightMode): boolean {
   return mode === 'sun';
 }
 
-function clamp01(v: number, fallback = 0): number {
-  if (!Number.isFinite(v)) return fallback;
-  return Math.min(1, Math.max(0, v));
-}
-
-function clampPositive(v: number, fallback: number, min = 0): number {
-  if (!Number.isFinite(v)) return fallback;
-  return Math.max(min, v);
-}
-
 function normalizeSpotParams(raw: Partial<SpotParams> | null | undefined, d: SpotParams): SpotParams {
   if (!raw || typeof raw !== 'object') return d;
-  const inner = clampPositive(
+  const inner = clampRange(
     typeof raw.innerConeDeg === 'number' ? raw.innerConeDeg : d.innerConeDeg,
-    d.innerConeDeg,
     0.5,
+    80,
+    d.innerConeDeg,
   );
   const outer = Math.max(
     inner + 0.5,
-    clampPositive(
+    clampRange(
       typeof raw.outerConeDeg === 'number' ? raw.outerConeDeg : d.outerConeDeg,
-      d.outerConeDeg,
       1,
+      90,
+      d.outerConeDeg,
     ),
   );
   return {
-    innerConeDeg: Math.min(80, inner),
+    innerConeDeg: inner,
     outerConeDeg: Math.min(90, outer),
-    apertureSharpness: clampPositive(
+    apertureSharpness: clampRange(
       typeof raw.apertureSharpness === 'number' ? raw.apertureSharpness : d.apertureSharpness,
-      d.apertureSharpness,
       0.5,
+      Number.POSITIVE_INFINITY,
+      d.apertureSharpness,
     ),
   };
 }
@@ -173,34 +167,35 @@ export function normalizeLaserParams(
   }
 
   return {
-    w0M: Math.min(
+    w0M: clampRange(
+      typeof raw.w0M === 'number' ? raw.w0M : d.w0M,
+      1e-4,
       0.05,
-      clampPositive(typeof raw.w0M === 'number' ? raw.w0M : d.w0M, d.w0M, 1e-4),
+      d.w0M,
     ),
     m2,
-    probeDistanceM: clampPositive(
+    probeDistanceM: clampRange(
       typeof raw.probeDistanceM === 'number' ? raw.probeDistanceM : d.probeDistanceM,
-      d.probeDistanceM,
       0.01,
+      Number.POSITIVE_INFINITY,
+      d.probeDistanceM,
     ),
-    ellipticRatio: Math.min(
+    ellipticRatio: clampRange(
+      typeof raw.ellipticRatio === 'number' ? raw.ellipticRatio : d.ellipticRatio,
+      0.2,
       8,
-      clampPositive(
-        typeof raw.ellipticRatio === 'number' ? raw.ellipticRatio : d.ellipticRatio,
-        d.ellipticRatio,
-        0.2,
-      ),
+      d.ellipticRatio,
     ),
     waistOffsetM:
       typeof raw.waistOffsetM === 'number' && Number.isFinite(raw.waistOffsetM)
-        ? Math.min(50, Math.max(-50, raw.waistOffsetM))
+        ? clampRange(raw.waistOffsetM, -50, 50)
         : d.waistOffsetM,
-    topHatMix: clamp01(typeof raw.topHatMix === 'number' ? raw.topHatMix : d.topHatMix),
-    sphericalAberration: clamp01(
+    topHatMix: clampUnit(typeof raw.topHatMix === 'number' ? raw.topHatMix : d.topHatMix),
+    sphericalAberration: clampUnit(
       typeof raw.sphericalAberration === 'number' ? raw.sphericalAberration : d.sphericalAberration,
     ),
-    coma: clamp01(typeof raw.coma === 'number' ? raw.coma : d.coma),
-    astigmatism: clamp01(typeof raw.astigmatism === 'number' ? raw.astigmatism : d.astigmatism),
+    coma: clampUnit(typeof raw.coma === 'number' ? raw.coma : d.coma),
+    astigmatism: clampUnit(typeof raw.astigmatism === 'number' ? raw.astigmatism : d.astigmatism),
   };
 }
 
@@ -208,13 +203,11 @@ export function normalizeSunParams(raw: Partial<SunParams> | null | undefined): 
   const d = defaultSunParams();
   if (!raw || typeof raw !== 'object') return d;
   return {
-    angularDiameterDeg: Math.min(
+    angularDiameterDeg: clampRange(
+      typeof raw.angularDiameterDeg === 'number' ? raw.angularDiameterDeg : d.angularDiameterDeg,
+      0.05,
       5,
-      clampPositive(
-        typeof raw.angularDiameterDeg === 'number' ? raw.angularDiameterDeg : d.angularDiameterDeg,
-        d.angularDiameterDeg,
-        0.05,
-      ),
+      d.angularDiameterDeg,
     ),
   };
 }
@@ -274,15 +267,17 @@ export function normalizeModeParamsPublic(
       return {
         mode: 'omni_lamp',
         omni: {
-          softRadiusM: clampPositive(
+          softRadiusM: clampRange(
             typeof o?.softRadiusM === 'number' ? o.softRadiusM : d.softRadiusM,
-            d.softRadiusM,
             0.01,
+            Number.POSITIVE_INFINITY,
+            d.softRadiusM,
           ),
-          falloff: clampPositive(
+          falloff: clampRange(
             typeof o?.falloff === 'number' ? o.falloff : d.falloff,
-            d.falloff,
             0.5,
+            Number.POSITIVE_INFINITY,
+            d.falloff,
           ),
         },
       };
@@ -293,15 +288,17 @@ export function normalizeModeParamsPublic(
       return {
         mode: 'parallel',
         parallel: {
-          beamRadiusM: clampPositive(
+          beamRadiusM: clampRange(
             typeof p?.beamRadiusM === 'number' ? p.beamRadiusM : d.beamRadiusM,
-            d.beamRadiusM,
             0.001,
+            Number.POSITIVE_INFINITY,
+            d.beamRadiusM,
           ),
-          residualMrad: clampPositive(
+          residualMrad: clampRange(
             typeof p?.residualMrad === 'number' ? p.residualMrad : d.residualMrad,
-            d.residualMrad,
             0,
+            Number.POSITIVE_INFINITY,
+            d.residualMrad,
           ),
         },
       };

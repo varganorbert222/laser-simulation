@@ -6,7 +6,7 @@ import {
   resolveEmitterAppearance,
   defaultLightEmitter,
   defaultLightEmitterForMode,
-} from '../index';
+} from '../../index';
 
 describe('light appearance (HDR lamps)', () => {
   it('maps CCT to warm/cool RGB', () => {

@@ -2,8 +2,8 @@ import { Component, NgZone, inject, signal } from '@angular/core';
 import {
   computeViewportAxisGizmoLines,
   hitTestViewportAxis,
-} from '../../../../engine/math/camera-axes';
-import type { CameraPose } from '../../../../engine';
+  type CameraPose,
+} from '@engine';
 import { EngineHostService } from '../../../core/services/engine-host.service';
 
 const DRAG_THRESHOLD_PX = 3;

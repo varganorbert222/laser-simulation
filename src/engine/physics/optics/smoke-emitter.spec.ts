@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSmokeEmitter, normalizeSmokeEmitter } from '../ecs/components';
-import { World } from '../ecs/world';
-import { createSmokeEmitterCommand } from '../commands/hierarchy-commands';
-import { gatherRenderPack } from '../render/pack';
+import { defaultSmokeEmitter, normalizeSmokeEmitter } from '../../ecs/components';
+import { World } from '../../ecs/world';
+import { createSmokeEmitterCommand } from '../../commands/hierarchy-commands';
+import { gatherRenderPack } from '../../render/pack';
 import { PLUME_DISABLED_CONE_COS, coneCosFromHalfAngleDeg } from './smoke-plume';
-import { createSceneEntity } from '../hierarchy/entity-factory';
+import { createSceneEntity } from '../../hierarchy/entity-factory';
 import { defaultMediaVolumeForKind } from './media-optical-presets';
-import { identity as matIdentity } from '../math/mat4';
-import { worldTransformSystem } from '../ecs/systems/world-transform';
+import { identity as matIdentity } from '../../math/mat4';
+import { worldTransformSystem } from '../../ecs/systems/world-transform';
 
 describe('SmokeEmitter pack / normalize', () => {
   it('normalizeSmokeEmitter fills defaults', () => {

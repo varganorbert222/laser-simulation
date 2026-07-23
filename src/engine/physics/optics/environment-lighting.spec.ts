@@ -5,9 +5,9 @@ import {
   environmentVolumetricSunRgb,
   normalizeEnvironmentLighting,
 } from './environment-lighting';
-import { World } from '../ecs/world';
-import { gatherRenderPack } from '../render/pack';
-import { defaultMediaVolume, defaultTransform } from '../ecs/components';
+import { World } from '../../ecs/world';
+import { gatherRenderPack } from '../../render/pack';
+import { defaultMediaVolume, defaultTransform } from '../../ecs/components';
 
 describe('volumetric environment lighting', () => {
   it('brighter ambient increases hemi and sun volumetric RGB', () => {

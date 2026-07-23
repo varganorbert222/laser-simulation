@@ -8,6 +8,8 @@
  * with V(λ) on the CPU display pack and S×phase in the march.
  */
 
+import { clamp01, clampRange } from '../../math/clamp';
+
 export type ScatterModel = 'tyndall' | 'rayleigh';
 
 export const SCATTER_MODELS: readonly ScatterModel[] = ['tyndall', 'rayleigh'];
@@ -27,8 +29,7 @@ export const MIE_ANISOTROPY_MAX = 0.95;
 
 /** Clamp particle size to the global educational range (0.1–1000 nm). */
 export function clampParticleSizeNm(nm: number): number {
-  if (!Number.isFinite(nm)) return 200;
-  return Math.min(PARTICLE_SIZE_NM_MAX, Math.max(PARTICLE_SIZE_NM_MIN, nm));
+  return clampRange(nm, PARTICLE_SIZE_NM_MIN, PARTICLE_SIZE_NM_MAX, 200);
 }
 
 /** Clamp particle size to the educational range for the scatter regime. */
@@ -41,8 +42,7 @@ export function clampParticleSizeForModel(model: ScatterModel, nm: number): numb
 }
 
 export function clampMieAnisotropy(g: number): number {
-  if (!Number.isFinite(g)) return 0;
-  return Math.min(MIE_ANISOTROPY_MAX, Math.max(MIE_ANISOTROPY_MIN, g));
+  return clampRange(g, MIE_ANISOTROPY_MIN, MIE_ANISOTROPY_MAX, 0);
 }
 
 /** Typical educational defaults when switching model — aligned with media presets. */
@@ -71,7 +71,7 @@ export function defaultMieAnisotropy(model: ScatterModel, particleSizeNm?: numbe
   const logMin = Math.log(TYNDALL_PARTICLE_NM_MIN);
   const logMax = Math.log(TYNDALL_PARTICLE_NM_MAX);
   const t = (Math.log(Math.max(size, TYNDALL_PARTICLE_NM_MIN)) - logMin) / (logMax - logMin);
-  const u = Math.min(1, Math.max(0, t));
+  const u = clamp01(t);
   // ~0.25 near 10 nm → ~0.62 at 1000 nm (fog/cloud); smoke ~700 nm → ~0.55
   return clampMieAnisotropy(0.25 * (1 - u) + 0.62 * u);
 }
@@ -90,7 +90,7 @@ export function mediaSpectralExponent(model: ScatterModel, particleSizeNm: numbe
   const logMin = Math.log(TYNDALL_PARTICLE_NM_MIN);
   const logMax = Math.log(TYNDALL_PARTICLE_NM_MAX);
   const t = (Math.log(Math.max(size, TYNDALL_PARTICLE_NM_MIN)) - logMin) / (logMax - logMin);
-  const u = Math.min(1, Math.max(0, t));
+  const u = clamp01(t);
   // ~0.8 near 10 nm (still mild vs Rayleigh), ~0.05 at 1000 nm (nearly white cone)
   return 0.8 * (1 - u) + 0.05 * u;
 }
@@ -116,7 +116,7 @@ export function spectralWeightFromRayleigh(
  * Forward = back; minimum at 90°.
  */
 export function phaseRayleigh(cosTheta: number): number {
-  const mu = Math.min(1, Math.max(-1, cosTheta));
+  const mu = clampRange(cosTheta, -1, 1);
   return (3 / (16 * Math.PI)) * (1 + mu * mu);
 }
 
@@ -127,68 +127,8 @@ export function phaseRayleigh(cosTheta: number): number {
  */
 export function phaseHG(cosTheta: number, g: number): number {
   const gg = clampMieAnisotropy(g);
-  const mu = Math.min(1, Math.max(-1, cosTheta));
+  const mu = clampRange(cosTheta, -1, 1);
   const g2 = gg * gg;
   const denom = Math.pow(Math.max(1 - 2 * gg * mu + g2, 1e-8), 1.5);
   return ((1 - g2) / denom) / (4 * Math.PI);
-}
-
-/** Relative HG (g=0 → 1) for UI / legacy comparisons. */
-export function phaseHGRelative(cosTheta: number, g: number): number {
-  return phaseHG(cosTheta, g) * 4 * Math.PI;
-}
-
-/** Regime-aware absolute phase for volumetrics / science readouts. */
-export function phaseForScatterModel(
-  model: ScatterModel,
-  cosTheta: number,
-  mieAnisotropy = 0,
-): number {
-  return model === 'rayleigh'
-    ? phaseRayleigh(cosTheta)
-    : phaseHG(cosTheta, mieAnisotropy);
-}
-
-/**
- * Dual-channel in-scatter weights when clear air (Rayleigh) and haze/smoke (Mie)
- * coexist at the same sample. Optical rates σ_s·ρ already include local fill.
- *
- *   I ∝ σ_R · S_λ⁴ · p_R(θ) + σ_M · S_λⁿ · p_HG(θ,g)
- */
-export function dualChannelInScatter(
-  sigmaSR: number,
-  sigmaSM: number,
-  cosTheta: number,
-  rayleighWeight: number,
-  spectralExpM: number,
-  mieAnisotropy: number,
-): number {
-  const sR = Math.max(0, sigmaSR);
-  const sM = Math.max(0, sigmaSM);
-  if (sR + sM < 1e-18) return 0;
-  const specR = spectralWeightFromRayleigh(rayleighWeight, 4);
-  const specM = spectralWeightFromRayleigh(rayleighWeight, spectralExpM);
-  return (
-    sR * specR * phaseRayleigh(cosTheta) +
-    sM * specM * phaseHG(cosTheta, mieAnisotropy)
-  );
-}
-
-/**
- * σ_s-weighted phase when two absolute phase lobes contribute at one point.
- * Used by science readouts; GPU uses dualChannelInScatter (spectral × phase).
- */
-export function blendPhaseByScatterWeight(
-  sigmaSR: number,
-  sigmaSM: number,
-  cosTheta: number,
-  mieAnisotropy: number,
-): number {
-  const sR = Math.max(0, sigmaSR);
-  const sM = Math.max(0, sigmaSM);
-  const sum = sR + sM;
-  if (sum < 1e-18) return phaseRayleigh(cosTheta);
-  return (
-    (sR * phaseRayleigh(cosTheta) + sM * phaseHG(cosTheta, mieAnisotropy)) / sum
-  );
 }

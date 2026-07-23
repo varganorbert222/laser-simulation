@@ -2,12 +2,13 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import {
   VISIBLE_NM_MAX,
   VISIBLE_NM_MIN,
-  clampRgb,
+  clampRange,
   hexToRgb,
   rgbToHex,
   rgbToWavelengthNm,
   wavelengthToRgb,
-} from '../../../../engine';
+} from '@engine';
+import { patchRgbChannel } from '../color-channel';
 
 /**
  * Light color: wavelength (nm) ↔ RGB ↔ hex via educational display mapping.
@@ -56,16 +57,14 @@ export class SpectralColorFieldComponent {
   }
 
   onChannel(index: 0 | 1 | 2, raw: string): void {
-    const n = Number(raw);
-    if (!Number.isFinite(n)) return;
-    const next = clampRgb(this.rgb);
-    next[index] = Math.min(1, Math.max(0, n));
+    const next = patchRgbChannel(this.rgb, index, raw);
+    if (!next) return;
     this.emitFromRgb(next);
   }
 
   private emitNm(nm: number): void {
     if (!Number.isFinite(nm)) return;
-    const clamped = Math.min(this.nmMax, Math.max(this.nmMin, Math.round(nm)));
+    const clamped = Math.round(clampRange(nm, this.nmMin, this.nmMax, this.nmMin));
     this.editStart.emit();
     this.wavelengthChange.emit(clamped);
   }

@@ -2,6 +2,7 @@
  * Thin-lens / beam-shaping transforms for Gaussian lasers (plausible, not full ABCD).
  */
 
+import { clamp01 } from '../../math/clamp';
 import { beamRadiusAt, clampM2, rayleighRange } from './laser';
 import type { LaserParams } from './modes';
 
@@ -32,7 +33,7 @@ export function propagateLaserWaists(
   const m2 = clampM2(laser.m2);
   const zRX = rayleighRange(w0x, Math.max(lambdaM, 1e-12), m2);
   const zRY = rayleighRange(w0y, Math.max(lambdaM, 1e-12), m2);
-  const astig = Math.min(1, Math.max(0, laser.astigmatism));
+  const astig = clamp01(laser.astigmatism);
   const delta = astig * 0.5 * Math.max(zRX, zRY);
   const zFromWaistX = t - laser.waistOffsetM - delta;
   const zFromWaistY = t - laser.waistOffsetM + delta;
@@ -56,8 +57,8 @@ export function aberrationRadiusScale(
   coma: number,
   comaAxisDot: number,
 ): number {
-  const sph = Math.min(1, Math.max(0, sphericalAberration));
-  const cm = Math.min(1, Math.max(0, coma));
+  const sph = clamp01(sphericalAberration);
+  const cm = clamp01(coma);
   const r2 = rNorm * rNorm;
   const sphStretch = 1 + sph * 0.55 * r2 * r2;
   const comaShift = 1 + cm * 0.35 * Math.max(0, comaAxisDot) * rNorm;
@@ -72,7 +73,7 @@ export function topHatMixProfile(
   wx: number,
   wy: number,
 ): number {
-  const m = Math.min(1, Math.max(0, mix));
+  const m = clamp01(mix);
   if (m < 1e-5) return gaussianDens;
   const topHatShape = rNorm < 1 ? 1 : Math.exp(-4 * (rNorm - 1) * (rNorm - 1));
   const topHatDens = (topHatShape * (2 / Math.PI)) / Math.max(wx * wy, 1e-10);

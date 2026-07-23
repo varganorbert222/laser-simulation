@@ -9,7 +9,7 @@ import {
   surfaceBrdfWeights,
   type SurfaceMaterial,
   type World,
-} from '../../../engine';
+} from '@engine';
 import {
   getOrCreateSurfaceRadiancePlugin,
   type SurfaceRadianceGpuLight,
@@ -21,7 +21,7 @@ import {
  * into a StandardMaterial-additive range comparable to the old SpotLight×2 path.
  * Optics stay in BeamModel; this is presentation scale only.
  */
-export const SURFACE_OPTICS_DISPLAY_GAIN = 1800;
+const SURFACE_OPTICS_DISPLAY_GAIN = 1800;
 
 /**
  * Optical surface lighting: LightEmitter → SurfaceRadiancePlugin

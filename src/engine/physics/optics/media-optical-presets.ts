@@ -27,23 +27,6 @@ import {
 /** @deprecated Prefer MediaPresetId — kept as alias for saves / UI. */
 export type MediaKind = MediaPresetId;
 
-export const MEDIA_KINDS: readonly MediaKind[] = [
-  'clearNight',
-  'clearDay',
-  'spring',
-  'summerHumid',
-  'autumnMist',
-  'winterDry',
-  'room',
-  'lab',
-  'hall',
-  'fog',
-  'smoke',
-  'dust',
-  'haze',
-  'cloud',
-];
-
 export interface MediaOpticalDefaults {
   preset: MediaPresetId;
   layer: MediaLayer;
@@ -192,9 +175,6 @@ export const MEDIA_OPTICS_CLOUD = {
   density: 0.85,
 };
 
-/** @deprecated alias — clear night outdoor climate. */
-export const MEDIA_OPTICS_ATMOSPHERE = climateDefaults('clearNight');
-
 const BY_PRESET: Record<MediaPresetId, MediaOpticalDefaults> = {
   clearNight: climateDefaults('clearNight'),
   clearDay: climateDefaults('clearDay'),
@@ -336,9 +316,9 @@ export function opticalFieldsForScatterModel(
   return {
     ...base,
     scatterModel: 'rayleigh',
-    scatter: MEDIA_OPTICS_ATMOSPHERE.scatter,
+    scatter: BY_PRESET.clearNight.scatter,
     scatterMie: 0,
-    absorption: MEDIA_OPTICS_ATMOSPHERE.absorption,
+    absorption: BY_PRESET.clearNight.absorption,
     particleSizeNm: clampParticleSizeNm(particleSizeNm),
     mieAnisotropy: defaultMieAnisotropy('rayleigh', particleSizeNm),
   };
@@ -348,25 +328,8 @@ export function scatterModelForMediaKind(kind: MediaKind | string): ScatterModel
   return mediaOpticalDefaults(kind).scatterModel;
 }
 
-export function layerForMediaKind(kind: MediaKind | string): MediaLayer {
-  return mediaOpticalDefaults(kind).layer;
-}
-
-export function isInsulatingMediaKind(kind: MediaKind | string): boolean {
-  return mediaOpticalDefaults(kind).insulating;
-}
-
-export function singleScatteringAlbedo(scatter: number, absorption: number): number {
-  const s = Math.max(0, scatter);
-  const a = Math.max(0, absorption);
-  const t = s + a;
-  if (t < 1e-12) return 1;
-  return s / t;
-}
-
 export {
   defaultPresetForLayer,
-  isAtmosphereClimateKind,
   isClimatePreset,
   isMediaLayer,
   isMediaPresetId,
@@ -375,7 +338,6 @@ export {
   sampleLayeredMediaRates,
 } from './atmosphere-climate';
 export type {
-  AtmosphereClimateKind,
   LayeredMediaSampleInput,
   LayeredMediaSampleResult,
   MediaLayer,

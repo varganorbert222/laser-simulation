@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoWorld, serializeWorld } from '../../engine';
+import { createDemoWorld, serializeWorld } from '@engine';
 import { documentToWorld } from './scene-io';
 import {
   createEmptySceneLibrary,

@@ -6,7 +6,7 @@ import {
   surfaceMaterialFromPreset,
   type SurfaceFinishPreset,
   type SurfaceMaterial,
-} from '../../../../engine';
+} from '@engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
 

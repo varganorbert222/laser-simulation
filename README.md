@@ -36,13 +36,31 @@ SFX hozzáadás: fájl → `npm run audio:registry` → clip a `data/audio/libra
 ## Architektúra
 
 ```
-src/engine/      — tiszta domain: ECS, Schedule/StudioRuntime, optika, commands, gl-matrix math
-src/adapters/    — Babylon presenter (mesh / lights / postfx / volumetrics)
-src/platform/    — kliens persistence szeam (JSON save/load; jövőbeli API DTO)
-src/app/         — Angular UI + editor domain services
+src/engine/           — tiszta domain (nincs Angular / Babylon)
+  math/               — gl-matrix wrapperek + clamp / smoothstep
+  physics/optics/     — szimulációs „fizika”: radiometria, közeg, BRDF (TS)
+  ecs/                — World, components/, systems/, schedule
+  render/             — pack DTO + quality + contract/ (GPU slotok, GLSL snippetek)
+  editor/             — viewport gizmo math, editable vec3 view-modellek
+  commands/, hierarchy/, selection/, save/, scene/, runtime/, assets/, noise/
+src/adapters/babylon/ — FramePresenter: mesh / lights / postfx / volumetrics
+src/platform/         — kliens persistence (JSON save/load; jövőbeli API DTO)
+src/app/              — Angular UI + editor services + LocalizationService
 ```
 
-- **Engine** nem függ Angularról és Babylonról (math: `gl-matrix`).
-- **StudioRuntime** futtatja a tick-et (`Schedule` → presenter sync/render).
-- **EditorFacade** vékony delegáló; a mutációk domain service-ekben vannak.
+Rétegszabályok:
+
+- **math** → csak `gl-matrix`
+- **physics/optics** → math; nincs GLSL, nincs World mutáció
+- **ecs** → math + physics típusok/normalize
+- **render/contract** → GPU szerződés (slot caps + shader parity); adapter innen importálja a GLSL-t
+- **adapters** → `@engine` / `@engine/render/contract` (nem deep `physics/optics`)
+- **app** → `@engine`, `@platform`, facade/host
+
+Runtime:
+
+- **StudioRuntime** futtatja a tick-et: `Schedule` (`worldTransform` → `gather`) → presenter `sync`/`render` (present a schedule-on kívül, adapter felelősség).
+- **EditorFacade** vékony delegáló; a mutációk domain editor service-ekben vannak (`patchSelectedComponents` helperrel).
 - Nincs HTTP backend most — a `platform/persistence` a jövőbeli API szerződés helye.
+
+Path aliasok (`tsconfig.json` / vitest): `@engine`, `@adapters/*`, `@platform/*`, `@app/*`.

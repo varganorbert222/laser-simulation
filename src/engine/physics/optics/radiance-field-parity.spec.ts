@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { radianceFieldGlslFunctions } from './beam-model';
-import { VOLUMETRIC_FRAGMENT } from '../../adapters/babylon/shaders/volumetric-shader';
+import { radianceFieldGlslFunctions } from '../../render/contract';
+import { VOLUMETRIC_FRAGMENT } from '../../../adapters/babylon/shaders/volumetric-shader';
 
 describe('radiance-field GLSL parity', () => {
   it('shared snippet contains core symbols', () => {

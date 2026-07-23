@@ -9,6 +9,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { clampRange } from '@engine';
 import { EngineHostService } from '../../core/services/engine-host.service';
 import { EditorFacade } from '../../core/services/editor-facade.service';
 import { LocalizationService } from '../../core/services/localization.service';
@@ -23,7 +24,7 @@ import {
 import { InspectorPanelComponent } from '../../shared/editor/inspector-panel/inspector-panel.component';
 import { ScienceReadoutComponent } from '../../shared/editor/science-readout/science-readout.component';
 import { ViewportAxesComponent } from '../../shared/editor/viewport-axes/viewport-axes.component';
-import { editorUndoShortcut } from '../../../engine';
+import { editorUndoShortcut } from '@engine';
 import { NoiseVolumeService } from '../../core/editor/noise-volume.service';
 
 @Component({
@@ -219,9 +220,9 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
       const dx = e.clientX - this.resizeStartX;
       const max = Math.floor(window.innerWidth * 0.4);
       if (this.resizeSide === 'left') {
-        this.leftWidth.set(clamp(this.resizeStartW + dx, 200, max));
+        this.leftWidth.set(clampRange(this.resizeStartW + dx, 200, max));
       } else {
-        this.rightWidth.set(clamp(this.resizeStartW - dx, 240, max));
+        this.rightWidth.set(clampRange(this.resizeStartW - dx, 240, max));
       }
     };
     const up = () => {
@@ -343,8 +344,4 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     if (raw === null) return null;
     return raw.trim();
   }
-}
-
-function clamp(v: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, v));
 }

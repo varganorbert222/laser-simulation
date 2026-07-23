@@ -1,6 +1,6 @@
 import type { EntityId, LightEmitter, MediaVolume, SmokeEmitter } from '../ecs/components';
-import type { SurfaceMaterial } from '../optics/surface-material';
-import { refreshSceneSunBinding } from '../optics/scene-sun';
+import type { SurfaceMaterial } from '../physics/optics/surface-material';
+import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
 import type { World } from '../ecs/world';
 import type { Command } from './stack';
 import { snapshotCommand } from './stack';
@@ -58,29 +58,4 @@ export function setSmokeEmitterCommand(
   return snapshotCommand('Füstszóró', structuredClone(before), structuredClone(after), (v) => {
     world.set(entityId, 'SmokeEmitter', structuredClone(v));
   });
-}
-
-export function setMediaDensityCommand(
-  world: World,
-  entityId: EntityId,
-  before: number,
-  after: number,
-): Command {
-  return {
-    label: 'Köd sűrűség',
-    execute: () => {
-      const media = world.get(entityId, 'MediaVolume');
-      if (media) {
-        media.density = after;
-        world.bump();
-      }
-    },
-    undo: () => {
-      const media = world.get(entityId, 'MediaVolume');
-      if (media) {
-        media.density = before;
-        world.bump();
-      }
-    },
-  };
 }

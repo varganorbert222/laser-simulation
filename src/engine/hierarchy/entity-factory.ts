@@ -45,14 +45,3 @@ export function addComponentToEntity<C extends ComponentName>(
   if (!world.hasEntity(id)) return;
   world.add(id, name, value);
 }
-
-export function removeComponentFromEntity(
-  world: World,
-  id: EntityId,
-  name: ComponentName,
-): void {
-  if (name === 'Transform' || name === 'Parent' || name === 'Name' || name === 'SiblingOrder') {
-    return;
-  }
-  world.remove(id, name);
-}

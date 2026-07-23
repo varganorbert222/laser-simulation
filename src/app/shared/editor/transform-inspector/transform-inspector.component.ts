@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
-import type { GizmoMode, GizmoSpace, Vec3Editable } from '../../../../engine';
+import type { GizmoMode, GizmoSpace, Vec3Editable } from '@engine';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 

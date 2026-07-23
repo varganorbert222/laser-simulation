@@ -21,6 +21,7 @@ import {
   type DisplayResponseCurve,
 } from './display-response-curve';
 import { clampAmbientLevel, ENVIRONMENT_AMBIENT_DEFAULT } from './environment-lighting';
+import { clamp01, clampRange } from '../../math/clamp';
 import {
   PHOTOPIC_LUMINOUS_EFFICACY,
   PHOTOPIC_NM_MAX,
@@ -60,8 +61,7 @@ export interface VisionBrightnessOpts {
  */
 export function photopicLuminousEfficacy(wavelengthNm: number): number {
   if (!Number.isFinite(wavelengthNm)) return 0;
-  const nm = Math.round(wavelengthNm);
-  const clamped = Math.min(PHOTOPIC_NM_MAX, Math.max(PHOTOPIC_NM_MIN, nm));
+  const clamped = Math.round(clampRange(wavelengthNm, PHOTOPIC_NM_MIN, PHOTOPIC_NM_MAX));
   return PHOTOPIC_LUMINOUS_EFFICACY[clamped] ?? 0;
 }
 
@@ -71,7 +71,7 @@ export function photopicLuminousEfficacy(wavelengthNm: number): number {
  */
 export function photopicVisionWeight(ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT): number {
   const a = clampAmbientLevel(ambientLevel);
-  return Math.min(1, Math.max(0, a / PHOTOPIC_AMBIENT_FLOOR));
+  return clamp01(a / PHOTOPIC_AMBIENT_FLOOR);
 }
 
 /**

@@ -1,4 +1,5 @@
-import type { BakedNoiseVolume } from '../../../../engine';
+import type { BakedNoiseVolume } from '@engine';
+import { clampRange } from '@engine';
 
 const VERT = `#version 300 es
 in vec2 position;
@@ -265,7 +266,7 @@ export class NoisePreviewRenderer {
     this.lastX = e.clientX;
     this.lastY = e.clientY;
     this.yaw += dx * 0.01;
-    this.pitch = Math.max(-1.1, Math.min(1.1, this.pitch + dy * 0.01));
+    this.pitch = clampRange(this.pitch + dy * 0.01, -1.1, 1.1);
   }
 
   private pointerUp(): void {

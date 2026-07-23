@@ -1,12 +1,12 @@
 import { fromEulerYXZ } from '../math/quat';
 import { vec3 } from '../math/vec3';
 import { World } from '../ecs/world';
-import { createQuality } from '../ecs/resources';
 import { createSceneEntity } from '../hierarchy/entity-factory';
 import { defaultLightEmitter, defaultSunLightEmitter } from '../ecs/components';
-import { defaultMediaVolumeForKind } from '../optics/media-optical-presets';
-import { defaultGroundSurfaceMaterial } from '../optics/surface-material';
-import { refreshSceneSunBinding } from '../optics/scene-sun';
+import { defaultMediaVolumeForKind } from '../physics/optics/media-optical-presets';
+import { defaultGroundSurfaceMaterial } from '../physics/optics/surface-material';
+import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
+import { createQuality } from '../render/quality';
 
 export function createDemoWorld(): World {
   const world = new World({

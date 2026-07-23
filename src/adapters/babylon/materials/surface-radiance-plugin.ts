@@ -9,10 +9,13 @@ import {
   type UniformBuffer,
 } from '@babylonjs/core';
 import '@babylonjs/core/Materials/materialPluginManager.js';
-import { radianceFieldGlslFunctions } from '../../../engine/optics/beam-model';
-import { incidentLightDirGlsl } from '../../../engine/optics/light-incident';
-import { microfacetBrdfGlslFunctions } from '../../../engine/optics/microfacet-brdf';
-import { MAX_GPU_LIGHTS } from '../../../engine';
+import {
+  MAX_GPU_LIGHTS,
+  incidentLightDirGlsl,
+  microfacetBrdfGlslFunctions,
+  radianceFieldGlslFunctions,
+} from '@engine';
+import { beamSlotUniformDecls } from '../shaders/beam-slot-uniforms';
 
 /** Packed BeamModel light for surface radiance (matches GpuLight slot layout). */
 export interface SurfaceRadianceGpuLight {
@@ -31,30 +34,14 @@ export interface SurfaceRadianceGpuLight {
 }
 
 function lightUniformDecls(slots: number): string {
-  const lines: string[] = [
+  return [
     'uniform float uSrCount;',
     'uniform float uSrAlbedo;',
     'uniform float uSrMetalness;',
     'uniform float uSrRoughness;',
     'uniform float uSrAbsorption;',
-  ];
-  for (let i = 0; i < slots; i++) {
-    lines.push(
-      `uniform vec3 uSrOrigin${i};`,
-      `uniform vec3 uSrDir${i};`,
-      `uniform vec3 uSrColor${i};`,
-      `uniform float uSrPower${i};`,
-      `uniform float uSrMode${i};`,
-      `uniform float uSrP0${i};`,
-      `uniform float uSrP1${i};`,
-      `uniform float uSrP2${i};`,
-      `uniform float uSrP3${i};`,
-      `uniform float uSrP4${i};`,
-      `uniform float uSrP5${i};`,
-      `uniform vec3 uSrSpill${i};`,
-    );
-  }
-  return lines.join('\n');
+    beamSlotUniformDecls(slots, 'uSr'),
+  ].join('\n');
 }
 
 function lightEvalLoop(slots: number): string {
@@ -155,30 +142,6 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
 
   override isCompatible(shaderLanguage: ShaderLanguage): boolean {
     return shaderLanguage === ShaderLanguage.GLSL;
-  }
-
-  setMaterialOptics(
-    albedoOrReflectivity: number,
-    absorption: number,
-    roughnessOrShininess = 0.45,
-    metalness = 0,
-    _specularWeight?: number,
-  ): void {
-    // New API: setMaterialPbr(albedo, metal, rough, absorb)
-    // Legacy: (reflectivity, absorption, shininess, diffuseW, specularW)
-    if (_specularWeight !== undefined) {
-      // Legacy call from surface-lights before migration completes
-      const shin = roughnessOrShininess;
-      this._albedo = Math.max(albedoOrReflectivity, metalness);
-      this._metalness = Math.min(1, Math.max(0, _specularWeight > 0.2 ? 0.7 : metalness));
-      this._roughness = Math.max(0.04, 1 - (Math.min(64, shin) - 8) / 56);
-      this._absorption = absorption;
-      return;
-    }
-    this._albedo = albedoOrReflectivity;
-    this._absorption = absorption;
-    this._roughness = roughnessOrShininess;
-    this._metalness = metalness;
   }
 
   setMaterialPbr(albedo: number, metalness: number, roughness: number, absorption: number): void {

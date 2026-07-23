@@ -1,21 +1,12 @@
-import { radianceFieldGlslFunctions } from '../../../engine/optics/beam-model';
 import {
   VOLUMETRIC_LIGHT_SLOTS,
   VOLUMETRIC_MEDIA_SLOTS,
-} from '../../../engine/render/pack';
+  radianceFieldGlslFunctions,
+} from '@engine';
+import { beamSlotUniformDecls } from './beam-slot-uniforms';
 
 function lightUniformDecls(slots: number): string {
-  const lines: string[] = [];
-  for (let i = 0; i < slots; i++) {
-    lines.push(
-      `uniform vec3 uLightOrigin${i}; uniform vec3 uLightDir${i}; uniform vec3 uLightColor${i};`,
-      `uniform float uLightPower${i}; uniform float uLightScatter${i}; uniform float uLightMode${i};`,
-      `uniform float uLightP0${i}; uniform float uLightP1${i}; uniform float uLightP2${i}; uniform float uLightP3${i};`,
-      `uniform float uLightP4${i}; uniform float uLightP5${i};`,
-      `uniform vec3 uLightSpill${i};`,
-    );
-  }
-  return lines.join('\n');
+  return beamSlotUniformDecls(slots, 'uLight', { scatter: true });
 }
 
 function mediaUniformDecls(slots: number): string {
@@ -544,7 +535,7 @@ float phaseHG(float cosTheta, float g) {
 
 const float INV_4PI = 0.0795774715;
 
-/* Shared with surface plugin — CPU twin: engine/optics/beam-model.ts evalRadianceField */
+/* Shared with surface plugin — CPU twin: engine/physics/optics/beam-model.ts evalRadianceField */
 ${radianceFieldGlslFunctions()}
 
 vec3 march(vec3 ro, vec3 rd, float sceneZCam) {

@@ -10,7 +10,7 @@ import {
   deriveGlowContribution,
   laserDotDisplayBrightness,
   type World,
-} from '../../../engine';
+} from '@engine';
 
 export class StudioPipeline {
   readonly pipeline: DefaultRenderingPipeline;

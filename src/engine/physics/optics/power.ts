@@ -1,5 +1,7 @@
 /** Emitter optical power limits and unit helpers (internal storage is always watts). */
 
+import { clamp01, clampRange } from '../../math/clamp';
+
 export const POWER_W_MIN = 0;
 /** 500 kW */
 export const POWER_W_MAX = 500_000;
@@ -21,8 +23,7 @@ export const POWER_PRESETS_W = [
 ] as const;
 
 export function clampPowerW(powerW: number): number {
-  if (!Number.isFinite(powerW)) return 0;
-  return Math.min(POWER_W_MAX, Math.max(POWER_W_MIN, powerW));
+  return clampRange(powerW, POWER_W_MIN, POWER_W_MAX, 0);
 }
 
 export function powerToUnit(powerW: number, unit: PowerUnit): number {
@@ -65,7 +66,7 @@ export function formatPowerW(powerW: number): string {
 
 /** Log-space slider 0..1 ↔ watts (usable from ~1 mW to 500 kW). */
 export function powerWFromSliderT(t: number): number {
-  const u = Math.min(1, Math.max(0, t));
+  const u = clamp01(t);
   const minPos = 0.001;
   return clampPowerW(minPos * Math.pow(POWER_W_MAX / minPos, u));
 }

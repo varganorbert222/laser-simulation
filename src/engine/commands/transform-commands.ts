@@ -1,8 +1,6 @@
 import type { EntityId, Transform } from '../ecs/components';
 import type { World } from '../ecs/world';
-import type { Quat } from '../math/quat';
 import { clone as cloneQuat } from '../math/quat';
-import type { Vec3 } from '../math/vec3';
 import { clone as cloneVec3 } from '../math/vec3';
 import { restoreWorldFromSerialized } from '../save/serialize';
 import type { Command } from './stack';
@@ -47,48 +45,6 @@ export function setTransformsCommand(
     label: entries.length > 1 ? `Transform (${entries.length})` : 'Transform',
     execute: () => restoreWorldFromSerialized(world, after),
     undo: () => restoreWorldFromSerialized(world, before),
-  };
-}
-
-export function setPositionCommand(
-  world: World,
-  entityId: EntityId,
-  before: Vec3,
-  after: Vec3,
-): Command {
-  return {
-    label: 'Pozíció',
-    execute: () => {
-      const t = world.get(entityId, 'Transform');
-      if (!t) return;
-      world.set(entityId, 'Transform', { ...t, position: cloneVec3(after) });
-    },
-    undo: () => {
-      const t = world.get(entityId, 'Transform');
-      if (!t) return;
-      world.set(entityId, 'Transform', { ...t, position: cloneVec3(before) });
-    },
-  };
-}
-
-export function setRotationCommand(
-  world: World,
-  entityId: EntityId,
-  before: Quat,
-  after: Quat,
-): Command {
-  return {
-    label: 'Forgatás',
-    execute: () => {
-      const t = world.get(entityId, 'Transform');
-      if (!t) return;
-      world.set(entityId, 'Transform', { ...t, rotation: cloneQuat(after) });
-    },
-    undo: () => {
-      const t = world.get(entityId, 'Transform');
-      if (!t) return;
-      world.set(entityId, 'Transform', { ...t, rotation: cloneQuat(before) });
-    },
   };
 }
 

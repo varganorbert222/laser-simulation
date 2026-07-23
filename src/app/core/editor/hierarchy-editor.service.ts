@@ -15,7 +15,7 @@ import {
   setViewportHiddenCommand,
   type HierarchyClipboardNode,
   type HierarchyReorderEvent,
-} from '../../../engine';
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
 import { LocalizationService } from '../services/localization.service';

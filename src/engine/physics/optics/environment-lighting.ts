@@ -5,6 +5,8 @@
  * Volumetric media also receive this as environment irradiance (cloud lighting):
  * hemi + sun in-scatter, plus an isotropic multiple-scatter fraction around emitters.
  */
+import { clampUnit } from '../../math/clamp';
+
 export interface EnvironmentLighting {
   /**
    * Relative environment brightness in [0, 1].
@@ -30,13 +32,11 @@ export const ENVIRONMENT_SUN_DIR_WORLD: readonly [number, number, number] = [
 ];
 
 export function clampAmbientLevel(level: number): number {
-  if (!Number.isFinite(level)) return ENVIRONMENT_AMBIENT_DEFAULT;
-  return Math.min(1, Math.max(0, level));
+  return clampUnit(level, ENVIRONMENT_AMBIENT_DEFAULT);
 }
 
 export function clampVolumeMultiScatter(v: number): number {
-  if (!Number.isFinite(v)) return ENVIRONMENT_VOLUME_MS_DEFAULT;
-  return Math.min(1, Math.max(0, v));
+  return clampUnit(v, ENVIRONMENT_VOLUME_MS_DEFAULT);
 }
 
 export function createDefaultEnvironmentLighting(): EnvironmentLighting {

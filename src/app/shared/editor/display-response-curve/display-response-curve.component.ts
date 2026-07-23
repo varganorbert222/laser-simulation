@@ -14,15 +14,17 @@ import {
   DISPLAY_RESPONSE_HDR_MAX,
   DISPLAY_RESPONSE_POINT_MAX,
   DISPLAY_RESPONSE_POINT_MIN,
+  clamp01,
   clampCurveT,
   clampHdr,
+  clampRange,
   eyeAdaptationGainFromAmbient,
   formatPowerW,
   normalizeDisplayResponseCurve,
   powerWAtCurveT,
   type DisplayResponseCurve,
   type DisplayResponsePoint,
-} from '../../../../engine';
+} from '@engine';
 import { LocalizationService } from '../../../core/services/localization.service';
 
 @Component({
@@ -65,7 +67,7 @@ export class DisplayResponseCurveComponent implements OnChanges, AfterViewInit {
   onAmbientSlider(raw: string): void {
     const n = Number(raw);
     if (!Number.isFinite(n)) return;
-    this.ambientLevelChange.emit(Math.min(1, Math.max(0, n)));
+    this.ambientLevelChange.emit(clamp01(n));
   }
 
   onPointerDown(event: PointerEvent): void {
@@ -97,7 +99,7 @@ export class DisplayResponseCurveComponent implements OnChanges, AfterViewInit {
     } else {
       const lo = pts[i - 1].t + 1e-4;
       const hi = pts[i + 1].t - 1e-4;
-      pts[i] = { t: Math.min(hi, Math.max(lo, t)), hdr };
+      pts[i] = { t: clampRange(t, lo, hi), hdr };
     }
     this.localPoints = normalizeDisplayResponseCurve({ points: pts }).points;
     this.emitCurve();

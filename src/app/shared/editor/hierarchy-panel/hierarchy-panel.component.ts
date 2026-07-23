@@ -16,7 +16,7 @@ import {
   type HierarchyOutlinerRow,
   type HierarchyOutlinerState,
   type HierarchyReorderEvent,
-} from '../../../../engine';
+} from '@engine';
 
 export type HierarchyContextAction =
   | 'add'

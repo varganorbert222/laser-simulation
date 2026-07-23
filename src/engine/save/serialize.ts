@@ -11,15 +11,32 @@ import {
   normalizeMediaVolume,
   normalizeSmokeEmitter,
 } from '../ecs/components';
-import { createQuality, createDefaultDisplayVision, normalizeDisplayVision, createDefaultEnvironmentLighting, normalizeEnvironmentLighting, normalizeEditorSelection, normalizeEditorTooling, normalizeShadowQuality, refreshSceneSunBinding, type Quality } from '../ecs/resources';
+import {
+  normalizeEditorSelection,
+  normalizeEditorTooling,
+} from '../ecs/resources';
 import { World, SAVE_SCHEMA_VERSION, type SerializedWorld } from '../ecs/world';
 import { identity as matIdentity } from '../math/mat4';
 import {
   normalizeSurfaceMaterial,
   type SurfaceMaterial,
-} from '../optics/surface-material';
-import type { DisplayVision } from '../optics/display-vision';
-import type { EnvironmentLighting } from '../optics/environment-lighting';
+} from '../physics/optics/surface-material';
+import type { DisplayVision } from '../physics/optics/display-vision';
+import {
+  createDefaultDisplayVision,
+  normalizeDisplayVision,
+} from '../physics/optics/display-vision';
+import type { EnvironmentLighting } from '../physics/optics/environment-lighting';
+import {
+  createDefaultEnvironmentLighting,
+  normalizeEnvironmentLighting,
+} from '../physics/optics/environment-lighting';
+import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
+import {
+  createQuality,
+  normalizeShadowQuality,
+  type Quality,
+} from '../render/quality';
 
 function normalizeQuality(q: Quality | (Partial<Quality> & { preset?: Quality['preset'] })): Quality {
   const preset = q.preset ?? 'medium';

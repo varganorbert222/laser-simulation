@@ -11,8 +11,8 @@ import {
   type SelectionMode,
   type Transform,
   type World,
-} from '../../../engine';
-import { BabylonPresenter } from '../../../adapters/babylon';
+} from '@engine';
+import { BabylonPresenter } from '@adapters/babylon';
 import { SceneLibraryService } from '../editor/scene-library.service';
 
 export interface HostSelectOptions {

@@ -1,9 +1,8 @@
 import { Injectable, computed, inject } from '@angular/core';
-import {
-  applySelection,
+import {
   normalizeEditorSelection,
   type SelectionMode,
-} from '../../../engine';
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 
 export interface SelectOptions {

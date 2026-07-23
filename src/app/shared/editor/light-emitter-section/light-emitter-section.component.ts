@@ -2,6 +2,7 @@ import { Component, effect, input, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import {
   ALL_LIGHT_MODES,
+  clamp01,
   clampIntensityLm,
   clampSpill01,
   defaultModeParams,
@@ -20,7 +21,7 @@ import {
   type LightHdrAppearance,
   type LightMode,
   type PowerUnit,
-} from '../../../../engine';
+} from '@engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { SpectralColorFieldComponent } from '../spectral-color-field/spectral-color-field.component';
@@ -90,7 +91,7 @@ export class LightEmitterSectionComponent {
   intensitySliderT(): number {
     // Log-ish map 1 lm … 1e6 lm → 0…1
     const lm = Math.max(1, this.light().intensityLm);
-    return Math.min(1, Math.max(0, Math.log10(lm) / 6));
+    return clamp01(Math.log10(lm) / 6);
   }
 
   onIntensityNumber(raw: string): void {
@@ -102,7 +103,7 @@ export class LightEmitterSectionComponent {
   onIntensitySlider(raw: string): void {
     const t = Number(raw);
     if (!Number.isFinite(t)) return;
-    const lm = Math.pow(10, Math.min(1, Math.max(0, t)) * 6);
+    const lm = Math.pow(10, clamp01(t) * 6);
     this.editor.setIntensityLm(clampIntensityLm(lm));
   }
 

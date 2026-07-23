@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { USER_ADDABLE_COMPONENTS, type UserAddableComponent } from '../../../../engine';
+import { USER_ADDABLE_COMPONENTS, type UserAddableComponent } from '@engine';
 import { EditorFacade } from '../../../core/services/editor-facade.service';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { TransformInspectorComponent } from '../transform-inspector/transform-inspector.component';

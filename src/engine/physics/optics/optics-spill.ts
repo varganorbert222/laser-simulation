@@ -29,12 +29,13 @@ export type LegacyOpticsSpillParams = Partial<OpticsSpillParams> & {
   apertureSpill?: number;
 };
 
+import { clampRange } from '../../math/clamp';
+
 export const OPTICS_SPILL_MIN = 0;
 export const OPTICS_SPILL_MAX = 0.85;
 
 export function clampSpill01(v: number): number {
-  if (!Number.isFinite(v)) return 0;
-  return Math.min(OPTICS_SPILL_MAX, Math.max(OPTICS_SPILL_MIN, v));
+  return clampRange(v, OPTICS_SPILL_MIN, OPTICS_SPILL_MAX, 0);
 }
 
 export function defaultOpticsSpill(): OpticsSpillParams {

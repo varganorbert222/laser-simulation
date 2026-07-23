@@ -5,7 +5,7 @@ import {
   type Scene,
 } from '@babylonjs/core';
 import { Constants } from '@babylonjs/core/Engines/constants';
-import type { BakedNoiseVolume } from '../../../engine';
+import type { BakedNoiseVolume } from '@engine';
 
 export type NoiseGpuKind = 0 | 2 | 3;
 

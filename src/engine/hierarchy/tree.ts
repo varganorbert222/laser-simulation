@@ -180,18 +180,6 @@ export function wouldCreateCycle(
   return false;
 }
 
-export function collectSubtreeIds(world: World, rootId: EntityId): EntityId[] {
-  const out: EntityId[] = [];
-  const walk = (id: EntityId) => {
-    out.push(id);
-    for (const child of world.allEntities()) {
-      if (world.get(child, 'Parent')?.entityId === id) walk(child);
-    }
-  };
-  walk(rootId);
-  return out;
-}
-
 export function nextSiblingIndex(world: World, parentId: EntityId | null): number {
   let max = -1;
   for (const id of world.allEntities()) {

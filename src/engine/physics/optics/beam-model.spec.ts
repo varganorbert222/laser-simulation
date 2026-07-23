@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LightEmitter } from '../ecs/components';
+import type { LightEmitter } from '../../ecs/components';
 import { defaultOpticsSpill } from './optics-spill';
 import { defaultLaserParams } from './modes';
 import {
   beamModelFromEmitter,
-  beamModelToGpuParams,
-  beamModeCode,
+  beamModelToGpuParams,
   evalRadianceField,
   surfaceBrdfWeights,
-  unpackLaserProfilePack,
-  zeroSpill,
+  unpackLaserProfilePack,
   type BeamModel,
 } from './beam-model';
 import { defaultSurfaceMaterial } from './surface-material';
@@ -41,7 +39,7 @@ describe('beamModelFromEmitter', () => {
       expect(m.softRadiusM).toBe(1.5);
       expect(m.falloff).toBe(2);
     }
-    expect(beamModeCode(m.kind)).toBe(0);
+    expect(beamModelToGpuParams(m).mode).toBe(0);
   });
 
   it('maps spotlight → cone (radians)', () => {
@@ -59,7 +57,7 @@ describe('beamModelFromEmitter', () => {
       expect(m.outerRad).toBeCloseTo((40 * Math.PI) / 180, 5);
       expect(m.sharpness).toBe(4);
     }
-    expect(beamModeCode(m.kind)).toBe(1);
+    expect(beamModelToGpuParams(m).mode).toBe(1);
   });
 
   it('maps parallel → tube', () => {
@@ -73,7 +71,7 @@ describe('beamModelFromEmitter', () => {
       expect(m.radiusM).toBe(0.05);
       expect(m.residualRad).toBeCloseTo(0.002, 6);
     }
-    expect(beamModeCode(m.kind)).toBe(2);
+    expect(beamModelToGpuParams(m).mode).toBe(2);
   });
 
   it('maps laser → gaussian with M²', () => {
@@ -92,7 +90,7 @@ describe('beamModelFromEmitter', () => {
       expect(m.laser.m2).toBe(1.2);
       expect(m.lambdaM).toBeCloseTo(650e-9, 12);
     }
-    expect(beamModeCode(m.kind)).toBe(3);
+    expect(beamModelToGpuParams(m).mode).toBe(3);
   });
 
   it('migrates legacy parallelness → m2', () => {
@@ -201,7 +199,7 @@ describe('evalRadianceField', () => {
       kind: 'omni',
       softRadiusM: 1,
       falloff: 2,
-      spill: zeroSpill(),
+      spill: { strayPowerFraction: 0 },
     };
     const a = evalRadianceField(model, {
       origin,
@@ -223,7 +221,7 @@ describe('evalRadianceField', () => {
       innerRad: 0.15,
       outerRad: 0.4,
       sharpness: 4,
-      spill: zeroSpill(),
+      spill: { strayPowerFraction: 0 },
     };
     const onAxis = evalRadianceField(model, {
       origin,
@@ -244,7 +242,7 @@ describe('evalRadianceField', () => {
       kind: 'gaussian',
       laser: { ...defaultLaserParams(), w0M: 0.002, m2: 1 },
       lambdaM: 532e-9,
-      spill: zeroSpill(),
+      spill: { strayPowerFraction: 0 },
     };
     const axis = evalRadianceField(model, {
       origin,
@@ -265,7 +263,7 @@ describe('evalRadianceField', () => {
       kind: 'tube',
       radiusM: 0.02,
       residualRad: 0.01,
-      spill: zeroSpill(),
+      spill: { strayPowerFraction: 0 },
     };
     const near = evalRadianceField(model, {
       origin,
@@ -285,7 +283,7 @@ describe('evalRadianceField', () => {
       kind: 'gaussian',
       laser: { ...defaultLaserParams(), w0M: 0.001, m2: 1 },
       lambdaM: 532e-9,
-      spill: zeroSpill(),
+      spill: { strayPowerFraction: 0 },
     };
     const near = evalRadianceField(model, {
       origin,
@@ -305,7 +303,7 @@ describe('evalRadianceField', () => {
       kind: 'gaussian',
       laser: { ...defaultLaserParams(), w0M: 0.002, m2: 1 },
       lambdaM: 532e-9,
-      spill: zeroSpill(),
+      spill: { strayPowerFraction: 0 },
     };
     const withSpill: BeamModel = {
       ...base,

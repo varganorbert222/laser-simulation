@@ -12,7 +12,7 @@ import {
   type NoiseBlendMode,
   type NoiseDimension,
   type NoiseVolumeResolution,
-} from '../../../../engine';
+} from '@engine';
 import { LocalizationService } from '../../../core/services/localization.service';
 import { NoiseVolumeService } from '../../../core/editor/noise-volume.service';
 import type { LocaleKey } from '../../../i18n/messages';

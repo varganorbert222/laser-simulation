@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import type { Vec3Editable } from '../../../../engine';
+import type { Vec3Editable } from '@engine';
 
 @Component({
   selector: 'app-vec3-field',

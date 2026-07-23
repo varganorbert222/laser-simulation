@@ -3,6 +3,9 @@
  * Lattice wraps so GPU wrap REPEAT is seamless on every axis used.
  */
 
+import { clamp01, clampRange } from '../math/clamp';
+import { hermite01 } from '../math/smoothstep';
+
 export type NoiseBlendMode = 'add' | 'sub' | 'mul' | 'max' | 'min';
 export type NoiseDimension = '2d' | '3d';
 
@@ -140,9 +143,9 @@ function normalizeLayer(raw: unknown, index: number): NoiseLayer {
     name: typeof r.name === 'string' && r.name.trim() ? r.name.trim() : fallback.name,
     seed: num(r.seed, fallback.seed),
     frequency: Math.max(1, Math.round(num(r.frequency, fallback.frequency))),
-    octaves: Math.max(1, Math.min(6, Math.round(num(r.octaves, fallback.octaves)))),
+    octaves: Math.round(clampRange(num(r.octaves, fallback.octaves), 1, 6)),
     lacunarity: Math.max(1.1, num(r.lacunarity, fallback.lacunarity)),
-    persistence: Math.max(0.05, Math.min(1, num(r.persistence, fallback.persistence))),
+    persistence: clampRange(num(r.persistence, fallback.persistence), 0.05, 1),
     amplitude: num(r.amplitude, fallback.amplitude),
     blend:
       blend === 'add' || blend === 'sub' || blend === 'mul' || blend === 'max' || blend === 'min'
@@ -172,10 +175,6 @@ function hash3(ix: number, iy: number, iz: number, seed: number): number {
   return n / 4294967295;
 }
 
-function fade(t: number): number {
-  return t * t * (3 - 2 * t);
-}
-
 /**
  * Tileable value noise. `period` = integer cells across the unit domain.
  * For 2D, pass pz=0 and periodZ=1 (constant in Z).
@@ -198,9 +197,9 @@ function valueNoiseTileable(
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const z0 = Math.floor(z);
-  const fx = fade(x - x0);
-  const fy = fade(y - y0);
-  const fz = fade(z - z0);
+  const fx = hermite01(x - x0);
+  const fy = hermite01(y - y0);
+  const fz = hermite01(z - z0);
 
   const wrap = (i: number, per: number) => ((i % per) + per) % per;
   const n000 = hash3(wrap(x0, perX), wrap(y0, perY), wrap(z0, perZ), seed);
@@ -232,7 +231,7 @@ function fbmTileable(
   let amp = 1;
   let sum = 0;
   let norm = 0;
-  const octaves = Math.max(1, Math.min(6, layer.octaves | 0));
+  const octaves = Math.round(clampRange(layer.octaves, 1, 6));
   for (let o = 0; o < octaves; o++) {
     const pzPeriod = dimension === '2d' ? 1 : freq;
     const z = dimension === '2d' ? 0 : pz;
@@ -320,12 +319,12 @@ export function bakeNoiseVolume(recipeInput: NoiseVolumeRecipe): BakedNoiseVolum
     if (recipe.normalize) {
       t = (t - minV) / span;
     } else {
-      t = Math.min(1, Math.max(0, t));
+      t = clamp01(t);
     }
     if (contrast !== 1) {
       t = Math.pow(Math.max(t, 0), contrast);
     }
-    data[j] = Math.min(255, Math.max(0, Math.round(t * 255)));
+    data[j] = Math.round(clampRange(t * 255, 0, 255));
   }
 
   const finalRecipe: NoiseVolumeRecipe = { ...recipe, resolution: res };
@@ -376,7 +375,7 @@ export function noiseSliceToRgba(
   out?: Uint8ClampedArray,
 ): Uint8ClampedArray {
   const { width: res, height, depth, data } = baked;
-  const z = Math.min(depth - 1, Math.max(0, zIndex | 0));
+  const z = Math.round(clampRange(zIndex | 0, 0, depth - 1));
   const rgba =
     out && out.length >= res * height * 4 ? out : new Uint8ClampedArray(res * height * 4);
   const base = z * res * height;

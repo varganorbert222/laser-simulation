@@ -7,12 +7,9 @@
  *   chroma × intensity → ACES / hue-preserving tonemap → monitor RGB
  */
 
-export type Rgb01 = readonly [number, number, number];
+import { clamp01, clampRange } from '../../math/clamp';
 
-export function clamp01(v: number): number {
-  if (!Number.isFinite(v)) return 0;
-  return Math.min(1, Math.max(0, v));
-}
+export type Rgb01 = readonly [number, number, number];
 
 export function clampRgb(rgb: Rgb01): [number, number, number] {
   return [clamp01(rgb[0]), clamp01(rgb[1]), clamp01(rgb[2])];
@@ -68,14 +65,6 @@ export function acesFilmToneMap(rgb: Rgb01): [number, number, number] {
   return [acesFilmCurve(rgb[0]), acesFilmCurve(rgb[1]), acesFilmCurve(rgb[2])];
 }
 
-/** Rec.709 luminance. */
-export function luminanceRgb(rgb: Rgb01): number {
-  const r = Number.isFinite(rgb[0]) ? Math.max(0, rgb[0]) : 0;
-  const g = Number.isFinite(rgb[1]) ? Math.max(0, rgb[1]) : 0;
-  const b = Number.isFinite(rgb[2]) ? Math.max(0, rgb[2]) : 0;
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
 /**
  * ACES on luminance only, then re-apply chromaticity — power changes brightness,
  * not hue (525 nm stays green instead of yellow/white clip).
@@ -111,13 +100,6 @@ export function displayRgb(chroma: Rgb01, intensity: number): [number, number, n
   return acesLuminanceToneMap([c[0] * i, c[1] * i, c[2] * i]);
 }
 
-/** sRGB-ish display gamma (linear → monitor). */
-export function applyDisplayGamma(rgb: Rgb01, gamma = 2.2): [number, number, number] {
-  const inv = 1 / Math.max(1e-6, gamma);
-  const f = (x: number) => Math.pow(clamp01(x), inv);
-  return [f(rgb[0]), f(rgb[1]), f(rgb[2])];
-}
-
 export function rgbToHex(rgb: Rgb01): string {
   const [r, g, b] = clampRgb(rgb);
   return `#${toHexByte(Math.round(r * 255))}${toHexByte(Math.round(g * 255))}${toHexByte(Math.round(b * 255))}`;
@@ -144,5 +126,5 @@ export function hexToRgb(hex: string): [number, number, number] | null {
 }
 
 function toHexByte(value: number): string {
-  return Math.min(255, Math.max(0, value)).toString(16).padStart(2, '0');
+  return Math.round(clampRange(value, 0, 255)).toString(16).padStart(2, '0');
 }

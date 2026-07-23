@@ -1,6 +1,7 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import {
   bakeNoiseVolume,
+  clampRange,
   createDefaultNoiseRecipe,
   createDefaultNoiseLayer,
   createNoiseLayerId,
@@ -20,7 +21,7 @@ import {
   type NoiseLibraryMeta,
   type NoiseVolumeRecipe,
   type NoiseVolumeResolution,
-} from '../../../engine';
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 
 /**
@@ -113,7 +114,7 @@ export class NoiseVolumeService {
 
   setContrast(contrast: number): void {
     if (!Number.isFinite(contrast)) return;
-    this.recipe.update((r) => ({ ...r, contrast: Math.max(0.05, Math.min(4, contrast)) }));
+    this.recipe.update((r) => ({ ...r, contrast: clampRange(contrast, 0.05, 4) }));
   }
 
   selectLayer(id: string | null): void {

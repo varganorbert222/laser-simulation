@@ -2,8 +2,7 @@ import { bootstrapApplication } from '@angular/platform-browser';
 import { appConfig } from './app/app.config';
 import { AppComponent } from './app/app.component';
 import {
-  configureQualityRenderScale,
-  refreshQualityPresets,
+  configureQualityRenderScale,
   studioAssets,
 } from './engine';
 
@@ -15,8 +14,7 @@ async function loadQualityConfig(): Promise<void> {
       renderScaleMin?: number;
       renderScaleMax?: number;
     };
-    configureQualityRenderScale(json);
-    refreshQualityPresets();
+    configureQualityRenderScale(json);
   } catch {
     // Defaults from engine/render/quality.ts apply.
   }

@@ -3,7 +3,7 @@
  * Each entry stores a full SceneDocument (SerializedWorld).
  */
 
-import { createDemoWorld, type World } from '../../engine';
+import { createDemoWorld, type World } from '@engine';
 import { documentToWorld, worldToDocument, type SceneDocument } from './scene-io';
 
 export const SCENE_LIBRARY_STORAGE_KEY = 'light-studio.scene-library.v1';

@@ -17,11 +17,12 @@ import { Constants } from '@babylonjs/core/Engines/constants';
 import {
   VOLUMETRIC_LIGHT_SLOTS,
   VOLUMETRIC_MEDIA_SLOTS,
+  clampRenderScale,
   gatherRenderPack,
   type BakedNoiseVolume,
   type GatheredFrame,
   type World,
-} from '../../../engine';
+} from '@engine';
 import {
   VOLUMETRIC_COMPOSE_FRAGMENT,
   VOLUMETRIC_FRAGMENT,
@@ -77,7 +78,7 @@ export class VolumetricBinder {
     camera: Camera,
     initialScale: number,
   ) {
-    const scale = clampScale(initialScale);
+    const scale = clampRenderScale(initialScale);
     const vol = this.volumetricSize(scale);
 
     this.noiseTextures = new NoiseTextureCache(scene);
@@ -153,11 +154,6 @@ export class VolumetricBinder {
     this.noiseTextures.syncEntries(entries);
   }
 
-  /** @deprecated Use syncNoiseLibrary — kept for transitional callers. */
-  setNoiseVolume(_baked: BakedNoiseVolume): void {
-    // no-op: per-media assets come from the noise library
-  }
-
   /** True when the low-res raymarch effect is compiled. */
   isRaymarchReady(): boolean {
     if (!this.volumetricEffect.isReady()) return false;
@@ -199,7 +195,7 @@ export class VolumetricBinder {
   }
 
   applyRenderScale(scale: number): void {
-    const clamped = clampScale(scale);
+    const clamped = clampRenderScale(scale);
     const changed = Math.abs(clamped - this.lastRenderScale) >= 1e-4;
     this.lastRenderScale = clamped;
     this.syncVolumetricSize(clamped, changed);
@@ -222,7 +218,7 @@ export class VolumetricBinder {
   }
 
   private volumetricSize(scale: number): AbsoluteSize {
-    const s = clampScale(scale);
+    const s = clampRenderScale(scale);
     const width = Math.max(1, (this.engine.getRenderWidth(true) * s) | 0);
     const height = Math.max(1, (this.engine.getRenderHeight(true) * s) | 0);
     return { width, height };
@@ -230,7 +226,7 @@ export class VolumetricBinder {
 
   private applyUniforms(effect: EffectLike): void {
     if (!this._world || !this._camera) return;
-    const pack = gatherRenderPack(this._world);
+    const pack = this._world.resources.RenderFrame ?? gatherRenderPack(this._world);
     this.lastPack = pack;
     const inv = Matrix.Invert(this._camera.getTransformationMatrix());
     effect.setVector2('uResolution', new Vector2(this.lastVolW, this.lastVolH));
@@ -358,6 +354,3 @@ export class VolumetricBinder {
   }
 }
 
-function clampScale(scale: number): number {
-  return Math.min(1, Math.max(0.05, scale));
-}

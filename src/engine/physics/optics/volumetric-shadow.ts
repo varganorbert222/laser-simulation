@@ -4,10 +4,12 @@
  * (density × plume × height falloff — no FBM, same as GPU shadow path).
  */
 
-import type { Vec3 } from '../math/vec3';
-import { add, length, normalize, scale, sub } from '../math/vec3';
-import type { ShadowQuality } from '../render/quality';
-import { shadowStepsForQuality } from '../render/quality';
+import type { Vec3 } from '../../math/vec3';
+import { add, length, normalize, scale, sub } from '../../math/vec3';
+import { clampRange } from '../../math/clamp';
+import { smoothstep } from '../../math/smoothstep';
+import type { ShadowQuality } from '../../render/quality';
+import { shadowStepsForQuality } from '../../render/quality';
 import { plumeEnvelope } from './smoke-plume';
 
 export interface ShadowMediaVolume {
@@ -35,11 +37,6 @@ export function lightMediaTransmittanceLocal(
   const dist = length(sub(lightOrigin, p));
   if (dist < 1e-4) return 1;
   return Math.exp(-Math.max(0, sigmaTLocal) * dist);
-}
-
-function smoothstep(edge0: number, edge1: number, x: number): number {
-  const t = Math.min(1, Math.max(0, (x - edge0) / Math.max(1e-8, edge1 - edge0)));
-  return t * t * (3 - 2 * t);
 }
 
 function heightFalloff(localY: number, halfY: number): number {
@@ -109,7 +106,7 @@ export function lightMediaTransmittanceMarch(
   const delta = sub(lightOrigin, p);
   const dist = length(delta);
   if (dist < 1e-4) return 1;
-  const n = Math.max(2, Math.min(8, Math.round(steps)));
+  const n = clampRange(Math.round(steps), 2, 8);
   const dir = normalize(delta);
   const ds = dist / n;
   let tau = 0;
@@ -143,7 +140,7 @@ export function sunMediaTransmittance(
   if (quality === 'off') return 1;
   if (quality === 'low') return Math.exp(-Math.max(0, sigmaTLocal) * pathLen);
   const dir = normalize(sunDir);
-  const steps = Math.max(2, Math.min(4, Math.round(shadowStepsForQuality(quality) * 0.5)));
+  const steps = clampRange(Math.round(shadowStepsForQuality(quality) * 0.5), 2, 4);
   const ds = pathLen / steps;
   let tau = 0;
   for (let s = 0; s < steps; s++) {
