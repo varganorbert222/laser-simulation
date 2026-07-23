@@ -25,14 +25,16 @@ import {
 } from '@engine';
 import {
   VOLUMETRIC_COMPOSE_FRAGMENT,
+  VOLUMETRIC_COMPOSE_SHADER_KEY,
   VOLUMETRIC_FRAGMENT,
   VOLUMETRIC_SAMPLERS,
+  VOLUMETRIC_SHADER_KEY,
   VOLUMETRIC_UNIFORMS,
-} from '../shaders/volumetric-shader';
+} from '../shaders/load-shaders';
 import { NoiseTextureCache } from './noise-volume-texture';
 
-Effect.ShadersStore['volumetricFragmentShader'] = VOLUMETRIC_FRAGMENT;
-Effect.ShadersStore['volumetricComposeFragmentShader'] = VOLUMETRIC_COMPOSE_FRAGMENT;
+Effect.ShadersStore[VOLUMETRIC_SHADER_KEY] = VOLUMETRIC_FRAGMENT;
+Effect.ShadersStore[VOLUMETRIC_COMPOSE_SHADER_KEY] = VOLUMETRIC_COMPOSE_FRAGMENT;
 
 type EffectLike = {
   setFloat: (name: string, v: number) => void;

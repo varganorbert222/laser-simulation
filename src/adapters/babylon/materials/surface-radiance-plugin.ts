@@ -9,13 +9,12 @@ import {
   type UniformBuffer,
 } from '@babylonjs/core';
 import '@babylonjs/core/Materials/materialPluginManager.js';
+import { MAX_GPU_LIGHTS } from '@engine';
 import {
-  MAX_GPU_LIGHTS,
-  incidentLightDirGlsl,
-  microfacetBrdfGlslFunctions,
-  radianceFieldGlslFunctions,
-} from '@engine';
-import { beamSlotUniformDecls } from '../shaders/beam-slot-uniforms';
+  SURFACE_RADIANCE_BEFORE_FRAGCOLOR,
+  SURFACE_RADIANCE_DEFINITIONS,
+  SURFACE_RADIANCE_UNIFORMS,
+} from '../../../generated/shaders';
 
 /** Packed BeamModel light for surface radiance (matches GpuLight slot layout). */
 export interface SurfaceRadianceGpuLight {
@@ -31,56 +30,6 @@ export interface SurfaceRadianceGpuLight {
   p4: number;
   p5: number;
   spill: [number, number, number];
-}
-
-function lightUniformDecls(slots: number): string {
-  return [
-    'uniform float uSrCount;',
-    'uniform float uSrAlbedo;',
-    'uniform float uSrMetalness;',
-    'uniform float uSrRoughness;',
-    'uniform float uSrAbsorption;',
-    beamSlotUniformDecls(slots, 'uSr'),
-  ].join('\n');
-}
-
-function lightEvalLoop(slots: number): string {
-  const blocks: string[] = [];
-  for (let i = 0; i < slots; i++) {
-    blocks.push(`
-      if (uSrCount > ${i}.5) {
-        vec3 o = uSrOrigin${i};
-        vec3 dBeam = uSrDir${i};
-        float mode = uSrMode${i};
-        float p0 = uSrP0${i};
-        float p1 = uSrP1${i};
-        float p2 = uSrP2${i};
-        float p3 = uSrP3${i};
-        float p4 = uSrP4${i};
-        float p5 = uSrP5${i};
-        vec3 spill = uSrSpill${i};
-        vec3 lightRgb = uSrColor${i};
-        float power = uSrPower${i};
-
-        // Optical irradiance (BeamModel: TEM00 / cone / tube / omni + spill)
-        // × Cook–Torrance GGX (Fresnel V·H, D, G). L = Point/Spot/Directional by mode.
-        float Li = rfEvalRadianceField(worldPos, o, dBeam, mode, p0, p1, p2, p3, p4, p5, spill);
-        vec3 L = srLightDir(worldPos, o, dBeam, mode);
-        float nDotL = max(dot(N, L), 0.0);
-        if (Li > 1e-12 && nDotL > 1e-5) {
-          float E = power * Li * nDotL;
-          vec3 H = normalize(L + V);
-          float nDotH = max(dot(N, H), 0.0);
-          float nDotV = max(dot(N, V), 0.0);
-          float vDotH = max(dot(V, H), 0.0);
-          vec2 lobes = mfEvaluate(nDotL, nDotV, nDotH, vDotH, albedo, metal, rough, absorb);
-          // Diffuse (view-stable) + specular (view-dependent optical highlight)
-          acc += lightRgb * E * lobes.x;
-          acc += lightRgb * E * lobes.y;
-        }
-      }`);
-  }
-  return blocks.join('\n');
 }
 
 function uboEntries(slots: number): Array<{ name: string; size: number; type: string }> {
@@ -171,7 +120,7 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
   } {
     return {
       ubo: uboEntries(MAX_GPU_LIGHTS),
-      fragment: lightUniformDecls(MAX_GPU_LIGHTS),
+      fragment: SURFACE_RADIANCE_UNIFORMS,
     };
   }
 
@@ -223,38 +172,11 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
   override getCustomCode(shaderType: string): { [pointName: string]: string } | null {
     if (shaderType !== 'fragment') return null;
     return {
-      CUSTOM_FRAGMENT_DEFINITIONS: `
-        #ifdef SURFACE_RADIANCE
-        ${radianceFieldGlslFunctions()}
-        ${microfacetBrdfGlslFunctions()}
-        ${incidentLightDirGlsl()}
-
-        vec3 srRadianceSpot(vec3 worldPos, vec3 N, vec3 V) {
-          vec3 acc = vec3(0.0);
-          float albedo = clamp(uSrAlbedo, 0.0, 1.0);
-          float metal = clamp(uSrMetalness, 0.0, 1.0);
-          float rough = clamp(uSrRoughness, 0.04, 1.0);
-          float absorb = clamp(uSrAbsorption, 0.0, 1.0);
-          ${lightEvalLoop(MAX_GPU_LIGHTS)}
-          // Soft display compress so GGX peaks stay visible without hard clip.
-          // Mild knee — keep power decades distinguishable after Weber–Fechner.
-          return acc / (vec3(1.0) + acc * 0.18);
-        }
-        #endif
-      `,
-      CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR: `
-        #ifdef SURFACE_RADIANCE
-        {
-          vec3 srN = normalize(normalW);
-          vec3 srV = normalize(vEyePosition.xyz - vPositionW);
-          color.rgb += srRadianceSpot(vPositionW, srN, srV);
-        }
-        #endif
-      `,
+      CUSTOM_FRAGMENT_DEFINITIONS: SURFACE_RADIANCE_DEFINITIONS,
+      CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR: SURFACE_RADIANCE_BEFORE_FRAGCOLOR,
     };
   }
 }
-
 const PLUGIN_BY_MATERIAL = new WeakMap<Material, SurfaceRadiancePlugin>();
 
 export function getOrCreateSurfaceRadiancePlugin(
