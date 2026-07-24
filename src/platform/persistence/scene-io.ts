@@ -13,7 +13,7 @@ export function documentToWorld(doc: SceneDocument | string): World {
   return deserializeWorld(json);
 }
 
-export function downloadTextFile(filename: string, content: string, mime = 'application/json'): void {
+function downloadTextFile(filename: string, content: string, mime = 'application/json'): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

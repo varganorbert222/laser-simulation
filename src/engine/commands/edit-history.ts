@@ -168,7 +168,7 @@ function snapshotsEqual(a: unknown, b: unknown): boolean {
 }
 
 /** Hotkey helpers — match rogue-leader dev editor behaviour. */
-export function shouldHandleEditorUndoKey(event: KeyboardEvent): boolean {
+function shouldHandleEditorUndoKey(event: KeyboardEvent): boolean {
   const target = event.target;
   if (!target || typeof target !== 'object') return true;
   const el = target as HTMLElement;

@@ -1,0 +1,149 @@
+<div class="catalog">
+  <p class="hint">{{ l10n.t('hintAssetCatalog') }}</p>
+
+  <div class="tabs" role="tablist">
+    <button
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'skyboxes'"
+      [attr.aria-selected]="tab() === 'skyboxes'"
+      (click)="setTab('skyboxes')"
+    >
+      {{ l10n.t('assetTabSkyboxes') }}
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'models'"
+      [attr.aria-selected]="tab() === 'models'"
+      (click)="setTab('models')"
+    >
+      {{ l10n.t('assetTabModels') }}
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [class.active]="tab() === 'textures'"
+      [attr.aria-selected]="tab() === 'textures'"
+      (click)="setTab('textures')"
+    >
+      {{ l10n.t('assetTabTextures') }}
+    </button>
+  </div>
+
+  @if (tab() === 'skyboxes') {
+    <ul class="asset-list">
+      @for (row of skyboxRows(); track row.id) {
+        <li [class.active]="isActiveSkybox(row.id)">
+          <div class="meta">
+            <strong>{{ row.entry.label ?? row.id }}</strong>
+            <code>{{ row.id }}</code>
+            <span class="path">{{ row.summary }}</span>
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              class="tiny"
+              [disabled]="!editor.isEditMode()"
+              (click)="useAsSceneSkybox(row.id)"
+            >
+              {{ l10n.t('assetUseAsSkybox') }}
+            </button>
+          </div>
+        </li>
+      } @empty {
+        <li class="empty">{{ l10n.t('assetCatalogEmpty') }}</li>
+      }
+    </ul>
+    @if (editor.atmosphere().skyboxAssetId) {
+      <button
+        type="button"
+        class="tiny clear"
+        [disabled]="!editor.isEditMode()"
+        (click)="clearSceneSkybox()"
+      >
+        {{ l10n.t('assetClearSkybox') }}
+      </button>
+    }
+  }
+
+  @if (tab() === 'models') {
+    @if (!canAssignModel()) {
+      <p class="hint">{{ l10n.t('hintAssetAssignModel') }}</p>
+    }
+    <ul class="asset-list">
+      @for (row of modelRows(); track row.id) {
+        <li [class.active]="isActiveModel(row.id)">
+          <div class="meta">
+            <strong>{{ row.entry.label ?? row.id }}</strong>
+            <code>{{ row.id }}</code>
+            <span class="path">{{ row.summary }}</span>
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              class="tiny"
+              [disabled]="!canAssignModel()"
+              (click)="assignModelToSelection(row.id)"
+            >
+              {{ l10n.t('assetAssignModel') }}
+            </button>
+          </div>
+        </li>
+      } @empty {
+        <li class="empty">{{ l10n.t('assetCatalogEmpty') }}</li>
+      }
+    </ul>
+    @if (canAssignModel() && editor.selectedEnvironmentPiece()?.catalogId) {
+      <button
+        type="button"
+        class="tiny clear"
+        (click)="clearModelFromSelection()"
+      >
+        {{ l10n.t('assetClearModel') }}
+      </button>
+    }
+  }
+
+  @if (tab() === 'textures') {
+    <ul class="asset-list">
+      @for (row of textureRows(); track row.id) {
+        <li
+          [class.active]="isActiveNightSky(row.id) || isActiveMoon(row.id)"
+        >
+          <div class="meta">
+            <strong>{{ row.entry.label ?? row.id }}</strong>
+            <code>{{ row.id }}</code>
+            <span class="path">{{ row.summary }}</span>
+            @if (isActiveNightSky(row.id)) {
+              <span class="badge">{{ l10n.t('assetBadgeNightSky') }}</span>
+            }
+            @if (isActiveMoon(row.id)) {
+              <span class="badge">{{ l10n.t('assetBadgeMoon') }}</span>
+            }
+          </div>
+          <div class="actions">
+            <button
+              type="button"
+              class="tiny"
+              [disabled]="!editor.isEditMode()"
+              (click)="useAsNightSky(row.id)"
+            >
+              {{ l10n.t('assetUseAsNightSky') }}
+            </button>
+            <button
+              type="button"
+              class="tiny"
+              [disabled]="!editor.isEditMode()"
+              (click)="useAsMoon(row.id)"
+            >
+              {{ l10n.t('assetUseAsMoon') }}
+            </button>
+          </div>
+        </li>
+      } @empty {
+        <li class="empty">{{ l10n.t('assetCatalogEmpty') }}</li>
+      }
+    </ul>
+  }
+</div>

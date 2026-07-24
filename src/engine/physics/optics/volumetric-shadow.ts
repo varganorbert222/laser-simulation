@@ -128,24 +128,3 @@ export function lightMediaTransmittance(
   if (quality === 'low') return lightMediaTransmittanceLocal(p, lightOrigin, sigmaTLocal);
   return lightMediaTransmittanceMarch(p, lightOrigin, volumes, shadowStepsForQuality(quality));
 }
-
-export function sunMediaTransmittance(
-  sigmaTLocal: number,
-  quality: ShadowQuality,
-  p: Vec3 = [0, 0, 0],
-  sunDir: Vec3 = [0, 1, 0],
-  volumes: readonly ShadowMediaVolume[] = [],
-  pathLen = 12,
-): number {
-  if (quality === 'off') return 1;
-  if (quality === 'low') return Math.exp(-Math.max(0, sigmaTLocal) * pathLen);
-  const dir = normalize(sunDir);
-  const steps = clampRange(Math.round(shadowStepsForQuality(quality) * 0.5), 2, 4);
-  const ds = pathLen / steps;
-  let tau = 0;
-  for (let s = 0; s < steps; s++) {
-    const t = (s + 0.5) * ds;
-    tau += extinctionFastAt(add(p, scale(dir, t)), volumes) * ds;
-  }
-  return Math.exp(-tau);
-}

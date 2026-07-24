@@ -1243,6 +1243,6 @@ void main(void) {
   }
 
   vec3 vol = march(ro, rd, sceneZCam);
-  // HDR linear contribution — tonemap + gamma happen after compose (ACES in DRP).
+  // HDR linear contribution — tonemap + color-space encode happen in compose.
   gl_FragColor = vec4(vol, 1.0);
 }

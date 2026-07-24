@@ -1,5 +1,6 @@
 import {
   Color3,
+  ImportMeshAsync,
   Material,
   Mesh,
   MeshBuilder,
@@ -10,9 +11,11 @@ import {
 } from '@babylonjs/core';
 // Ensure default material shaders are registered (tree-shaken ESM builds).
 import '@babylonjs/core/Materials/standardMaterial.js';
+import '@babylonjs/loaders/glTF';
 import {
   SURFACE_MAX_SIMULTANEOUS_LIGHTS,
   clamp01,
+  studioAssets,
   surfaceBrdfWeights,
   type GizmoMode,
   type GizmoSpace,
@@ -41,6 +44,9 @@ export class SceneMeshSync {
   private onReflection:
     | ((mat: StandardMaterial, sm: SurfaceMaterial | null) => void)
     | null = null;
+  /** In-flight GLB loads keyed by entity id (cancelled when epoch rebuilds). */
+  private readonly pendingCatalogLoads = new Map<string, number>();
+  private catalogLoadSeq = 0;
 
   constructor(
     private readonly scene: Scene,
@@ -169,6 +175,7 @@ export class SceneMeshSync {
     this.lastGizmoEntity = null;
     this.lastGizmoMode = 'none';
     this.lastGizmoSpace = this.world.resources.EditorTooling.gizmoSpace === 'local' ? 'world' : 'local';
+    this.pendingCatalogLoads.clear();
     for (const mesh of this.meshes.values()) mesh.dispose();
     this.meshes.clear();
 
@@ -178,6 +185,11 @@ export class SceneMeshSync {
       if (this.world.has(id, 'EnvironmentPiece')) {
         const piece = this.world.get(id, 'EnvironmentPiece');
         const sm = this.world.get(id, 'SurfaceMaterial') ?? null;
+        const catalogId = piece?.catalogId?.trim() || null;
+        if (catalogId) {
+          this.spawnCatalogMesh(id, catalogId, sm, piece?.kind ?? 'prop');
+          continue;
+        }
         if (piece?.kind === 'ground') {
           const ground = MeshBuilder.CreateGround(
             `ground_${id}`,
@@ -256,6 +268,77 @@ export class SceneMeshSync {
     }
 
     this.highlightSelection();
+  }
+
+  /**
+   * Place a procedural stand-in, then swap in a catalog GLB when load succeeds.
+   */
+  private spawnCatalogMesh(
+    id: string,
+    catalogId: string,
+    sm: SurfaceMaterial | null,
+    kind: 'ground' | 'prop' | 'sky',
+  ): void {
+    const placeholder =
+      kind === 'ground'
+        ? MeshBuilder.CreateGround(`ground_${id}`, { width: 30, height: 30 }, this.scene)
+        : MeshBuilder.CreateBox(`prop_${id}`, { size: 0.5 }, this.scene);
+    placeholder.material = this.createSurfaceOrFallback(
+      `catalogPlaceholderMat_${id}`,
+      sm,
+      kind === 'ground' ? new Color3(0.14, 0.15, 0.17) : new Color3(0.35, 0.35, 0.4),
+    );
+    placeholder.metadata = { entityId: id, catalogId };
+    this.applyTransform(placeholder, this.world.get(id, 'Transform')!);
+    this.meshes.set(id, placeholder);
+
+    const url = studioAssets.getModelUrl(catalogId);
+    if (!url) return;
+
+    const entry = studioAssets.getModel(catalogId);
+    const seq = ++this.catalogLoadSeq;
+    this.pendingCatalogLoads.set(id, seq);
+
+    void ImportMeshAsync(url, this.scene)
+      .then((result) => {
+        if (this.pendingCatalogLoads.get(id) !== seq) {
+          for (const m of result.meshes) m.dispose();
+          return;
+        }
+        const roots = result.meshes.filter((m) => !m.parent);
+        const root = roots[0] ?? result.meshes[0];
+        if (!root) {
+          this.pendingCatalogLoads.delete(id);
+          return;
+        }
+        for (const m of result.meshes) {
+          m.metadata = { entityId: id, catalogId };
+          if (m !== root && !m.parent) m.parent = root;
+        }
+        root.name = `catalog_${catalogId}_${id}`;
+        const prev = this.meshes.get(id);
+        if (prev && prev !== root) prev.dispose();
+        this.applyTransform(root, this.world.get(id, 'Transform')!);
+        if (entry?.scale != null) {
+          const s = entry.scale;
+          if (typeof s === 'number') {
+            root.scaling.scaleInPlace(s);
+          } else {
+            root.scaling.x *= s[0];
+            root.scaling.y *= s[1];
+            root.scaling.z *= s[2];
+          }
+        }
+        this.meshes.set(id, root);
+        this.pendingCatalogLoads.delete(id);
+        this.highlightSelection();
+        this.syncGizmoAttachment();
+      })
+      .catch(() => {
+        if (this.pendingCatalogLoads.get(id) === seq) {
+          this.pendingCatalogLoads.delete(id);
+        }
+      });
   }
 
   private createSurfaceOrFallback(

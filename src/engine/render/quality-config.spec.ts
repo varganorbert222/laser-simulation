@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   configureQualityRenderScale,
   createQuality,
-  getQualityRenderScaleConfig,
+  getQualityRenderScaleConfig,
   renderScaleForPreset,
 } from './quality';
 
@@ -17,6 +17,8 @@ describe('quality render scale', () => {
     expect(createQuality('medium').antiAliasing).toBe(true);
     expect(createQuality('medium').theatricalGlow).toBe(false);
     expect(createQuality('medium').tonemapMode).toBe('aces');
+    expect(createQuality('medium').colorProfile).toBe('hdr');
+    expect(createQuality('medium').outputGamma).toBe(2.2);
   });
 
   it('clamps and orders min/max from config', () => {
@@ -24,6 +26,6 @@ describe('quality render scale', () => {
     const cfg = getQualityRenderScaleConfig();
     expect(cfg.renderScaleMin).toBeCloseTo(0.2);
     expect(cfg.renderScaleMax).toBeCloseTo(0.6);
-    configureQualityRenderScale({ renderScaleMin: 0.25, renderScaleMax: 0.5 });
+    configureQualityRenderScale({ renderScaleMin: 0.25, renderScaleMax: 0.5 });
   });
 });

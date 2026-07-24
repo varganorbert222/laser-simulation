@@ -130,7 +130,6 @@ input[type='range'] {
   cursor: pointer;
 }
 
-.mode,
 .hint {
   margin: 0;
   font-size: 0.78rem;
@@ -146,12 +145,4 @@ input[type='range'] {
   background: rgba(42, 28, 12, 0.85);
   border: 1px solid rgba(214, 168, 90, 0.4);
   border-radius: 4px;
-}
-
-.derived {
-  margin: 0;
-  font-size: 0.75rem;
-  color: var(--ls-text);
-  font-variant-numeric: tabular-nums;
-  opacity: 0.85;
 }

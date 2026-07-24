@@ -12,6 +12,7 @@ import {
 } from '@babylonjs/core';
 import type { AtmosphereModel } from '@engine';
 import type { AtmosphereLutBaker } from './atmosphere-lut-baker';
+import type { AtmosphereNightTextures } from './atmosphere-night-textures';
 import {
   ATMOSPHERE_SKYBOX_FRAG,
   ATMOSPHERE_SKYBOX_SHADER,
@@ -40,15 +41,27 @@ const SKYBOX_UNIFORMS = [
   'uSunDirection',
   'uEyeHeight',
   'uSunAngularRadius',
+  'uMoonAngularRadius',
   'uExposure',
   'uLutBlend',
+  'uSkyboxHdrColors',
+  'uNightExposure',
+  'uMoonExposure',
+  'uNightBlendStrength',
+  'uSkyboxGroundColor',
+  'uSkyboxEquatorColor',
 ] as const;
 
-const SKYBOX_SAMPLERS = ['uSkyViewLUT', 'uTransmittanceLUT'] as const;
+const SKYBOX_SAMPLERS = [
+  'uSkyViewLUT',
+  'uTransmittanceLUT',
+  'uNightSkyMap',
+  'uMoonMap',
+] as const;
 
 /**
  * Fullscreen far-plane sky: reconstructs view rays (same idea as volumetric) and
- * composites analytical sky + Sky View / Transmittance LUTs.
+ * composites analytical sky + Sky View / Transmittance LUTs + night starfield/moon.
  */
 export class AtmosphereSkybox {
   readonly mesh: AbstractMesh;
@@ -59,6 +72,7 @@ export class AtmosphereSkybox {
   constructor(
     private readonly scene: Scene,
     private readonly baker: AtmosphereLutBaker,
+    private readonly night: AtmosphereNightTextures,
   ) {
     // Clip-space style plane: vertex shader ignores world and writes NDC directly.
     this.mesh = MeshBuilder.CreatePlane(
@@ -116,6 +130,14 @@ export class AtmosphereSkybox {
       sunAngularDiameterDeg: number;
       lutBlend: number;
       lutReady: boolean;
+      /** Derived from Quality.colorProfile — not an independent sky HDR switch. */
+      skyboxHdrColors: boolean;
+      nightExposure: number;
+      moonAngularDiameterDeg: number;
+      moonExposure: number;
+      nightBlendStrength: number;
+      skyboxGroundColor: readonly [number, number, number];
+      skyboxEquatorColor: readonly [number, number, number];
     },
   ): void {
     if (!this.visible) return;
@@ -132,6 +154,8 @@ export class AtmosphereSkybox {
     m.setMatrix('uInvViewProj', this.invViewProj);
     m.setTexture('uSkyViewLUT', this.baker.skyViewLut);
     m.setTexture('uTransmittanceLUT', this.baker.transmittanceLut);
+    m.setTexture('uNightSkyMap', this.night.nightSky);
+    m.setTexture('uMoonMap', this.night.moon);
     m.setVector3('uPlanetCenter', Vector3.Zero());
     m.setFloat('uPlanetRadius', model.planetRadius);
     m.setFloat('uAtmosphereRadius', model.atmosphereRadius);
@@ -151,13 +175,33 @@ export class AtmosphereSkybox {
       new Vector3(sunLightDir[0], sunLightDir[1], sunLightDir[2]),
     );
     m.setFloat('uEyeHeight', 1);
-    m.setFloat(
-      'uSunAngularRadius',
-      (opts.sunAngularDiameterDeg * 0.5 * Math.PI) / 180,
-    );
+    const sunRad = (opts.sunAngularDiameterDeg * 0.5 * Math.PI) / 180;
+    const moonRad = (opts.moonAngularDiameterDeg * 0.5 * Math.PI) / 180;
+    m.setFloat('uSunAngularRadius', sunRad);
+    m.setFloat('uMoonAngularRadius', moonRad);
     // Exposure is artistic; ambient still lifts the floor slightly for night→day eye feel.
     m.setFloat('uExposure', opts.exposure * (0.55 + opts.ambientLevel * 0.9));
     m.setFloat('uLutBlend', opts.lutReady ? opts.lutBlend : 0.0);
+    m.setFloat('uSkyboxHdrColors', opts.skyboxHdrColors ? 1 : 0);
+    m.setFloat('uNightExposure', opts.nightExposure);
+    m.setFloat('uMoonExposure', opts.moonExposure);
+    m.setFloat('uNightBlendStrength', opts.nightBlendStrength);
+    m.setVector3(
+      'uSkyboxGroundColor',
+      new Vector3(
+        opts.skyboxGroundColor[0],
+        opts.skyboxGroundColor[1],
+        opts.skyboxGroundColor[2],
+      ),
+    );
+    m.setVector3(
+      'uSkyboxEquatorColor',
+      new Vector3(
+        opts.skyboxEquatorColor[0],
+        opts.skyboxEquatorColor[1],
+        opts.skyboxEquatorColor[2],
+      ),
+    );
   }
 
   dispose(): void {

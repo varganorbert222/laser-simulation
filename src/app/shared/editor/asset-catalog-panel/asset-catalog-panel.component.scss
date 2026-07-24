@@ -1,0 +1,138 @@
+:host {
+  display: block;
+}
+
+.catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--ls-muted, #9aa8b5);
+  line-height: 1.35;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tabs button {
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 4px;
+  border: 1px solid var(--ls-border, #3a4550);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ls-text, #e8eef4);
+  cursor: pointer;
+}
+
+.tabs button.active {
+  border-color: rgba(196, 163, 90, 0.55);
+  background: rgba(196, 163, 90, 0.14);
+  color: #f0e2b0;
+}
+
+.asset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(50vh, 22rem);
+  overflow: auto;
+  border: 1px solid var(--ls-border, #3a4550);
+  border-radius: 4px;
+}
+
+.asset-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ls-border, #3a4550) 70%, transparent);
+}
+
+.asset-list li:last-child {
+  border-bottom: none;
+}
+
+.asset-list li.active {
+  background: rgba(196, 163, 90, 0.08);
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.meta strong {
+  font-size: 0.85rem;
+  color: var(--ls-text, #e8eef4);
+}
+
+.meta code {
+  font-size: 0.7rem;
+  color: var(--ls-muted, #9aa8b5);
+  font-family: var(--ls-font-mono, ui-monospace, monospace);
+}
+
+.path {
+  font-size: 0.72rem;
+  color: var(--ls-muted, #9aa8b5);
+  word-break: break-all;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 0.15rem;
+  font-size: 0.68rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 3px;
+  border: 1px solid rgba(196, 163, 90, 0.4);
+  color: #f0e2b0;
+  width: fit-content;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.tiny {
+  font: inherit;
+  font-size: 0.72rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid var(--ls-border, #3a4550);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ls-text, #e8eef4);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tiny:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.tiny.clear {
+  align-self: flex-start;
+}
+
+.empty {
+  padding: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--ls-muted, #9aa8b5);
+}

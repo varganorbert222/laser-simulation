@@ -7,8 +7,8 @@ import {
   photopicVisionWeight,
   relativeBeamBrightness,
   relativeDotBrightness,
-  scotopicLuminousEfficacy,
 } from './laser-brightness';
+import { scotopicLuminousEfficacy } from './scotopic-efficacy';
 
 describe('laser brightness (photopic + Rayleigh)', () => {
   it('peaks photopic efficacy near 555 nm', () => {

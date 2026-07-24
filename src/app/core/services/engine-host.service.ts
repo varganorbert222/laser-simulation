@@ -88,10 +88,6 @@ export class EngineHostService {
     return this.presenter;
   }
 
-  getRuntime(): StudioRuntime | null {
-    return this.runtime;
-  }
-
   disposeHost(): void {
     this.runtime?.dispose();
     this.runtime = null;

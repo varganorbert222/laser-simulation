@@ -13,7 +13,6 @@ import {
   type SmokeEmitter,
   type PresentationMode,
   type QualityLadder,
-  type QualityPreset,
   type QualityPresetSelection,
   type ShadowQuality,
   type Quality,
@@ -25,6 +24,8 @@ import {
   type AtmosphereSettings,
   type AtmosphereTimePresetId,
   type AtmosphereSeasonPresetId,
+  type ColorProfile,
+  type TonemapMode,
 } from '@engine';
 import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
@@ -35,6 +36,10 @@ import { SelectionService, type SelectOptions } from '../editor/selection.servic
 import { SessionService } from '../editor/session.service';
 import { SurfaceMaterialEditorService } from '../editor/surface-material-editor.service';
 import { TransformEditorService } from '../editor/transform-editor.service';
+import {
+  patchSelectedComponents,
+  selectionComponentPrimary,
+} from '../editor/patch-component';
 import type { HierarchySelectEvent } from '../../shared/editor/hierarchy-panel/hierarchy-panel.component';
 
 /**
@@ -87,6 +92,15 @@ export class EditorFacade {
   readonly sceneList = this.session.sceneList;
   readonly activeSceneId = this.session.activeSceneId;
   readonly activeSceneLabel = this.session.activeSceneLabel;
+
+  readonly selectedEnvironmentPiece = computed(() => {
+    this.engine.epoch();
+    return selectionComponentPrimary(
+      this.engine.world(),
+      this.selectedIds(),
+      'EnvironmentPiece',
+    );
+  });
 
   readonly selectedName = computed(() => {
     this.engine.epoch();
@@ -321,8 +335,16 @@ export class EditorFacade {
     this.session.setTheatricalGlow(enabled);
   }
 
-  setTonemapMode(mode: 'aces' | 'reinhard'): void {
+  setTonemapMode(mode: TonemapMode): void {
     this.session.setTonemapMode(mode);
+  }
+
+  setColorProfile(profile: ColorProfile): void {
+    this.session.setColorProfile(profile);
+  }
+
+  setOutputGamma(gamma: number): void {
+    this.session.setOutputGamma(gamma);
   }
 
   setAmbientLevel(ambientLevel: number): void {
@@ -359,6 +381,27 @@ export class EditorFacade {
 
   setAtmosphereNow(): void {
     this.session.setAtmosphereNow();
+  }
+
+  hasEnvironmentSelection(): boolean {
+    return this.selectedIds().some((id) => this.engine.world().has(id, 'EnvironmentPiece'));
+  }
+
+  /** Assign / clear catalog model id on selected EnvironmentPiece entities. */
+  assignCatalogModel(catalogId: string | null): void {
+    const ids = this.selectedIds().filter((id) =>
+      this.engine.world().has(id, 'EnvironmentPiece'),
+    );
+    patchSelectedComponents({
+      engine: this.engine,
+      ids,
+      component: 'EnvironmentPiece',
+      label: 'Model asset',
+      merge: (before) => ({
+        ...before,
+        catalogId: catalogId?.trim() || undefined,
+      }),
+    });
   }
 
   setResponseCurve(curve: DisplayResponseCurve): void {

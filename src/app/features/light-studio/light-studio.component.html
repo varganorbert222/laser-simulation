@@ -89,6 +89,15 @@
       <button
         type="button"
         class="mode-btn"
+        [class.active]="assetsModalOpen()"
+        (click)="assetsModalOpen.set(true)"
+        [attr.title]="l10n.t('tipAssetCatalog')"
+      >
+        {{ l10n.t('assets') }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
         [class.active]="scenesModalOpen()"
         (click)="openScenes()"
         [attr.title]="l10n.t('sceneLibrary')"
@@ -117,6 +126,7 @@
     [open]="renderModalOpen()"
     [title]="l10n.t('renderSettings')"
     titleId="render-settings-modal-title"
+    [wide]="true"
     (dismiss)="renderModalOpen.set(false)"
   >
     <app-render-settings-panel />
@@ -138,6 +148,21 @@
     <app-noise-editor />
     <div studioModalActions>
       <button type="button" class="primary" (click)="noiseModalOpen.set(false)">
+        {{ l10n.t('modalClose') }}
+      </button>
+    </div>
+  </app-studio-modal>
+
+  <app-studio-modal
+    [open]="assetsModalOpen()"
+    [title]="l10n.t('assetCatalog')"
+    titleId="asset-catalog-modal-title"
+    [wide]="true"
+    (dismiss)="assetsModalOpen.set(false)"
+  >
+    <app-asset-catalog-panel />
+    <div studioModalActions>
+      <button type="button" class="primary" (click)="assetsModalOpen.set(false)">
         {{ l10n.t('modalClose') }}
       </button>
     </div>

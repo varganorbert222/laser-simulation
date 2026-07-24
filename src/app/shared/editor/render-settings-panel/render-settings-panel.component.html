@@ -14,9 +14,16 @@
             {{ p }}
           </button>
         }
-        @if (editor.quality() === 'custom') {
-          <span class="preset-custom">{{ presetLabel('custom') }}</span>
-        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.quality() === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.quality() === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
       </div>
     </div>
   </details>
@@ -35,9 +42,16 @@
             {{ p }}
           </button>
         }
-        @if (editor.qualitySettings().volumetricsPreset === 'custom') {
-          <span class="preset-custom">{{ presetLabel('custom') }}</span>
-        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.qualitySettings().volumetricsPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.qualitySettings().volumetricsPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
       </div>
       <label>
         {{ l10n.t('renderStepSize') }}
@@ -112,9 +126,16 @@
             {{ p }}
           </button>
         }
-        @if (editor.qualitySettings().shadowPreset === 'custom') {
-          <span class="preset-custom">{{ presetLabel('custom') }}</span>
-        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.qualitySettings().shadowPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.qualitySettings().shadowPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
       </div>
       <label>
         {{ l10n.t('shadowQuality') }}
@@ -144,6 +165,50 @@
         {{ l10n.t('atmosphereEnabled') }}
       </label>
 
+      <label [attr.title]="l10n.t('tipSkyboxAsset')">
+        {{ l10n.t('skyboxAsset') }}
+        <select
+          [value]="editor.atmosphere().skyboxAssetId ?? ''"
+          [disabled]="!editor.isEditMode() || editor.atmosphere().enabled"
+          (change)="onSkyboxAsset($any($event.target).value)"
+        >
+          <option value="">{{ l10n.t('skyboxAssetNone') }}</option>
+          @for (id of skyboxIds; track id) {
+            <option [value]="id">{{ skyboxLabel(id) }}</option>
+          }
+        </select>
+      </label>
+
+      <label [attr.title]="l10n.t('tipNightSkyTexture')">
+        {{ l10n.t('nightSkyTexture') }}
+        <select
+          [value]="editor.atmosphere().nightSkyTextureId"
+          [disabled]="!editor.isEditMode()"
+          (change)="onNightSkyTexture($any($event.target).value)"
+        >
+          @for (id of nightSkyTextureIds; track id) {
+            <option [value]="id" [selected]="id === editor.atmosphere().nightSkyTextureId">
+              {{ textureLabel(id) }}
+            </option>
+          }
+        </select>
+      </label>
+
+      <label [attr.title]="l10n.t('tipMoonTexture')">
+        {{ l10n.t('moonTexture') }}
+        <select
+          [value]="editor.atmosphere().moonTextureId"
+          [disabled]="!editor.isEditMode()"
+          (change)="onMoonTexture($any($event.target).value)"
+        >
+          @for (id of moonTextureIds; track id) {
+            <option [value]="id" [selected]="id === editor.atmosphere().moonTextureId">
+              {{ textureLabel(id) }}
+            </option>
+          }
+        </select>
+      </label>
+
       <p class="subhead">{{ l10n.t('renderSkyboxQuality') }}</p>
       <div class="preset-row">
         @for (p of ladder; track p) {
@@ -157,9 +222,16 @@
             {{ p }}
           </button>
         }
-        @if (editor.atmosphere().qualityPreset === 'custom') {
-          <span class="preset-custom">{{ presetLabel('custom') }}</span>
-        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.atmosphere().qualityPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.atmosphere().qualityPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
       </div>
 
       <label>
@@ -186,6 +258,72 @@
           (change)="onSkyNumber('exposure', $any($event.target).value)"
         />
       </label>
+      <app-color-field
+        [label]="l10n.t('skyboxGroundColor')"
+        [tooltip]="l10n.t('hintSkyboxGroundColor')"
+        [rgb]="editor.atmosphere().skyboxGroundColor"
+        [readonly]="!editor.atmosphere().enabled"
+        (rgbChange)="onSkyGroundColor($event)"
+      />
+      <app-color-field
+        [label]="l10n.t('skyboxEquatorColor')"
+        [tooltip]="l10n.t('hintSkyboxEquatorColor')"
+        [rgb]="editor.atmosphere().skyboxEquatorColor"
+        [readonly]="!editor.atmosphere().enabled"
+        (rgbChange)="onSkyEquatorColor($event)"
+      />
+
+      <p class="subhead">{{ l10n.t('renderNightSky') }}</p>
+      <p class="hint">{{ l10n.t('hintRenderNightSky') }}</p>
+      <label>
+        {{ l10n.t('nightExposure') }}
+        <input
+          type="number"
+          min="0.05"
+          max="8"
+          step="0.05"
+          [value]="editor.atmosphere().nightExposure"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('nightExposure', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('moonSize') }}
+        <input
+          type="number"
+          min="0.05"
+          max="24"
+          step="0.05"
+          [value]="editor.atmosphere().moonAngularDiameterDeg"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('moonAngularDiameterDeg', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('moonExposure') }}
+        <input
+          type="number"
+          min="0.05"
+          max="8"
+          step="0.05"
+          [value]="editor.atmosphere().moonExposure"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('moonExposure', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('nightBlendStrength') }}
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="editor.atmosphere().nightBlendStrength"
+          [disabled]="!editor.atmosphere().enabled"
+          (change)="onSkyNumber('nightBlendStrength', $any($event.target).value)"
+        />
+      </label>
+
       <label>
         {{ l10n.t('skyLutBlend') }}
         <input
@@ -251,9 +389,16 @@
             {{ p }}
           </button>
         }
-        @if (editor.qualitySettings().presentationPreset === 'custom') {
-          <span class="preset-custom">{{ presetLabel('custom') }}</span>
-        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.qualitySettings().presentationPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.qualitySettings().presentationPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
       </div>
       <label class="check">
         <input
@@ -272,6 +417,47 @@
         {{ l10n.t('theatricalGlow') }}
       </label>
       <label>
+        {{ l10n.t('colorProfile') }}
+        <select
+          [value]="editor.qualitySettings().colorProfile"
+          (change)="onColorProfile($any($event.target).value)"
+        >
+          <option value="hdr">{{ l10n.t('colorProfileHdr') }}</option>
+          <option value="sdr">{{ l10n.t('colorProfileSdr') }}</option>
+        </select>
+      </label>
+      <p class="hint">{{ l10n.t('hintColorProfile') }}</p>
+      <label>
+        {{ l10n.t('outputGamma') }}
+        <input
+          type="number"
+          min="1"
+          max="3"
+          step="0.1"
+          [value]="editor.qualitySettings().outputGamma"
+          (change)="onOutputGamma($any($event.target).value)"
+        />
+      </label>
+      <div class="preset-row">
+        <button
+          type="button"
+          class="preset-btn"
+          [class.active]="editor.qualitySettings().outputGamma === 2.2"
+          (click)="onOutputGamma('2.2')"
+        >
+          2.2
+        </button>
+        <button
+          type="button"
+          class="preset-btn"
+          [class.active]="editor.qualitySettings().outputGamma === 2.4"
+          (click)="onOutputGamma('2.4')"
+        >
+          2.4
+        </button>
+      </div>
+      <p class="hint">{{ l10n.t('hintOutputGamma') }}</p>
+      <label>
         {{ l10n.t('tonemapMode') }}
         <select
           [value]="editor.tonemapMode()"
@@ -279,8 +465,10 @@
         >
           <option value="aces">ACES</option>
           <option value="reinhard">Reinhard</option>
+          <option value="hable">Hable</option>
         </select>
       </label>
+      <p class="hint">{{ l10n.t('hintTonemapMode') }}</p>
     </div>
   </details>
 </div>

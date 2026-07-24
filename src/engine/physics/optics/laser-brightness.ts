@@ -34,19 +34,19 @@ import { rayleighScatterWeight } from './wavelength';
  * Max eye-adaptation gain in a fully dark environment (ambientLevel = 0).
  * Models pupil + dark adaptation vs bright-lab baseline (gain = 1).
  */
-export const DARK_ENVIRONMENT_ADAPTATION_GAIN = 12;
+const DARK_ENVIRONMENT_ADAPTATION_GAIN = 12;
 
 /**
  * Ambient level at/above which V_eff is fully photopic.
  * Below this, blends toward scotopic V′ (Purkinje shift) as ambient → 0.
  */
-export const PHOTOPIC_AMBIENT_FLOOR = 0.35;
+const PHOTOPIC_AMBIENT_FLOOR = 0.35;
 
 /**
  * Divides CIE luminous product (mW·V·exposure) into a volumetric GPU scale.
  * ~35 ⇒ 150 mW green at night (product ~1.4e3) → scale ~40, visible with outdoor haze.
  */
-export const PHYSICAL_LUMINOUS_REF = 35;
+const PHYSICAL_LUMINOUS_REF = 35;
 
 export interface VisionBrightnessOpts {
   /** Scene ambient level [0,1] from EnvironmentLighting — drives eye exposure. */
@@ -218,6 +218,3 @@ export function relativeBeamBrightness(
   }
   return laserBeamLuminousProduct(a.powerW, a.wavelengthNm, 550, ambientLevel) / lb;
 }
-
-export { scientificDisplayLuminousToneMap } from './display-response-curve';
-export { scotopicLuminousEfficacy } from './scotopic-efficacy';

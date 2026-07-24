@@ -13,6 +13,11 @@ export interface CameraPose {
  */
 export interface FramePresenter {
   setWorld(world: World): void;
+  /**
+   * Push the live view camera into ECS before gather so cam-relative GPU packs
+   * match the matrices used in the volumetric / scene pass this frame.
+   */
+  syncViewCamera?(world: World): void;
   sync(world: World): void;
   render(): void;
   resize(): void;

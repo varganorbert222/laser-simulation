@@ -3,7 +3,6 @@ import {
   acesFilmToneMap,
   acesLuminanceToneMap,
   displayRgb,
-  huePreservingToneMap,
   normalizeChromaticity,
 } from './color';
 import { laserDotDisplayBrightness } from './laser-brightness';
@@ -15,15 +14,6 @@ describe('hue-preserving display', () => {
     expect(g).toBeCloseTo(1);
     expect(r).toBeCloseTo(0.25);
     expect(b).toBeCloseTo(0.125);
-  });
-
-  it('Reinhard on max preserves channel ratios', () => {
-    const src: [number, number, number] = [2, 10, 0.5];
-    const out = huePreservingToneMap(src);
-    const ratioIn = src[0] / src[1];
-    const ratioOut = out[0] / out[1];
-    expect(ratioOut).toBeCloseTo(ratioIn, 6);
-    expect(Math.max(out[0], out[1], out[2])).toBeLessThanOrEqual(1);
   });
 
   it('luminance ACES keeps 525 nm green-dominant at high intensity', () => {

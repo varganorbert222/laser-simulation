@@ -13,6 +13,7 @@ import {
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe.js';
 import type { AtmosphereModel } from '@engine';
 import type { AtmosphereLutBaker } from './atmosphere-lut-baker';
+import type { AtmosphereNightTextures } from './atmosphere-night-textures';
 import {
   ATMOSPHERE_ENV_CAPTURE_SHADER,
   ATMOSPHERE_ENV_CAPTURE_VERT,
@@ -44,8 +45,22 @@ const CAPTURE_UNIFORMS = [
   'uSunDirection',
   'uEyeHeight',
   'uSunAngularRadius',
+  'uMoonAngularRadius',
   'uExposure',
   'uLutBlend',
+  'uSkyboxHdrColors',
+  'uNightExposure',
+  'uMoonExposure',
+  'uNightBlendStrength',
+  'uSkyboxGroundColor',
+  'uSkyboxEquatorColor',
+] as const;
+
+const CAPTURE_SAMPLERS = [
+  'uSkyViewLUT',
+  'uTransmittanceLUT',
+  'uNightSkyMap',
+  'uMoonMap',
 ] as const;
 
 /** Face resolution for sky → IBL cubemap capture. */
@@ -65,6 +80,7 @@ export class AtmosphereEnvCubemap {
   constructor(
     private readonly scene: Scene,
     private readonly baker: AtmosphereLutBaker,
+    private readonly night: AtmosphereNightTextures,
   ) {
     this.probe = new ReflectionProbe(
       'atmosphereEnvProbe',
@@ -104,7 +120,7 @@ export class AtmosphereEnvCubemap {
       {
         attributes: ['position'],
         uniforms: [...CAPTURE_UNIFORMS],
-        samplers: ['uSkyViewLUT', 'uTransmittanceLUT'],
+        samplers: [...CAPTURE_SAMPLERS],
       },
     );
     this.material.backFaceCulling = false;
@@ -140,6 +156,14 @@ export class AtmosphereEnvCubemap {
       lutBlend: number;
       lutReady: boolean;
       reflectionLevel: number;
+      /** Derived from Quality.colorProfile — not an independent sky HDR switch. */
+      skyboxHdrColors: boolean;
+      nightExposure: number;
+      moonAngularDiameterDeg: number;
+      moonExposure: number;
+      nightBlendStrength: number;
+      skyboxGroundColor: readonly [number, number, number];
+      skyboxEquatorColor: readonly [number, number, number];
     },
   ): void {
     this.active = true;
@@ -147,6 +171,8 @@ export class AtmosphereEnvCubemap {
     const m = this.material;
     m.setTexture('uSkyViewLUT', this.baker.skyViewLut);
     m.setTexture('uTransmittanceLUT', this.baker.transmittanceLut);
+    m.setTexture('uNightSkyMap', this.night.nightSky);
+    m.setTexture('uMoonMap', this.night.moon);
     m.setVector3('uPlanetCenter', Vector3.Zero());
     m.setFloat('uPlanetRadius', model.planetRadius);
     m.setFloat('uAtmosphereRadius', model.atmosphereRadius);
@@ -166,12 +192,32 @@ export class AtmosphereEnvCubemap {
       new Vector3(sunLightDir[0], sunLightDir[1], sunLightDir[2]),
     );
     m.setFloat('uEyeHeight', 1);
-    m.setFloat(
-      'uSunAngularRadius',
-      (opts.sunAngularDiameterDeg * 0.5 * Math.PI) / 180,
-    );
+    const sunRad = (opts.sunAngularDiameterDeg * 0.5 * Math.PI) / 180;
+    const moonRad = (opts.moonAngularDiameterDeg * 0.5 * Math.PI) / 180;
+    m.setFloat('uSunAngularRadius', sunRad);
+    m.setFloat('uMoonAngularRadius', moonRad);
     m.setFloat('uExposure', opts.exposure * (0.55 + opts.ambientLevel * 0.9));
     m.setFloat('uLutBlend', opts.lutReady ? opts.lutBlend : 0.0);
+    m.setFloat('uSkyboxHdrColors', opts.skyboxHdrColors ? 1 : 0);
+    m.setFloat('uNightExposure', opts.nightExposure);
+    m.setFloat('uMoonExposure', opts.moonExposure);
+    m.setFloat('uNightBlendStrength', opts.nightBlendStrength);
+    m.setVector3(
+      'uSkyboxGroundColor',
+      new Vector3(
+        opts.skyboxGroundColor[0],
+        opts.skyboxGroundColor[1],
+        opts.skyboxGroundColor[2],
+      ),
+    );
+    m.setVector3(
+      'uSkyboxEquatorColor',
+      new Vector3(
+        opts.skyboxEquatorColor[0],
+        opts.skyboxEquatorColor[1],
+        opts.skyboxEquatorColor[2],
+      ),
+    );
 
     const key = [
       sunLightDir[0].toFixed(4),
@@ -182,6 +228,17 @@ export class AtmosphereEnvCubemap {
       opts.sunAngularDiameterDeg.toFixed(3),
       opts.lutBlend.toFixed(2),
       opts.lutReady ? '1' : '0',
+      opts.skyboxHdrColors ? '1' : '0',
+      opts.nightExposure.toFixed(3),
+      opts.moonAngularDiameterDeg.toFixed(3),
+      opts.moonExposure.toFixed(3),
+      opts.nightBlendStrength.toFixed(2),
+      opts.skyboxGroundColor[0].toFixed(3),
+      opts.skyboxGroundColor[1].toFixed(3),
+      opts.skyboxGroundColor[2].toFixed(3),
+      opts.skyboxEquatorColor[0].toFixed(3),
+      opts.skyboxEquatorColor[1].toFixed(3),
+      opts.skyboxEquatorColor[2].toFixed(3),
       model.planetRadius.toFixed(0),
       model.atmosphereRadius.toFixed(0),
     ].join('|');

@@ -46,11 +46,6 @@ function wrap360(deg: number): number {
   return x < 0 ? x + 360 : x;
 }
 
-function wrapSigned180(deg: number): number {
-  let x = ((deg + 180) % 360 + 360) % 360 - 180;
-  return x;
-}
-
 /**
  * Apparent solar position at a geographic site.
  * Accuracy ~0.01° for visual use across 1950–2050.
@@ -199,13 +194,4 @@ export function localCivilFromUtcMs(
     minute: local.getUTCMinutes(),
     second: local.getUTCSeconds(),
   };
-}
-
-/** Wrap helper exported for tests. */
-export function wrapAzimuthDeg(deg: number): number {
-  return wrap360(deg);
-}
-
-export function wrapHourAngleDeg(deg: number): number {
-  return wrapSigned180(deg);
 }

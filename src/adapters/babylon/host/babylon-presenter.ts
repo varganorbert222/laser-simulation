@@ -43,7 +43,9 @@ import {
 } from '../camera/blender-camera-controls';
 import { AtmosphereEnvCubemap } from '../atmosphere/atmosphere-env-cubemap';
 import { AtmosphereLutBaker } from '../atmosphere/atmosphere-lut-baker';
+import { AtmosphereNightTextures } from '../atmosphere/atmosphere-night-textures';
 import { AtmosphereSkybox } from '../atmosphere/atmosphere-skybox';
+import { StaticSkybox } from '../atmosphere/static-skybox';
 import { SurfaceLightSync } from '../lights/surface-lights';
 import { SceneMeshSync } from '../mesh/scene-mesh-sync';
 import { bindViewportPicking } from '../picking/viewport-picking';
@@ -85,8 +87,10 @@ export class BabylonPresenter implements FramePresenter {
   private readonly pipeline: StudioPipeline;
   private readonly volumetrics: VolumetricBinder;
   private readonly atmosphereBaker: AtmosphereLutBaker;
+  private readonly atmosphereNight: AtmosphereNightTextures;
   private readonly atmosphereSkybox: AtmosphereSkybox;
   private readonly atmosphereEnv: AtmosphereEnvCubemap;
+  private readonly staticSkybox: StaticSkybox;
   private readonly depthRenderer: DepthRenderer;
   private readonly hemi: HemisphericLight;
   private readonly sun: DirectionalLight;
@@ -175,24 +179,47 @@ export class BabylonPresenter implements FramePresenter {
     );
     this.volumetrics.bindWorld(this.world, this.camera);
     this.atmosphereBaker = new AtmosphereLutBaker(this.engine, this.scene);
-    this.atmosphereSkybox = new AtmosphereSkybox(this.scene, this.atmosphereBaker);
-    this.atmosphereEnv = new AtmosphereEnvCubemap(this.scene, this.atmosphereBaker);
+    this.atmosphereNight = new AtmosphereNightTextures(this.scene);
+    this.atmosphereSkybox = new AtmosphereSkybox(
+      this.scene,
+      this.atmosphereBaker,
+      this.atmosphereNight,
+    );
+    this.atmosphereEnv = new AtmosphereEnvCubemap(
+      this.scene,
+      this.atmosphereBaker,
+      this.atmosphereNight,
+    );
+    this.staticSkybox = new StaticSkybox(this.scene);
     this.meshes.setReflectionHook((mat, sm) => {
       if (!sm) {
         mat.reflectionTexture = null;
         return;
       }
-      this.atmosphereEnv.applyToMaterial(mat, sm.metalness, sm.roughness);
+      if (this.world.resources.Atmosphere?.enabled) {
+        this.atmosphereEnv.applyToMaterial(mat, sm.metalness, sm.roughness);
+        return;
+      }
+      const env = this.staticSkybox.environmentTexture;
+      if (env) {
+        mat.reflectionTexture = env;
+        mat.reflectionTexture.level = this.world.resources.Atmosphere?.reflectionLevel ?? 0.85;
+        return;
+      }
+      mat.reflectionTexture = null;
     });
     // Camera-space Z depth — opaque surfaces stop volumetric beams; transparent (transmission) skip depth write.
+    // Driven manually before the volumetric pass (not via scene custom RTs) so occlusion
+    // matches this frame's camera instead of lagging one frame behind.
     this.depthRenderer = this.scene.enableDepthRenderer(
       this.camera,
       false,
       true,
-      undefined,
+      1, // NEAREST — stable occlusion edges when volumetric samples at lower res
       true,
     );
     this.depthRenderer.forceDepthWriteTransparentMeshes = false;
+    this.depthRenderer.enabled = false;
     this.volumetrics.setSceneDepthTexture(this.depthRenderer.getDepthMap());
     this.pipeline = new StudioPipeline(this.scene, this.camera);
 
@@ -328,6 +355,12 @@ export class BabylonPresenter implements FramePresenter {
     this.applyQualitySettings();
   }
 
+  /** Live view camera → ECS before gather (see StudioRuntime.tick). */
+  syncViewCamera(world: World): void {
+    this.world = world;
+    this.syncCameraToResource();
+  }
+
   sync(world: World): void {
     this.world = world;
     this.syncCameraToResource();
@@ -346,14 +379,18 @@ export class BabylonPresenter implements FramePresenter {
     if (!atmo?.enabled) {
       this.atmosphereSkybox.setEnabled(false);
       this.atmosphereEnv.clear();
+      this.staticSkybox.sync(atmo?.skyboxAssetId ?? null);
       this.meshes.reapplyReflections();
       this.volumetrics.setAerialPerspectiveLut(null);
       return;
     }
+    this.staticSkybox.clear();
+    this.atmosphereNight.ensure(atmo.nightSkyTextureId, atmo.moonTextureId);
     const spa = resolveAtmosphereSolarPosition(atmo);
     this.atmosphereBaker.sync(atmo, spa.lightDirWorld);
     this.atmosphereSkybox.setEnabled(true);
     const ambientLevel = world.resources.EnvironmentLighting.ambientLevel;
+    const quality = world.resources.Quality;
     const skyOpts = {
       ambientLevel,
       exposure: atmo.exposure,
@@ -361,6 +398,14 @@ export class BabylonPresenter implements FramePresenter {
       lutBlend: atmo.lutBlend,
       lutReady: this.atmosphereBaker.skyLutsReady,
       reflectionLevel: atmo.reflectionLevel,
+      // Unity/Unreal: sky writes into the HDR buffer; SDR clamps only at display compose.
+      skyboxHdrColors: quality.colorProfile === 'hdr',
+      nightExposure: atmo.nightExposure,
+      moonAngularDiameterDeg: atmo.moonAngularDiameterDeg,
+      moonExposure: atmo.moonExposure,
+      nightBlendStrength: atmo.nightBlendStrength,
+      skyboxGroundColor: atmo.skyboxGroundColor,
+      skyboxEquatorColor: atmo.skyboxEquatorColor,
     };
     this.atmosphereSkybox.sync(
       this.camera,
@@ -444,6 +489,8 @@ export class BabylonPresenter implements FramePresenter {
   }
 
   render(): void {
+    // Force-refresh depth for this camera before raymarch (auto gather is disabled).
+    this.depthRenderer.getDepthMap().render(true);
     this.volumetrics.renderPass();
     this.scene.render();
   }
@@ -515,6 +562,8 @@ export class BabylonPresenter implements FramePresenter {
     this.pipeline.dispose();
     this.atmosphereSkybox.dispose();
     this.atmosphereEnv.dispose();
+    this.staticSkybox.dispose();
+    this.atmosphereNight.dispose();
     this.atmosphereBaker.dispose();
     this.volumetrics.dispose();
     this.scene.disableDepthRenderer(this.camera);

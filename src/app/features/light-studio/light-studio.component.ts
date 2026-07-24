@@ -17,6 +17,7 @@ import { DisplayResponseCurveComponent } from '../../shared/editor/display-respo
 import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
 import { TimeOfDayPanelComponent } from '../../shared/editor/time-of-day-panel/time-of-day-panel.component';
 import { NoiseEditorComponent } from '../../shared/editor/noise-editor/noise-editor.component';
+import { AssetCatalogPanelComponent } from '../../shared/editor/asset-catalog-panel/asset-catalog-panel.component';
 import { StudioModalComponent } from '../../shared/editor/studio-modal/studio-modal.component';
 import {
   HierarchyPanelComponent,
@@ -40,6 +41,7 @@ import { NoiseVolumeService } from '../../core/editor/noise-volume.service';
     RenderSettingsPanelComponent,
     TimeOfDayPanelComponent,
     NoiseEditorComponent,
+    AssetCatalogPanelComponent,
     StudioModalComponent,
   ],
   templateUrl: './light-studio.component.html',
@@ -63,6 +65,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   sceneLoading = signal(false);
   renderModalOpen = signal(false);
   noiseModalOpen = signal(false);
+  assetsModalOpen = signal(false);
   selectedLibraryId = signal<string | null>(null);
   private resizeSide: 'left' | 'right' | null = null;
   private resizeStartX = 0;

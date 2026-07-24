@@ -16,5 +16,5 @@ ${lines.join('\n')}
 export const PHOTOPIC_NM_MIN = ${keys[0]};
 export const PHOTOPIC_NM_MAX = ${keys[keys.length - 1]};
 `;
-writeFileSync('src/engine/optics/photopic-efficacy-table.ts', out);
+writeFileSync('src/engine/physics/optics/photopic-efficacy-table.ts', out);
 console.log('wrote', keys.length, 'entries');

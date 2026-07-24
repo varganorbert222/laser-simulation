@@ -32,3 +32,40 @@ describe('resolveRegistryClip', () => {
     expect(resolveRegistryClip(registry, 'missing')).toBeNull();
   });
 });
+
+describe('AssetManifest textures', () => {
+  it('parses textures map with defaults shape', async () => {
+    const { loadAssetManifest } = await import('./asset-manifest');
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(
+        JSON.stringify({
+          models: {},
+          skyboxes: {
+            studio_dark: {
+              type: 'photodome',
+              textures: ['textures/skybox/a.png'],
+            },
+          },
+          textures: {
+            night_sky_default: {
+              label: 'Night sky',
+              category: 'sky',
+              path: 'textures/skybox/NightSky.jpg',
+              usage: 'equirect',
+            },
+          },
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      )) as typeof fetch;
+    try {
+      const manifest = await loadAssetManifest('/data/manifest.json');
+      expect(manifest.textures.night_sky_default?.path).toBe(
+        'textures/skybox/NightSky.jpg',
+      );
+      expect(manifest.skyboxes.studio_dark?.type).toBe('photodome');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});

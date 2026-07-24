@@ -10,11 +10,33 @@ export type QualityLadder = 'low' | 'medium' | 'high' | 'ultra';
 /** Ladder or Custom when values no longer match a packed preset. */
 export type QualityPresetSelection = QualityLadder | 'custom';
 
-/** @deprecated Prefer {@link QualityLadder} — kept as alias for call sites. */
-export type QualityPreset = QualityLadder;
-
 /** Light→Medium volumetric self-shadow quality (Camera→Medium T is always on). */
 export type ShadowQuality = 'off' | 'low' | 'medium' | 'high';
+
+/**
+ * Output / display profile (Unity Camera.allowHDR + tonemapper headroom).
+ * Working color space is always linear HDR (Unity Linear / Unreal working space).
+ * This only changes the final compose stage:
+ * - `hdr` — weaker tonemap; sky/IBL may write values >1 (physical sun)
+ * - `sdr` — clamp sources + strong tonemap for LDR display
+ * Display gamma ({@link Quality.outputGamma}) is applied after tonemap for both
+ * (Babylon image processing is off — canvas is LDR).
+ */
+export type ColorProfile = 'hdr' | 'sdr';
+
+/**
+ * @deprecated Legacy Unity-style working-space toggle. Migrated to {@link Quality.outputGamma}.
+ * Kept for old scene saves only. Working space is always linear.
+ */
+export type ColorSpaceMode = 'linear' | 'gamma';
+
+/** Full-frame compose tonemap operator (Unity/Unreal tonemapper). */
+export type TonemapMode = 'aces' | 'reinhard' | 'hable';
+
+/** True when sky/IBL may emit >1 into the HDR scene buffer (follows display profile). */
+export function skyAllowsHdrColors(profile: ColorProfile): boolean {
+  return profile === 'hdr';
+}
 
 export interface Quality {
   /** Overall / global preset — `'custom'` if sections disagree. */
@@ -44,8 +66,18 @@ export interface Quality {
    * Default false for physically plausible baseline.
    */
   theatricalGlow: boolean;
-  /** Volumetric compose tonemap: aces (default) or reinhard. */
-  tonemapMode: 'aces' | 'reinhard';
+  /** Full-frame compose tonemap (project-level presentation). Default `'aces'`. */
+  tonemapMode: TonemapMode;
+  /**
+   * HDR vs SDR color profile (project-level; not part of Low→Ultra ladder).
+   * Default {@link ColorProfile} `'hdr'`.
+   */
+  colorProfile: ColorProfile;
+  /**
+   * Display gamma applied after tonemap (2.2 / 2.4 / custom). Default `2.2`.
+   * Needed because Babylon image processing is disabled (LDR canvas encode).
+   */
+  outputGamma: number;
 }
 
 export interface QualityRenderScaleConfig {
@@ -73,7 +105,7 @@ export interface VolumetricsTune {
 export interface PresentationTune {
   antiAliasing: boolean;
   theatricalGlow: boolean;
-  tonemapMode: 'aces' | 'reinhard';
+  tonemapMode: TonemapMode;
 }
 
 let scaleConfig: QualityRenderScaleConfig = {
@@ -219,6 +251,52 @@ export function normalizeShadowQuality(v: unknown): ShadowQuality {
   return 'low';
 }
 
+export function normalizeColorProfile(
+  v: unknown,
+  fallback: ColorProfile = 'hdr',
+): ColorProfile {
+  if (v === 'hdr' || v === 'sdr') return v;
+  return fallback;
+}
+
+export function normalizeTonemapMode(
+  v: unknown,
+  fallback: TonemapMode = 'aces',
+): TonemapMode {
+  if (v === 'aces' || v === 'reinhard' || v === 'hable') return v;
+  return fallback;
+}
+
+/** Clamp editable display gamma (1 = pass-through, typical 2.2 / 2.4). */
+export function clampOutputGamma(v: number, fallback = 2.2): number {
+  return clampRange(v, 1, 3, fallback);
+}
+
+/**
+ * @deprecated Prefer {@link clampOutputGamma}. Maps legacy Linear/Gamma saves.
+ * - `linear` → gamma 2.2 (encode on)
+ * - `gamma` → gamma 1.0 (legacy pass-through)
+ */
+export function normalizeColorSpace(
+  v: unknown,
+  fallback: ColorSpaceMode = 'linear',
+): ColorSpaceMode {
+  if (v === 'linear' || v === 'gamma') return v;
+  return fallback;
+}
+
+/** Resolve output gamma from new field or legacy `colorSpace`. */
+export function resolveOutputGamma(
+  raw: { outputGamma?: unknown; colorSpace?: unknown } | null | undefined,
+  fallback = 2.2,
+): number {
+  if (typeof raw?.outputGamma === 'number' && Number.isFinite(raw.outputGamma)) {
+    return clampOutputGamma(raw.outputGamma, fallback);
+  }
+  const legacy = normalizeColorSpace(raw?.colorSpace, 'linear');
+  return legacy === 'gamma' ? 1 : fallback;
+}
+
 export function isQualityLadder(v: unknown): v is QualityLadder {
   return v === 'low' || v === 'medium' || v === 'high' || v === 'ultra';
 }
@@ -305,8 +383,15 @@ export function refreshQualityPresets(
   };
 }
 
-/** Build a full Quality packed from one ladder (all sections aligned). */
-export function createQuality(preset: QualityLadder = 'medium'): Quality {
+/**
+ * Build a full Quality packed from one ladder (all sections aligned).
+ * Color profile / gamma are project-level — pass {@link preserve} to keep them
+ * when switching Low→Ultra (Unity Quality Settings do not reset Color Space).
+ */
+export function createQuality(
+  preset: QualityLadder = 'medium',
+  preserve?: Pick<Partial<Quality>, 'colorProfile' | 'outputGamma'>,
+): Quality {
   const vol = volumetricsTuneForPreset(preset);
   const pres = presentationTuneForPreset(preset);
   return {
@@ -318,6 +403,11 @@ export function createQuality(preset: QualityLadder = 'medium'): Quality {
     ...vol,
     shadowQuality: shadowQualityForPreset(preset),
     ...pres,
+    colorProfile: normalizeColorProfile(preserve?.colorProfile, 'hdr'),
+    outputGamma: clampOutputGamma(
+      typeof preserve?.outputGamma === 'number' ? preserve.outputGamma : 2.2,
+      2.2,
+    ),
   };
 }
 
@@ -400,10 +490,12 @@ export function normalizeQualityResource(
       typeof raw?.antiAliasing === 'boolean' ? raw.antiAliasing : base.antiAliasing,
     theatricalGlow:
       typeof raw?.theatricalGlow === 'boolean' ? raw.theatricalGlow : base.theatricalGlow,
-    tonemapMode:
-      raw?.tonemapMode === 'reinhard' || raw?.tonemapMode === 'aces'
-        ? raw.tonemapMode
-        : base.tonemapMode,
+    tonemapMode: normalizeTonemapMode(raw?.tonemapMode, base.tonemapMode),
+    colorProfile: normalizeColorProfile(raw?.colorProfile, base.colorProfile),
+    outputGamma: resolveOutputGamma(
+      raw as { outputGamma?: unknown; colorSpace?: unknown } | undefined,
+      base.outputGamma,
+    ),
     overallPreset: overallHint,
     volumetricsPreset: normalizeQualityPresetSelection(
       raw?.volumetricsPreset,

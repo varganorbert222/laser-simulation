@@ -63,13 +63,3 @@ export const ATMOSPHERE_AERIAL_UNIFORMS = [
 ] as const;
 
 export const ATMOSPHERE_AERIAL_SAMPLERS = ['uTransmittanceLUT'] as const;
-
-export const ATMOSPHERE_SKYBOX_UNIFORMS = [
-  'uInvViewProj',
-  ...ATMOSPHERE_COMMON_UNIFORMS.filter((n) => n !== 'uResolution'),
-  'uSunAngularRadius',
-  'uExposure',
-  'uLutBlend',
-] as const;
-
-export const ATMOSPHERE_SKYBOX_SAMPLERS = ['uSkyViewLUT', 'uTransmittanceLUT'] as const;

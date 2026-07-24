@@ -31,7 +31,9 @@ float sampleDensity(vec3 p) {
 void main() {
   vec2 ndc = vUV * 2.0 - 1.0;
   mat3 R = rotY(uYawPitch.x) * rotX(uYawPitch.y);
-  vec3 ro = R * vec3(0.0, 0.0, -1.85);
+  // Orbit around the unit-cube center (not the [0,0,0] corner).
+  vec3 center = vec3(0.5);
+  vec3 ro = center + R * vec3(0.0, 0.0, -1.85);
   vec3 rd = normalize(R * vec3(ndc.x * 0.85, ndc.y * 0.85, 1.2));
 
   // Unit cube [0,1]^3

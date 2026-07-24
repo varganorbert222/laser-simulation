@@ -10,10 +10,15 @@ import {
   type SolarPosition,
 } from '../astro/solar-position';
 import {
+  DEFAULT_MOON_TEXTURE_ID,
+  DEFAULT_NIGHT_SKY_TEXTURE_ID,
+} from '../../assets/asset-manifest';
+import {
   createDefaultAtmosphereModel,
   normalizeAtmosphereModel,
   type AtmosphereModel,
 } from './atmosphere-model';
+import { clampRgb, type Rgb01 } from './color';
 
 /** Same ladder as volumetric {@link QualityLadder}. */
 export type AtmosphereQualityPreset = 'low' | 'medium' | 'high' | 'ultra' | 'custom';
@@ -144,6 +149,45 @@ export interface AtmosphereSettings {
   lutBlend: number;
   /** StandardMaterial / environmentTexture reflection intensity. */
   reflectionLevel: number;
+  /**
+   * @deprecated Derived from {@link Quality.colorProfile} at render time
+   * (`skyAllowsHdrColors`). Kept on saves for back-compat; do not treat as
+   * an independent HDR switch — Unity/Unreal keep sky energy in the HDR
+   * buffer and clamp only at the display tonemapper.
+   */
+  skyboxHdrColors: boolean;
+  /**
+   * Night starfield exposure (NightSky equirect). Default 1 ≈ previous baked look.
+   */
+  nightExposure: number;
+  /**
+   * Apparent moon disc diameter in degrees.
+   * Default ≈ 3× the previous artistic size (~1.15× sun → ~3.45× sun ≈ 1.83°).
+   */
+  moonAngularDiameterDeg: number;
+  /** Moon disc brightness multiplier. */
+  moonExposure: number;
+  /**
+   * How strongly night textures replace the day sky after twilight (0–1).
+   */
+  nightBlendStrength: number;
+  /**
+   * Unity-style skybox Ground color (below horizon). Default near-black.
+   */
+  skyboxGroundColor: readonly [number, number, number];
+  /**
+   * Unity-style Equator / horizon band color (rim between sky and ground).
+   */
+  skyboxEquatorColor: readonly [number, number, number];
+  /**
+   * Static skybox from `data/manifest.json` skyboxes (photodome / cubemap).
+   * Used when {@link enabled} is false; null = clear-color backdrop.
+   */
+  skyboxAssetId: string | null;
+  /** Night starfield equirect texture id (`manifest.textures`). */
+  nightSkyTextureId: string;
+  /** Moon disc texture id (`manifest.textures`). */
+  moonTextureId: string;
   model: AtmosphereModel;
 }
 
@@ -169,6 +213,19 @@ export function createDefaultAtmosphereSettings(): AtmosphereSettings {
     exposure: 1,
     lutBlend: 1,
     reflectionLevel: 0.85,
+    skyboxHdrColors: true,
+    nightExposure: 1,
+    // Previous disc was ~1.15× sun diameter; default is 3× that for visibility.
+    moonAngularDiameterDeg: 0.53 * 1.15 * 3,
+    moonExposure: 1,
+    nightBlendStrength: 1,
+    // Unity Procedural Skybox Ground — dark void under the horizon.
+    skyboxGroundColor: [0.02, 0.02, 0.025],
+    // Horizon / equator band (Unity-like rim between sky and ground).
+    skyboxEquatorColor: [0.45, 0.48, 0.52],
+    skyboxAssetId: null,
+    nightSkyTextureId: DEFAULT_NIGHT_SKY_TEXTURE_ID,
+    moonTextureId: DEFAULT_MOON_TEXTURE_ID,
     model: createDefaultAtmosphereModel(),
   };
 }
@@ -272,11 +329,76 @@ export function normalizeAtmosphereSettings(
     exposure: clamp(raw.exposure as number, 0.05, 8, base.exposure),
     lutBlend: clamp(raw.lutBlend as number, 0, 1, base.lutBlend),
     reflectionLevel: clamp(raw.reflectionLevel as number, 0, 2, base.reflectionLevel),
+    skyboxHdrColors:
+      typeof raw.skyboxHdrColors === 'boolean'
+        ? raw.skyboxHdrColors
+        : base.skyboxHdrColors,
+    nightExposure: clamp(raw.nightExposure as number, 0.05, 8, base.nightExposure),
+    moonAngularDiameterDeg: clamp(
+      raw.moonAngularDiameterDeg as number,
+      0.05,
+      24,
+      base.moonAngularDiameterDeg,
+    ),
+    moonExposure: clamp(raw.moonExposure as number, 0.05, 8, base.moonExposure),
+    nightBlendStrength: clamp(
+      raw.nightBlendStrength as number,
+      0,
+      1,
+      base.nightBlendStrength,
+    ),
+    skyboxGroundColor: normalizeSkyboxRgb(
+      raw.skyboxGroundColor,
+      base.skyboxGroundColor,
+    ),
+    skyboxEquatorColor: normalizeSkyboxRgb(
+      raw.skyboxEquatorColor,
+      base.skyboxEquatorColor,
+    ),
+    skyboxAssetId: normalizeAssetIdOrNull(raw.skyboxAssetId, base.skyboxAssetId),
+    nightSkyTextureId: normalizeAssetId(
+      raw.nightSkyTextureId,
+      base.nightSkyTextureId,
+    ),
+    moonTextureId: normalizeMoonTextureId(raw.moonTextureId, base.moonTextureId),
     model: normalizeAtmosphereModel(raw.model),
   };
   // Keep qualityPreset honest vs sample counts (Custom when tweaked).
   next.qualityPreset = matchAtmosphereQualityPreset(next);
   return next;
+}
+
+function normalizeAssetId(raw: unknown, fallback: string): string {
+  if (typeof raw === 'string' && raw.trim()) return raw.trim();
+  return fallback;
+}
+
+function normalizeSkyboxRgb(
+  raw: unknown,
+  fallback: Rgb01,
+): [number, number, number] {
+  if (!Array.isArray(raw) || raw.length < 3) return clampRgb(fallback);
+  const r = Number(raw[0]);
+  const g = Number(raw[1]);
+  const b = Number(raw[2]);
+  if (![r, g, b].every((c) => Number.isFinite(c))) return clampRgb(fallback);
+  return clampRgb([r, g, b]);
+}
+
+/** Prefer Moon sprite id — never keep NightSky assigned as the moon by mistake. */
+function normalizeMoonTextureId(raw: unknown, fallback: string): string {
+  const id = normalizeAssetId(raw, fallback);
+  if (id === DEFAULT_NIGHT_SKY_TEXTURE_ID) return DEFAULT_MOON_TEXTURE_ID;
+  return id;
+}
+
+function normalizeAssetIdOrNull(raw: unknown, fallback: string | null): string | null {
+  if (raw === null) return null;
+  if (typeof raw === 'string') {
+    const t = raw.trim();
+    return t.length ? t : null;
+  }
+  return fallback;
 }
 
 export function atmosphereUtcMs(settings: AtmosphereSettings): number {

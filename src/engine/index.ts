@@ -14,7 +14,6 @@ export {
 export {
   identity as quatIdentity,
   fromEulerYXZ,
-  rotateVec,
   forward,
   clone as cloneQuat,
   type Quat,
@@ -35,7 +34,6 @@ export {
   hitTestViewportAxis,
   type ViewportAxisGizmoLine,
 } from './editor/camera-axes';
-export * from './editor/vec3-editable';
 
 /* ── Physics / optics (simulation science) ────────────────────────── */
 export * from './physics/optics/constants';
@@ -102,7 +100,6 @@ export {
   serializeWorld,
   deserializeWorld,
   restoreWorldFromSerialized,
-  migrateSave,
 } from './save/serialize';
 export * from './scene/demo-world';
 export * from './runtime/frame-presenter';

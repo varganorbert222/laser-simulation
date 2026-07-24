@@ -10,8 +10,8 @@
           float rough = clamp(uSrRoughness, 0.04, 1.0);
           float absorb = clamp(uSrAbsorption, 0.0, 1.0);
           {{SURFACE_LIGHT_EVAL_LOOP}}
-          // Soft display compress so GGX peaks stay visible without hard clip.
-          // Mild knee — keep power decades distinguishable after Weber–Fechner.
-          return acc / (vec3(1.0) + acc * 0.18);
+          // Soft HDR ceiling only (∞ → ~1/k). Not a film curve — ACES/Reinhard/Hable
+          // run once in volumetric compose on the full-frame linear composite.
+          return acc / (vec3(1.0) + acc * 0.08);
         }
         #endif

@@ -2,7 +2,7 @@
 
 import { clamp01, clampRange } from '../../math/clamp';
 
-export const POWER_W_MIN = 0;
+const POWER_W_MIN = 0;
 /** 500 kW */
 export const POWER_W_MAX = 500_000;
 

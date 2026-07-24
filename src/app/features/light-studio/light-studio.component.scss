@@ -91,18 +91,6 @@ button.ghost {
   background: transparent;
 }
 
-.quality {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--ls-muted);
-
-  &[title] {
-    cursor: help;
-  }
-}
-
 .dock {
   flex: 1;
   display: flex;
@@ -268,8 +256,7 @@ button.ghost {
   gap: 0.4rem;
 }
 
-.scene-toolbar button.primary,
-.studio-modal-actions button.primary {
+.scene-toolbar button.primary {
   border-color: rgba(196, 163, 90, 0.55);
   background: rgba(196, 163, 90, 0.14);
   color: #f0e2b0;

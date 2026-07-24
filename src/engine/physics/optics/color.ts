@@ -29,22 +29,6 @@ export function normalizeChromaticity(rgb: Rgb01): [number, number, number] {
 }
 
 /**
- * Reinhard soft clip on the max channel (shared scale → hue ratios intact).
- * Prefer {@link acesFilmToneMap} for the full-frame path; this stays available
- * for simple CPU previews.
- */
-export function huePreservingToneMap(rgb: Rgb01): [number, number, number] {
-  const r = Number.isFinite(rgb[0]) ? Math.max(0, rgb[0]) : 0;
-  const g = Number.isFinite(rgb[1]) ? Math.max(0, rgb[1]) : 0;
-  const b = Number.isFinite(rgb[2]) ? Math.max(0, rgb[2]) : 0;
-  const m = Math.max(r, g, b);
-  if (m <= 1e-12) return [0, 0, 0];
-  const mapped = m / (1 + m);
-  const s = mapped / m;
-  return [r * s, g * s, b * s];
-}
-
-/**
  * ACES filmic curve on a single HDR value (Narkowicz fit).
  */
 export function acesFilmCurve(x: number): number {

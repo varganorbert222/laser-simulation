@@ -8,9 +8,6 @@ import { clamp01 } from '../../math/clamp';
 import { evaluateMicrofacetBrdf } from './microfacet-brdf';
 import { gaussianTem00Profile } from './laser';
 
-export { schlickFresnel } from './microfacet-brdf';
-export { peakIrradiance, gaussianTem00Density, gaussianTem00Profile } from './laser';
-
 /**
  * Separate diffuse (view-independent) and specular (view-dependent) spot terms.
  * Irradiance E = P · (2/(π w²)) · TEM00, then × microfacet BRDF.

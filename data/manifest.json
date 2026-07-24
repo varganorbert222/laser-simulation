@@ -27,6 +27,7 @@
   },
   "skyboxes": {
     "studio_dark": {
+      "label": "Studio dark",
       "type": "photodome",
       "textures": [
         "textures/skybox/studio_dark/studio_dark_01.png"
@@ -35,6 +36,7 @@
       "size": 1000
     },
     "studio_hdr_cube": {
+      "label": "Studio HDR cube",
       "type": "cubemap",
       "faces": [
         "textures/skybox/studio_hdr_cube/px.png",
@@ -44,6 +46,20 @@
         "textures/skybox/studio_hdr_cube/pz.png",
         "textures/skybox/studio_hdr_cube/nz.png"
       ]
+    }
+  },
+  "textures": {
+    "night_sky_default": {
+      "label": "Night sky",
+      "category": "sky",
+      "path": "textures/skybox/NightSky.jpg",
+      "usage": "equirect"
+    },
+    "moon_default": {
+      "label": "Moon",
+      "category": "sky",
+      "path": "textures/skybox/Moon.png",
+      "usage": "sprite"
     }
   }
 }

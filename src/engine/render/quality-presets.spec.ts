@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   applyVolumetricsPreset,
   createQuality,
+  normalizeQualityResource,
   refreshQualityPresets,
   resolveOverallPreset,
+  skyAllowsHdrColors,
 } from './quality';
 
 describe('quality section presets', () => {
@@ -33,6 +35,28 @@ describe('quality section presets', () => {
     );
     expect(tweaked.volumetricsPreset).toBe('custom');
     expect(tweaked.overallPreset).toBe('custom');
+  });
+
+  it('defaults to HDR + gamma 2.2 color settings', () => {
+    const q = createQuality('medium');
+    expect(q.colorProfile).toBe('hdr');
+    expect(q.outputGamma).toBe(2.2);
+    expect(skyAllowsHdrColors(q.colorProfile)).toBe(true);
+    expect(skyAllowsHdrColors('sdr')).toBe(false);
+  });
+
+  it('createQuality can preserve color profile and gamma', () => {
+    const q = createQuality('ultra', { colorProfile: 'sdr', outputGamma: 2.4 });
+    expect(q.overallPreset).toBe('ultra');
+    expect(q.colorProfile).toBe('sdr');
+    expect(q.outputGamma).toBe(2.4);
+  });
+
+  it('migrates legacy colorSpace into outputGamma', () => {
+    const fromLinear = normalizeQualityResource({ colorSpace: 'linear' } as never);
+    expect(fromLinear.outputGamma).toBe(2.2);
+    const fromGamma = normalizeQualityResource({ colorSpace: 'gamma' } as never);
+    expect(fromGamma.outputGamma).toBe(1);
   });
 
   it('resolveOverallPreset requires unanimous ladder', () => {

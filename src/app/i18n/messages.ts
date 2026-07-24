@@ -9,6 +9,16 @@ export const hu = {
   antiAliasing: 'Anti-aliasing',
   theatricalGlow: 'Theatrical glow / bloom',
   tonemapMode: 'Tonemap',
+  hintTonemapMode:
+    'Unity/Unreal tonemapper: teljes képkocka a lineáris HDR összeg után (ACES / Reinhard / Hable).',
+  colorProfile: 'Display HDR',
+  colorProfileHdr: 'HDR',
+  colorProfileSdr: 'SDR',
+  hintColorProfile:
+    'Unity Camera.allowHDR mintára. Working space mindig linear. HDR: gyengébb tonemap, égbolt/IBL >1. SDR: forrás clamp + erős tonemap. Alapértelmezés: HDR.',
+  outputGamma: 'Gamma',
+  hintOutputGamma:
+    'Megjelenítési gamma a tonemap után (2.2 / 2.4 / egyéni). A canvas LDR — Babylon image processing helyett itt encode-olunk.',
   laserOptics: 'Lézer optika',
   hintLaserOptics:
     'TEM₀₀ waist (w₀), M², ellipticitás, fókusz és aberrációk — a tudományos nyalábmodell paraméterei.',
@@ -125,7 +135,6 @@ export const hu = {
   eyeExposure: 'szem exposure',
   hintEnvironmentExposure:
     'Egyetlen fizikai modell: CIE V(λ) + környezeti fény. A szem exposure a fill/ambient szintből jön (sötét lab → nagyobb adaptáció).',
-  atmosphereSky: 'Fizikai égbolt (SPA + LUT)',
   atmosphereEnabled: 'Eljárásos égbolt',
   atmosphereLatitude: 'Szélesség (°)',
   atmosphereLongitude: 'Hosszúság (°)',
@@ -136,8 +145,6 @@ export const hu = {
   atmosphereMonth: 'Hónap',
   atmosphereDay: 'Nap',
   atmosphereSite: 'Helyszín',
-  hintAtmosphereSky:
-    'Rayleigh + Mie atmoszféra LUT-ekkel; a Nap pozícióját SPA számolja a hely/idő alapján. A volumetrikus env fény ugyanezt a Nap-irányt használja.',
   timeOfDayPanel: 'Napszak',
   tipTimeOfDayPanel: 'SPA idő / dátum, évszak-presetek, folyamatos napszak-animáció.',
   hintTimeOfDayPanel:
@@ -174,6 +181,31 @@ export const hu = {
     'Eltérő értékek — szerkesztés letiltva (egyeztesd a mezőket, vagy jelölj ki egyet).',
   scenes: 'Jelenetek',
   sceneLibrary: 'Jelenetkönyvtár',
+  assets: 'Assetek',
+  assetCatalog: 'Asset katalógus',
+  tipAssetCatalog: 'Skyboxok, modellek és textúrák a data/manifest.json könyvtárból (ID → /assets).',
+  hintAssetCatalog:
+    'Shipped media a manifesztben. Új fájl: tedd az assets/ alá, majd vedd fel ID-val a data/manifest.json-ba — a kód soha nem hardcode-ol pathot.',
+  assetTabSkyboxes: 'Skyboxok',
+  assetTabModels: 'Modellek',
+  assetTabTextures: 'Textúrák',
+  assetUseAsSkybox: 'Jelenet skybox',
+  assetClearSkybox: 'Skybox törlése',
+  assetAssignModel: 'Kijelöléshez',
+  assetClearModel: 'Model leválasztása',
+  assetUseAsNightSky: 'Éjszakai ég',
+  assetUseAsMoon: 'Hold',
+  assetBadgeNightSky: 'éjszakai ég',
+  assetBadgeMoon: 'hold',
+  assetCatalogEmpty: 'Nincs bejegyzés a manifesztben.',
+  hintAssetAssignModel: 'Jelölj ki egy EnvironmentPiece objektumot szerkesztő módban a modell hozzárendeléséhez.',
+  skyboxAsset: 'Statikus skybox',
+  skyboxAssetNone: 'Nincs (clear color)',
+  tipSkyboxAsset: 'Manifest skybox ID. Atmosphere kikapcsolva használatos (photodome / cubemap).',
+  nightSkyTexture: 'Éjszakai ég textúra',
+  tipNightSkyTexture: 'Manifest texture ID az éjszakai csillagtérképhez (procedural atmosphere).',
+  moonTexture: 'Hold textúra',
+  tipMoonTexture: 'Manifest texture ID a holdkoronghoz.',
   sceneCurrent: 'Aktuális',
   sceneSave: 'Mentés',
   sceneSaveAs: 'Mentés másként',
@@ -335,14 +367,12 @@ export const hu = {
   tipNoiseAsset: 'Bakelt 2D/3D zaj a Zaj szerkesztő könyvtárából.',
   tipNoiseVolumeSampling:
     'A sűrűségmező a kiválasztott zajtextúrából jön. A skála / időskála a mintavételi koordinátát állítja.',
-  renderPreset: 'Preset',
   renderOverallQuality: 'Összesített minőség',
   hintRenderOverall:
     'Globális preset: minden szekciót ugyanarra állít. Ha bármelyik eltér, Custom lesz.',
-  hintRenderPreset:
-    'Low → Ultra: raymarch + Light→Medium árnyék csomag. Egyedi mezők utána felülírhatók.',
   qualityPresetCustom: 'Custom',
-  hintQualityCustom: 'Egyedi értékek — a szekciók nem azonos preseten vannak.',
+  hintQualityCustom:
+    'Automatikus állapot — nem választható. Akkor aktív, ha az értékek nem egyeznek egy presettel.',
   renderVolumetrics: 'Volumetria (raymarch)',
   renderStepSize: 'Lépésköz',
   renderMaxSteps: 'Max lépés',
@@ -363,6 +393,19 @@ export const hu = {
   renderSkyboxQuality: 'Skybox minőség',
   skySunSize: 'Nap átmérő (°)',
   skyExposure: 'Sky exposure',
+  skyboxGroundColor: 'Ground szín',
+  hintSkyboxGroundColor:
+    'Unity-szerű horizon alatti ground: alapból sötét. Csak a skybox megjelenését állítja.',
+  skyboxEquatorColor: 'Equator / horizont szín',
+  hintSkyboxEquatorColor:
+    'Unity-szerű equator (horizontsáv) a sky és a ground között.',
+  renderNightSky: 'Éjszakai ég / hold',
+  hintRenderNightSky:
+    'Csillagmező és hold a napszak szerint keveredik. Alap holdméret ~3× a korábbi művészi méret.',
+  nightExposure: 'Éjszakai exposure',
+  moonSize: 'Hold átmérő (°)',
+  moonExposure: 'Hold exposure',
+  nightBlendStrength: 'Éjszakai keverés',
   skyLutBlend: 'LUT keverés',
   skyReflectionLevel: 'IBL reflection',
   skyViewSamples: 'Sky View minták',
@@ -417,6 +460,16 @@ export const en = {
   antiAliasing: 'Anti-aliasing',
   theatricalGlow: 'Theatrical glow / bloom',
   tonemapMode: 'Tonemap',
+  hintTonemapMode:
+    'Unity/Unreal-style tonemapper after the linear HDR composite (ACES / Reinhard / Hable).',
+  colorProfile: 'Display HDR',
+  colorProfileHdr: 'HDR',
+  colorProfileSdr: 'SDR',
+  hintColorProfile:
+    'Like Unity Camera.allowHDR. Working space is always linear. HDR: weaker tonemap, sky/IBL may exceed 1. SDR: source clamp + strong tonemap. Default: HDR.',
+  outputGamma: 'Gamma',
+  hintOutputGamma:
+    'Display gamma after tonemap (2.2 / 2.4 / custom). Canvas is LDR — encode here (Babylon image processing is off).',
   laserOptics: 'Laser optics',
   hintLaserOptics:
     'TEM₀₀ waist (w₀), M², ellipticity, focus and aberrations — parameters of the scientific beam model.',
@@ -533,7 +586,6 @@ export const en = {
   eyeExposure: 'eye exposure',
   hintEnvironmentExposure:
     'One physical model: CIE V(λ) + environment fill. Eye exposure comes from ambient level (dark lab → higher adaptation).',
-  atmosphereSky: 'Physical sky (SPA + LUT)',
   atmosphereEnabled: 'Procedural sky',
   atmosphereLatitude: 'Latitude (°)',
   atmosphereLongitude: 'Longitude (°)',
@@ -544,8 +596,6 @@ export const en = {
   atmosphereMonth: 'Month',
   atmosphereDay: 'Day',
   atmosphereSite: 'Site',
-  hintAtmosphereSky:
-    'Rayleigh + Mie atmosphere via LUTs; SPA drives the sun from site/time. Volumetric env lighting shares the same sun direction.',
   timeOfDayPanel: 'Time of day',
   tipTimeOfDayPanel: 'SPA clock / date, season presets, continuous day-cycle animation.',
   hintTimeOfDayPanel:
@@ -582,6 +632,31 @@ export const en = {
     'Mixed values — editing disabled (match fields, or select one object).',
   scenes: 'Scenes',
   sceneLibrary: 'Scene library',
+  assets: 'Assets',
+  assetCatalog: 'Asset catalog',
+  tipAssetCatalog: 'Skyboxes, models, and textures from data/manifest.json (id → /assets).',
+  hintAssetCatalog:
+    'Shipped media lives in the manifest. Drop files under assets/, then register ids in data/manifest.json — code never hardcodes paths.',
+  assetTabSkyboxes: 'Skyboxes',
+  assetTabModels: 'Models',
+  assetTabTextures: 'Textures',
+  assetUseAsSkybox: 'Use as scene skybox',
+  assetClearSkybox: 'Clear skybox',
+  assetAssignModel: 'Assign to selection',
+  assetClearModel: 'Clear model',
+  assetUseAsNightSky: 'Use as night sky',
+  assetUseAsMoon: 'Use as moon',
+  assetBadgeNightSky: 'night sky',
+  assetBadgeMoon: 'moon',
+  assetCatalogEmpty: 'No entries in the manifest.',
+  hintAssetAssignModel: 'Select an EnvironmentPiece in edit mode to assign a model.',
+  skyboxAsset: 'Static skybox',
+  skyboxAssetNone: 'None (clear color)',
+  tipSkyboxAsset: 'Manifest skybox id. Used when atmosphere is off (photodome / cubemap).',
+  nightSkyTexture: 'Night sky texture',
+  tipNightSkyTexture: 'Manifest texture id for the night starfield (procedural atmosphere).',
+  moonTexture: 'Moon texture',
+  tipMoonTexture: 'Manifest texture id for the moon disc.',
   sceneCurrent: 'Current',
   sceneSave: 'Save',
   sceneSaveAs: 'Save as',
@@ -743,14 +818,12 @@ export const en = {
   tipNoiseAsset: 'Baked 2D/3D noise from the Noise editor library.',
   tipNoiseVolumeSampling:
     'Density comes from the selected noise texture. Scale / time scale set sampling coordinates.',
-  renderPreset: 'Preset',
   renderOverallQuality: 'Overall quality',
   hintRenderOverall:
     'Global preset sets every section alike. If any section differs, Overall becomes Custom.',
-  hintRenderPreset:
-    'Low → Ultra packs raymarch + Light→Medium shadow. Individual fields can override after.',
   qualityPresetCustom: 'Custom',
-  hintQualityCustom: 'Custom values — sections are not on the same preset.',
+  hintQualityCustom:
+    'Automatic state — not selectable. Active when values do not match a preset.',
   renderVolumetrics: 'Volumetrics (raymarch)',
   renderStepSize: 'Step size',
   renderMaxSteps: 'Max steps',
@@ -771,6 +844,19 @@ export const en = {
   renderSkyboxQuality: 'Skybox quality',
   skySunSize: 'Sun diameter (°)',
   skyExposure: 'Sky exposure',
+  skyboxGroundColor: 'Ground color',
+  hintSkyboxGroundColor:
+    'Unity-like below-horizon ground — dark by default. Affects skybox look only.',
+  skyboxEquatorColor: 'Equator / horizon color',
+  hintSkyboxEquatorColor:
+    'Unity-like equator band between sky and ground.',
+  renderNightSky: 'Night sky / moon',
+  hintRenderNightSky:
+    'Starfield and moon blend with time of day. Default moon size is ~3× the previous artistic size.',
+  nightExposure: 'Night exposure',
+  moonSize: 'Moon diameter (°)',
+  moonExposure: 'Moon exposure',
+  nightBlendStrength: 'Night blend',
   skyLutBlend: 'LUT blend',
   skyReflectionLevel: 'IBL reflection',
   skyViewSamples: 'Sky View samples',

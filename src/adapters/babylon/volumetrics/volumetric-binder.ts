@@ -102,13 +102,15 @@ export class VolumetricBinder {
       Constants.TEXTURETYPE_UNSIGNED_BYTE,
     );
 
+    // Prefer half-float so HDR laser/sky energy survives until compose tonemap.
+    const volType = this.pickVolumetricTextureType();
     this.volumetricTarget = new RenderTargetTexture(
       'volumetricLights',
       vol,
       scene,
       false,
       true,
-      Constants.TEXTURETYPE_UNSIGNED_BYTE,
+      volType,
       false,
       Constants.TEXTURE_BILINEAR_SAMPLINGMODE,
       false,
@@ -138,7 +140,7 @@ export class VolumetricBinder {
     this.compose = new PostProcess(
       'volumetricCompose',
       'volumetricCompose',
-      ['uTonemapMode', 'uAerialEnabled'],
+      ['uTonemapMode', 'uColorProfile', 'uOutputGamma', 'uAerialEnabled'],
       ['volumetricTexture', 'uAerialPerspectiveLUT'],
       1.0,
       camera,
@@ -149,8 +151,12 @@ export class VolumetricBinder {
     this.compose.onApply = (effect) => {
       const fx = effect as unknown as EffectLike;
       fx.setTexture('volumetricTexture', this.volumetricTarget);
-      const mode = this._world?.resources.Quality.tonemapMode === 'reinhard' ? 1 : 0;
+      const q = this._world?.resources.Quality;
+      const mode =
+        q?.tonemapMode === 'hable' ? 2 : q?.tonemapMode === 'reinhard' ? 1 : 0;
       fx.setFloat('uTonemapMode', mode);
+      fx.setFloat('uColorProfile', q?.colorProfile === 'sdr' ? 0 : 1);
+      fx.setFloat('uOutputGamma', typeof q?.outputGamma === 'number' ? q.outputGamma : 2.2);
       const aerialOn = this._aerialLut && this._world?.resources.Atmosphere?.enabled ? 1 : 0;
       fx.setFloat('uAerialEnabled', aerialOn);
       fx.setTexture('uAerialPerspectiveLUT', this._aerialLut ?? this._aerialDummy);
@@ -197,7 +203,10 @@ export class VolumetricBinder {
     return this.isRaymarchReady() && this.isComposeReady();
   }
 
-  /** Raymarch into the low-res RTT (call once per frame before scene.render). */
+  /**
+   * Raymarch into the low-res RTT.
+   * Call once per frame after scene depth is updated for this camera, before scene.render.
+   */
   renderPass(): void {
     if (!this._world || !this._camera) return;
     if (!this.volumetricEffect.isReady()) return;
@@ -250,6 +259,30 @@ export class VolumetricBinder {
     const width = Math.max(1, (this.engine.getRenderWidth(true) * s) | 0);
     const height = Math.max(1, (this.engine.getRenderHeight(true) * s) | 0);
     return { width, height };
+  }
+
+  /** Prefer HALF_FLOAT for HDR headroom; fall back when the GPU rejects it. */
+  private pickVolumetricTextureType(): number {
+    try {
+      const probe = new RenderTargetTexture(
+        'volumetricHdrProbe',
+        { width: 4, height: 4 },
+        this.scene,
+        false,
+        true,
+        Constants.TEXTURETYPE_HALF_FLOAT,
+        false,
+        Constants.TEXTURE_BILINEAR_SAMPLINGMODE,
+        false,
+        false,
+      );
+      const ok = !!probe.getInternalTexture();
+      probe.dispose();
+      if (ok) return Constants.TEXTURETYPE_HALF_FLOAT;
+    } catch {
+      // ignore — UNSIGNED_BYTE fallback
+    }
+    return Constants.TEXTURETYPE_UNSIGNED_BYTE;
   }
 
   private applyUniforms(effect: EffectLike): void {

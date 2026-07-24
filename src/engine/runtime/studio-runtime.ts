@@ -10,7 +10,7 @@ import type { FramePresenter } from './frame-presenter';
 /**
  * Default sim schedule.
  * - worldTransform: hierarchical TRS → WorldXform
- * - gather: GPU RenderFrame pack cache
+ * - gather: GPU RenderFrame pack cache (requires syncViewCamera first)
  * - present: intentionally NOT scheduled — StudioRuntime calls presenter.sync/render
  *   after schedule.run (adapter-owned presentation).
  * - input / adapt / render: extension points (empty by default)
@@ -54,12 +54,13 @@ export class StudioRuntime {
     if (presenter) presenter.setWorld(this.world);
   }
 
-  getPresenter(): FramePresenter | null {
-    return this.presenter;
-  }
-
   /**
    * Advance ECS schedule, then sync + render via presenter (present outside schedule).
+   *
+   * Order matters for volumetric/camera sync:
+   * 1. syncViewCamera — live Babylon pose → ECS Camera before gather
+   * 2. schedule (worldTransform + gather) — cam-relative pack matches this frame
+   * 3. presenter.sync / render — meshes + depth + volumetric + scene
    */
   tick(dt: number): void {
     const atmo = this.world.resources.Atmosphere;
@@ -71,8 +72,9 @@ export class StudioRuntime {
       const created = syncPrimarySunFromAtmosphere(this.world);
       if (created) this.world.bump();
     }
-    this.schedule.run(this.world, dt);
     const presenter = this.presenter;
+    presenter?.syncViewCamera?.(this.world);
+    this.schedule.run(this.world, dt);
     if (!presenter) return;
     presenter.sync(this.world);
     presenter.render();

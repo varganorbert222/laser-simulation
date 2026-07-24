@@ -17,6 +17,9 @@ import {
   atmosphereWithUtcMs,
   syncPrimarySunFromAtmosphere,
   normalizeShadowQuality,
+  normalizeColorProfile,
+  clampOutputGamma,
+  normalizeTonemapMode,
   applyVolumetricsPreset,
   applyShadowPreset,
   applyPresentationPreset,
@@ -24,6 +27,8 @@ import {
   type AtmosphereSeasonPresetId,
   type AtmosphereSettings,
   type AtmosphereTimePresetId,
+  type ColorProfile,
+  type TonemapMode,
   type DisplayResponseCurve,
   type PresentationMode,
   type Quality,
@@ -103,10 +108,17 @@ export class SessionService {
   /** Global graphics preset — aligns volumetrics, shadow, presentation, and skybox. */
   setQuality(preset: QualityLadder): void {
     this.engine.mutate((world) => {
-      world.resources.Quality = createQuality(preset);
+      const prev = world.resources.Quality;
+      world.resources.Quality = createQuality(preset, {
+        colorProfile: prev.colorProfile,
+        outputGamma: prev.outputGamma,
+      });
       world.resources.Atmosphere = createAtmosphereSettingsForQuality(
         preset,
-        world.resources.Atmosphere,
+        {
+          ...world.resources.Atmosphere,
+          skyboxHdrColors: prev.colorProfile === 'hdr',
+        },
       );
       world.bump();
     });
@@ -172,7 +184,23 @@ export class SessionService {
       if (typeof partial.transmittanceCut === 'number') {
         next.transmittanceCut = clamp01(partial.transmittanceCut);
       }
+      if (partial.colorProfile !== undefined) {
+        next.colorProfile = normalizeColorProfile(partial.colorProfile);
+      }
+      if (partial.outputGamma !== undefined) {
+        next.outputGamma = clampOutputGamma(partial.outputGamma);
+      }
+      if (partial.tonemapMode !== undefined) {
+        next.tonemapMode = normalizeTonemapMode(partial.tonemapMode);
+      }
       world.resources.Quality = this.withSkyRefresh(next);
+      // Sky HDR emission follows display profile (Unity Camera.allowHDR semantics).
+      if (partial.colorProfile !== undefined) {
+        world.resources.Atmosphere = {
+          ...world.resources.Atmosphere,
+          skyboxHdrColors: next.colorProfile === 'hdr',
+        };
+      }
       world.bump();
     });
     this.engine.getHost()?.applyQualitySettings();
@@ -190,8 +218,16 @@ export class SessionService {
     this.patchQuality({ theatricalGlow: enabled });
   }
 
-  setTonemapMode(mode: 'aces' | 'reinhard'): void {
-    this.patchQuality({ tonemapMode: mode });
+  setTonemapMode(mode: TonemapMode): void {
+    this.patchQuality({ tonemapMode: normalizeTonemapMode(mode) });
+  }
+
+  setColorProfile(profile: ColorProfile): void {
+    this.patchQuality({ colorProfile: normalizeColorProfile(profile) });
+  }
+
+  setOutputGamma(gamma: number): void {
+    this.patchQuality({ outputGamma: clampOutputGamma(gamma) });
   }
 
   readonly displayVision = computed(() => {

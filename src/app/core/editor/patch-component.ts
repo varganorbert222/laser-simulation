@@ -12,7 +12,7 @@ import {
 import type { EngineHostService } from '../services/engine-host.service';
 
 /** Component values for a selection that all share `name`, or null if not. */
-export function selectionComponentValues<K extends ComponentName>(
+function selectionComponentValues<K extends ComponentName>(
   world: World,
   ids: readonly EntityId[],
   name: K,

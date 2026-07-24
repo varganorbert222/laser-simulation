@@ -6,10 +6,10 @@
  */
 
 /** CIE-ish scotopic peak (nm). */
-export const SCOTOPIC_PEAK_NM = 507;
+const SCOTOPIC_PEAK_NM = 507;
 
 /** Gaussian width (nm) for the educational V′(λ) lobe. */
-export const SCOTOPIC_SIGMA_NM = 50;
+const SCOTOPIC_SIGMA_NM = 50;
 
 /**
  * Relative scotopic efficacy V′(λ), peak ≈ 1 at ~507 nm.
