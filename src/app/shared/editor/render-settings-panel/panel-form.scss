@@ -1,0 +1,74 @@
+.hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--ls-muted, #9a9488);
+}
+
+.preset-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.preset-btn {
+  text-transform: capitalize;
+  padding: 0.3rem 0.65rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+}
+
+.preset-btn.active {
+  border-color: rgba(196, 163, 90, 0.7);
+  background: rgba(196, 163, 90, 0.18);
+}
+
+.preset-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.preset-btn.preset-custom:disabled {
+  cursor: default;
+  border-style: dashed;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.preset-btn.preset-custom.active:disabled {
+  opacity: 1;
+  border-color: rgba(196, 163, 90, 0.7);
+  background: rgba(196, 163, 90, 0.18);
+  color: #e0c57a;
+  font-weight: 600;
+}
+
+label {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(5.5rem, 7rem);
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: #cfc8ba;
+  min-width: 0;
+  max-width: 100%;
+}
+
+label.check {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+}
+
+input[type='number'],
+select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.25rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
+  color: inherit;
+}

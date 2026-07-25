@@ -54,7 +54,7 @@
         type="button"
         class="mode-btn"
         [class.active]="renderModalOpen()"
-        (click)="renderModalOpen.set(true)"
+        (click)="toggleModal(renderModalOpen)"
         [attr.title]="l10n.t('tipRenderSettings')"
       >
         {{ l10n.t('renderSettings') }}
@@ -62,8 +62,26 @@
       <button
         type="button"
         class="mode-btn"
+        [class.active]="visionModalOpen()"
+        (click)="toggleModal(visionModalOpen)"
+        [attr.title]="l10n.t('tipVisionPanel')"
+      >
+        {{ l10n.t('renderVision') }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
+        [class.active]="presentationModalOpen()"
+        (click)="toggleModal(presentationModalOpen)"
+        [attr.title]="l10n.t('tipPresentationPanel')"
+      >
+        {{ l10n.t('renderPresentation') }}
+      </button>
+      <button
+        type="button"
+        class="mode-btn"
         [class.active]="timeOfDayModalOpen()"
-        (click)="timeOfDayModalOpen.set(true)"
+        (click)="toggleModal(timeOfDayModalOpen)"
         [attr.title]="l10n.t('tipTimeOfDayPanel')"
       >
         {{ l10n.t('timeOfDayPanel') }}
@@ -72,7 +90,7 @@
         type="button"
         class="mode-btn"
         [class.active]="noiseModalOpen()"
-        (click)="noiseModalOpen.set(true)"
+        (click)="toggleModal(noiseModalOpen)"
         [attr.title]="l10n.t('tipNoiseEditor')"
       >
         {{ l10n.t('noiseEditor') }}
@@ -80,17 +98,8 @@
       <button
         type="button"
         class="mode-btn"
-        [class.active]="visionModalOpen()"
-        (click)="visionModalOpen.set(true)"
-        [attr.title]="l10n.t('tipVisionPanel')"
-      >
-        {{ l10n.t('toggleVisionPanel') }}
-      </button>
-      <button
-        type="button"
-        class="mode-btn"
         [class.active]="assetsModalOpen()"
-        (click)="assetsModalOpen.set(true)"
+        (click)="toggleModal(assetsModalOpen)"
         [attr.title]="l10n.t('tipAssetCatalog')"
       >
         {{ l10n.t('assets') }}
@@ -99,7 +108,7 @@
         type="button"
         class="mode-btn"
         [class.active]="scenesModalOpen()"
-        (click)="openScenes()"
+        (click)="toggleScenes()"
         [attr.title]="l10n.t('sceneLibrary')"
       >
         {{ l10n.t('scenes') }}
@@ -130,11 +139,25 @@
     (dismiss)="renderModalOpen.set(false)"
   >
     <app-render-settings-panel />
-    <div studioModalActions>
-      <button type="button" class="primary" (click)="renderModalOpen.set(false)">
-        {{ l10n.t('modalClose') }}
-      </button>
-    </div>
+  </app-studio-modal>
+
+  <app-studio-modal
+    [open]="visionModalOpen()"
+    [title]="l10n.t('renderVision')"
+    titleId="vision-settings-modal-title"
+    [wide]="true"
+    (dismiss)="visionModalOpen.set(false)"
+  >
+    <app-vision-settings-panel />
+  </app-studio-modal>
+
+  <app-studio-modal
+    [open]="presentationModalOpen()"
+    [title]="l10n.t('renderPresentation')"
+    titleId="presentation-settings-modal-title"
+    (dismiss)="presentationModalOpen.set(false)"
+  >
+    <app-presentation-settings-panel />
   </app-studio-modal>
 
   <app-studio-modal
@@ -146,11 +169,6 @@
     (dismiss)="noiseModalOpen.set(false)"
   >
     <app-noise-editor />
-    <div studioModalActions>
-      <button type="button" class="primary" (click)="noiseModalOpen.set(false)">
-        {{ l10n.t('modalClose') }}
-      </button>
-    </div>
   </app-studio-modal>
 
   <app-studio-modal
@@ -162,11 +180,6 @@
     (dismiss)="assetsModalOpen.set(false)"
   >
     <app-asset-catalog-panel />
-    <div studioModalActions>
-      <button type="button" class="primary" (click)="assetsModalOpen.set(false)">
-        {{ l10n.t('modalClose') }}
-      </button>
-    </div>
   </app-studio-modal>
 
   <app-studio-modal
@@ -176,35 +189,6 @@
     (dismiss)="timeOfDayModalOpen.set(false)"
   >
     <app-time-of-day-panel />
-    <div studioModalActions>
-      <button type="button" class="primary" (click)="timeOfDayModalOpen.set(false)">
-        {{ l10n.t('modalClose') }}
-      </button>
-    </div>
-  </app-studio-modal>
-
-  <app-studio-modal
-    [open]="visionModalOpen()"
-    [title]="l10n.t('displayVision')"
-    titleId="vision-curve-modal-title"
-    [wide]="true"
-    (dismiss)="visionModalOpen.set(false)"
-  >
-    <app-display-response-curve
-      [curve]="editor.responseCurve()"
-      [ambientLevel]="editor.ambientLevel()"
-      [readonly]="!editor.isEditMode()"
-      (curveChange)="editor.setResponseCurve($event)"
-      (ambientLevelChange)="editor.setAmbientLevel($event)"
-    />
-    <div studioModalActions>
-      <button type="button" (click)="editor.resetResponseCurve()">
-        {{ l10n.t('resetCurve') }}
-      </button>
-      <button type="button" class="primary" (click)="visionModalOpen.set(false)">
-        {{ l10n.t('modalClose') }}
-      </button>
-    </div>
   </app-studio-modal>
 
   <app-studio-modal
@@ -212,7 +196,6 @@
     [title]="l10n.t('sceneLibrary')"
     titleId="scene-library-modal-title"
     [wide]="true"
-    [closeOnBackdrop]="!sceneLoading()"
     (dismiss)="onScenesDismiss()"
   >
     <p class="hint">
@@ -279,14 +262,6 @@
         (click)="deleteSelected()"
       >
         {{ l10n.t('sceneDelete') }}
-      </button>
-      <button
-        type="button"
-        class="primary"
-        [disabled]="sceneLoading()"
-        (click)="onScenesDismiss()"
-      >
-        {{ l10n.t('modalClose') }}
       </button>
     </div>
   </app-studio-modal>

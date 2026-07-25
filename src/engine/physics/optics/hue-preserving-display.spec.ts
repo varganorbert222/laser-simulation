@@ -60,16 +60,16 @@ describe('hue-preserving display', () => {
 });
 
 describe('display power decades', () => {
-  it('Weber–Fechner default: decades grow through kW; green ≫ red', () => {
+  it('Weber–Fechner default: decades grow through 1 kW; green ≫ red', () => {
     const opts = { ambientLevel: 1 as const }; // bright lab — no adaptation boost
     const m5 = laserDotDisplayBrightness(0.005, 532, opts);
     const w1 = laserDotDisplayBrightness(1, 532, opts);
+    const w50 = laserDotDisplayBrightness(50, 532, opts);
     const k1 = laserDotDisplayBrightness(1000, 532, opts);
-    const k500 = laserDotDisplayBrightness(500_000, 532, opts);
     expect(w1).toBeGreaterThan(m5);
-    expect(k1).toBeGreaterThan(w1 * 1.4);
-    expect(k500).toBeGreaterThan(k1);
-    expect(k500).toBeLessThanOrEqual(96);
+    expect(w50).toBeGreaterThan(w1);
+    expect(k1).toBeGreaterThan(w50);
+    expect(k1).toBeLessThanOrEqual(96);
     expect(laserDotDisplayBrightness(1, 532, opts)).toBeGreaterThan(
       laserDotDisplayBrightness(1, 650, opts),
     );

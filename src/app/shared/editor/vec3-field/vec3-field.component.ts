@@ -43,11 +43,19 @@ import type { Vec3Editable } from '@engine';
     </div>
   `,
   styles: `
+    :host {
+      display: block;
+      min-width: 0;
+      max-width: 100%;
+    }
     .vec3 {
       display: grid;
-      grid-template-columns: minmax(4.5rem, auto) repeat(3, 1fr);
+      grid-template-columns: 8rem repeat(3, minmax(0, 1fr));
       gap: 0.35rem;
       align-items: center;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
     }
     .vec3[title] {
       cursor: help;
@@ -55,6 +63,10 @@ import type { Vec3Editable } from '@engine';
     .title {
       font-size: 0.75rem;
       color: var(--ls-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
     }
     label {
       display: flex;
@@ -62,9 +74,12 @@ import type { Vec3Editable } from '@engine';
       gap: 0.15rem;
       font-size: 0.65rem;
       color: var(--ls-muted);
+      min-width: 0;
     }
     input {
       width: 100%;
+      min-width: 0;
+      max-width: 100%;
       box-sizing: border-box;
       font: inherit;
       font-size: 0.78rem;

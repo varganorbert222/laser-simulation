@@ -162,28 +162,27 @@ export function resolveHdrChroma(hdr: LightHdrAppearance): [number, number, numb
 
 function lampLuminousProduct(
   intensityLm: number,
-  ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT,
+  opts?: VisionBrightnessOpts | null,
 ): number {
-  return Math.max(0, intensityLm) * eyeAdaptationGainFromAmbient(ambientLevel);
+  const gain =
+    opts?.packSideAdaptation === false
+      ? 1
+      : eyeAdaptationGainFromAmbient(opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT);
+  return Math.max(0, intensityLm) * gain;
 }
 
 export function physicalLumenScale(
   intensityLm: number,
   opts?: VisionBrightnessOpts | null,
 ): number {
-  const ambient = opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
-  return lampLuminousProduct(intensityLm, ambient) / LUMEN_PHYSICAL_REF;
+  return lampLuminousProduct(intensityLm, opts) / LUMEN_PHYSICAL_REF;
 }
 
 export function displayLumenBrightness(
   intensityLm: number,
   opts?: VisionBrightnessOpts | null,
 ): number {
-  const ambient = opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
-  return displayLuminousToneMap(
-    lampLuminousProduct(intensityLm, ambient),
-    opts?.responseCurve,
-  );
+  return displayLuminousToneMap(lampLuminousProduct(intensityLm, opts), opts?.responseCurve);
 }
 
 /**

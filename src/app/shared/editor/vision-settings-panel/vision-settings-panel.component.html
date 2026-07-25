@@ -1,0 +1,16 @@
+<div class="vision-settings">
+  <app-display-response-curve
+    [curve]="editor.responseCurve()"
+    [ambientLevel]="visionAmbientLevel()"
+    [autoMode]="editor.atmosphere().enabled"
+    [autoExposure]="autoExposure()"
+    [readonly]="!editor.isEditMode() || editor.atmosphere().enabled"
+    (curveChange)="editor.setResponseCurve($event)"
+    (ambientLevelChange)="editor.setAmbientLevel($event)"
+  />
+  @if (editor.isEditMode() && !editor.atmosphere().enabled) {
+    <button type="button" class="preset-btn" (click)="editor.resetResponseCurve()">
+      {{ l10n.t('resetCurve') }}
+    </button>
+  }
+</div>

@@ -246,18 +246,6 @@
           (change)="onSkyNumber('sunAngularDiameterDeg', $any($event.target).value)"
         />
       </label>
-      <label>
-        {{ l10n.t('skyExposure') }}
-        <input
-          type="number"
-          min="0.05"
-          max="8"
-          step="0.05"
-          [value]="editor.atmosphere().exposure"
-          [disabled]="!editor.atmosphere().enabled"
-          (change)="onSkyNumber('exposure', $any($event.target).value)"
-        />
-      </label>
       <app-color-field
         [label]="l10n.t('skyboxGroundColor')"
         [tooltip]="l10n.t('hintSkyboxGroundColor')"
@@ -276,18 +264,6 @@
       <p class="subhead">{{ l10n.t('renderNightSky') }}</p>
       <p class="hint">{{ l10n.t('hintRenderNightSky') }}</p>
       <label>
-        {{ l10n.t('nightExposure') }}
-        <input
-          type="number"
-          min="0.05"
-          max="8"
-          step="0.05"
-          [value]="editor.atmosphere().nightExposure"
-          [disabled]="!editor.atmosphere().enabled"
-          (change)="onSkyNumber('nightExposure', $any($event.target).value)"
-        />
-      </label>
-      <label>
         {{ l10n.t('moonSize') }}
         <input
           type="number"
@@ -297,18 +273,6 @@
           [value]="editor.atmosphere().moonAngularDiameterDeg"
           [disabled]="!editor.atmosphere().enabled"
           (change)="onSkyNumber('moonAngularDiameterDeg', $any($event.target).value)"
-        />
-      </label>
-      <label>
-        {{ l10n.t('moonExposure') }}
-        <input
-          type="number"
-          min="0.05"
-          max="8"
-          step="0.05"
-          [value]="editor.atmosphere().moonExposure"
-          [disabled]="!editor.atmosphere().enabled"
-          (change)="onSkyNumber('moonExposure', $any($event.target).value)"
         />
       </label>
       <label>
@@ -372,103 +336,6 @@
           (change)="onSkyNumber('transmittanceSamples', $any($event.target).value)"
         />
       </label>
-    </div>
-  </details>
-
-  <details class="section">
-    <summary>{{ l10n.t('renderPresentation') }}</summary>
-    <div class="section-body">
-      <div class="preset-row">
-        @for (p of ladder; track p) {
-          <button
-            type="button"
-            class="preset-btn"
-            [class.active]="isActive(editor.qualitySettings().presentationPreset, p)"
-            (click)="setPresentation(p)"
-          >
-            {{ p }}
-          </button>
-        }
-        <button
-          type="button"
-          class="preset-btn preset-custom"
-          [class.active]="editor.qualitySettings().presentationPreset === 'custom'"
-          disabled
-          [attr.title]="l10n.t(customHintKey())"
-          [attr.aria-pressed]="editor.qualitySettings().presentationPreset === 'custom'"
-        >
-          {{ presetLabel('custom') }}
-        </button>
-      </div>
-      <label class="check">
-        <input
-          type="checkbox"
-          [checked]="editor.antiAliasing()"
-          (change)="editor.setAntiAliasing($any($event.target).checked)"
-        />
-        {{ l10n.t('antiAliasing') }}
-      </label>
-      <label class="check">
-        <input
-          type="checkbox"
-          [checked]="editor.theatricalGlow()"
-          (change)="editor.setTheatricalGlow($any($event.target).checked)"
-        />
-        {{ l10n.t('theatricalGlow') }}
-      </label>
-      <label>
-        {{ l10n.t('colorProfile') }}
-        <select
-          [value]="editor.qualitySettings().colorProfile"
-          (change)="onColorProfile($any($event.target).value)"
-        >
-          <option value="hdr">{{ l10n.t('colorProfileHdr') }}</option>
-          <option value="sdr">{{ l10n.t('colorProfileSdr') }}</option>
-        </select>
-      </label>
-      <p class="hint">{{ l10n.t('hintColorProfile') }}</p>
-      <label>
-        {{ l10n.t('outputGamma') }}
-        <input
-          type="number"
-          min="1"
-          max="3"
-          step="0.1"
-          [value]="editor.qualitySettings().outputGamma"
-          (change)="onOutputGamma($any($event.target).value)"
-        />
-      </label>
-      <div class="preset-row">
-        <button
-          type="button"
-          class="preset-btn"
-          [class.active]="editor.qualitySettings().outputGamma === 2.2"
-          (click)="onOutputGamma('2.2')"
-        >
-          2.2
-        </button>
-        <button
-          type="button"
-          class="preset-btn"
-          [class.active]="editor.qualitySettings().outputGamma === 2.4"
-          (click)="onOutputGamma('2.4')"
-        >
-          2.4
-        </button>
-      </div>
-      <p class="hint">{{ l10n.t('hintOutputGamma') }}</p>
-      <label>
-        {{ l10n.t('tonemapMode') }}
-        <select
-          [value]="editor.tonemapMode()"
-          (change)="onTonemap($any($event.target).value)"
-        >
-          <option value="aces">ACES</option>
-          <option value="reinhard">Reinhard</option>
-          <option value="hable">Hable</option>
-        </select>
-      </label>
-      <p class="hint">{{ l10n.t('hintTonemapMode') }}</p>
     </div>
   </details>
 </div>

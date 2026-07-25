@@ -3,24 +3,15 @@
 import { clamp01, clampRange } from '../../math/clamp';
 
 const POWER_W_MIN = 0;
-/** 500 kW */
-export const POWER_W_MAX = 500_000;
+/** 1 kW — hard cap for custom values. */
+export const POWER_W_MAX = 1_000;
 
 export type PowerUnit = 'mW' | 'W' | 'kW';
 
 export const POWER_UNITS: readonly PowerUnit[] = ['mW', 'W', 'kW'];
 
-export const POWER_PRESETS_W = [
-  0.005,
-  0.05,
-  0.2,
-  1,
-  5,
-  1_000,
-  10_000,
-  100_000,
-  500_000,
-] as const;
+/** Quick presets (largest = 50 W). Custom entry still allows up to POWER_W_MAX. */
+export const POWER_PRESETS_W = [0.005, 0.05, 0.2, 1, 5, 50] as const;
 
 export function clampPowerW(powerW: number): number {
   return clampRange(powerW, POWER_W_MIN, POWER_W_MAX, 0);
@@ -64,7 +55,7 @@ export function formatPowerW(powerW: number): string {
   return `${trimNum(w * 1000)} mW`;
 }
 
-/** Log-space slider 0..1 ↔ watts (usable from ~1 mW to 500 kW). */
+/** Log-space slider 0..1 ↔ watts (usable from ~1 mW to 1 kW). */
 export function powerWFromSliderT(t: number): number {
   const u = clamp01(t);
   const minPos = 0.001;

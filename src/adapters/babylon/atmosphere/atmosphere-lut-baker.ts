@@ -52,9 +52,9 @@ export const SKY_VIEW_LUT_SIZE = { width: 256, height: 128 };
 /** Default = medium preset aerial volume. */
 export const AERIAL_LUT_SIZE = { width: 32, height: 32, depth: 16 };
 
-/** Artistic exposure scale shared by skybox + IBL capture (less dimming at night ambient). */
-export function atmosphereDisplayExposure(exposure: number, ambientLevel: number): number {
-  return Math.max(0, exposure) * (0.9 + Math.max(0, Math.min(1, ambientLevel)) * 0.45);
+/** Sky / IBL exposure — display scale; compose auto-exposure owns eye adaptation when sky ON. */
+export function atmosphereDisplayExposure(exposure: number, _ambientLevel?: number): number {
+  return Math.max(0, exposure);
 }
 
 /**

@@ -1,24 +1,87 @@
 @if (open) {
-  <div class="studio-modal-backdrop" (click)="onBackdropClick($event)">
+  @if (closeOnBackdrop) {
     <div
-      class="studio-modal-card"
-      [class.wide]="wide"
-      [class.xlarge]="xlarge"
-      role="dialog"
-      aria-modal="true"
-      [attr.aria-labelledby]="title ? titleId : null"
+      class="studio-modal-backdrop"
+      [style.z-index]="zIndex - 1"
+      (click)="onBackdropClick($event)"
+    ></div>
+  }
+
+  <div
+    #card
+    class="studio-modal-card"
+    [class.wide]="wide"
+    [class.xlarge]="xlarge"
+    [class.height-auto]="heightAuto"
+    [style.left.px]="rect.left"
+    [style.top.px]="rect.top"
+    [style.width.px]="rect.width"
+    [style.height]="heightAuto ? 'auto' : rect.height + 'px'"
+    [style.z-index]="zIndex"
+    role="dialog"
+    [attr.aria-modal]="closeOnBackdrop ? 'true' : 'false'"
+    [attr.aria-labelledby]="title ? titleId : null"
+    (pointerdown)="bringToFront()"
+  >
+    <div
+      class="studio-modal-header"
+      (pointerdown)="onHeaderPointerDown($event)"
     >
       @if (title) {
         <h3 [id]="titleId">{{ title }}</h3>
+      } @else {
+        <h3 [id]="titleId" class="studio-modal-title-spacer"></h3>
       }
-
-      <div class="studio-modal-body">
-        <ng-content />
-      </div>
-
-      <div class="studio-modal-actions">
-        <ng-content select="[studioModalActions]" />
-      </div>
+      <button
+        type="button"
+        class="studio-modal-close"
+        (click)="onCloseClick($event)"
+        [attr.title]="l10n.t('modalClose')"
+        [attr.aria-label]="l10n.t('modalClose')"
+      >
+        ×
+      </button>
     </div>
+
+    <div class="studio-modal-body">
+      <ng-content />
+    </div>
+
+    <div class="studio-modal-actions">
+      <ng-content select="[studioModalActions]" />
+    </div>
+
+    <div
+      class="studio-modal-resize n"
+      (pointerdown)="onResizePointerDown($event, 'n')"
+    ></div>
+    <div
+      class="studio-modal-resize s"
+      (pointerdown)="onResizePointerDown($event, 's')"
+    ></div>
+    <div
+      class="studio-modal-resize e"
+      (pointerdown)="onResizePointerDown($event, 'e')"
+    ></div>
+    <div
+      class="studio-modal-resize w"
+      (pointerdown)="onResizePointerDown($event, 'w')"
+    ></div>
+    <div
+      class="studio-modal-resize ne"
+      (pointerdown)="onResizePointerDown($event, 'ne')"
+    ></div>
+    <div
+      class="studio-modal-resize nw"
+      (pointerdown)="onResizePointerDown($event, 'nw')"
+    ></div>
+    <div
+      class="studio-modal-resize se"
+      (pointerdown)="onResizePointerDown($event, 'se')"
+    ></div>
+    <div
+      class="studio-modal-resize sw"
+      (pointerdown)="onResizePointerDown($event, 'sw')"
+    ></div>
   </div>
 }

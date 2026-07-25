@@ -1,27 +1,38 @@
 <section class="vision-panel">
-  <label class="ambient" [attr.title]="l10n.t('tipEnvironmentAmbient')">
-    <span>{{ l10n.t('environmentAmbient') }} · {{ l10n.t('eyeExposure') }} {{ exposureLabel }}</span>
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [value]="ambientLevel"
-      [disabled]="readonly"
-      (input)="onAmbientSlider($any($event.target).value)"
-    />
-    <span class="mode-labels">
-      <span>{{ l10n.t('ambientDark') }}</span>
-      <span>{{ l10n.t('ambientBright') }}</span>
-    </span>
-  </label>
+  @if (autoMode) {
+    <p class="hint">{{ l10n.t('hintVisionAuto') }}</p>
+  } @else {
+    <label class="ambient" [attr.title]="l10n.t('tipEnvironmentAmbient')">
+      <span>{{ l10n.t('environmentAmbient') }} · {{ l10n.t('eyeExposure') }} {{ exposureLabel }}</span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        [value]="ambientLevel"
+        [disabled]="readonly"
+        (input)="onAmbientSlider($any($event.target).value)"
+      />
+      <span class="mode-labels">
+        <span>{{ l10n.t('ambientDark') }}</span>
+        <span>{{ l10n.t('ambientBright') }}</span>
+      </span>
+    </label>
+    <p class="hint">{{ l10n.t('hintEnvironmentExposure') }}</p>
+  }
 
-  <p class="hint">{{ l10n.t('hintEnvironmentExposure') }}</p>
   <p class="hint">{{ l10n.t('hintDisplayCurve') }}</p>
+
+  <div class="curve-legend">
+    <span class="leg scientific">{{ l10n.t('visionCurveLegendScientific') }}</span>
+    <span class="leg active">{{ l10n.t('visionCurveLegendActive') }}</span>
+    <span class="leg live">{{ l10n.t('visionCurveLegendLive') }}</span>
+  </div>
 
   <canvas
     #canvas
     class="curve-canvas"
+    [class.locked]="autoMode || readonly"
     [attr.title]="l10n.t('tipDisplayCurve')"
     (pointerdown)="onPointerDown($event)"
     (pointermove)="onPointerMove($event)"
@@ -32,5 +43,14 @@
   <div class="axis-hint">
     <span>X: {{ l10n.t('curveAxisPower') }}</span>
     <span>Y: {{ l10n.t('curveAxisHdr') }} (0–{{ hdrMax }})</span>
+  </div>
+
+  <div class="live-readout" aria-live="polite">
+    <span>{{ liveInUse() }}</span>
+    <span>{{ l10n.t('environmentAmbient') }} {{ liveAmbient().toFixed(2) }}</span>
+    <span>{{ l10n.t('eyeExposure') }} {{ livePackGain() }}</span>
+    @if (autoMode && liveAutoExposure() != null) {
+      <span>{{ l10n.t('autoExposureReadout') }} {{ liveAutoExposure()!.toFixed(2) }}×</span>
+    }
   </div>
 </section>

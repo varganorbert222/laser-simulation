@@ -1,11 +1,17 @@
 /**
- * Scene fill / key ambient that drives both viewport lighting and eye exposure.
- * 0 = dark lab, 1 = bright day — no separate day/night vision modes.
+ * Scene fill / key ambient that drives viewport lighting and (when sky OFF)
+ * pack-side eye exposure. With Atmosphere enabled, ambient is derived from SPA
+ * via ambientFromSolarElevation — see resolveSceneAmbientLevel.
  *
  * Volumetric media also receive this as environment irradiance (cloud lighting):
  * hemi + sun in-scatter, plus an isotropic multiple-scatter fraction around emitters.
  */
 import { clampUnit } from '../../math/clamp';
+import { ambientFromSolarElevation } from './ambient-from-solar';
+import {
+  resolveAtmosphereSolarPosition,
+  type AtmosphereSettings,
+} from './atmosphere-settings';
 
 export interface EnvironmentLighting {
   /**
@@ -111,4 +117,19 @@ export function environmentSunDirUnit(): [number, number, number] {
   const [x, y, z] = ENVIRONMENT_SUN_DIR_WORLD;
   const len = Math.hypot(x, y, z) || 1;
   return [x / len, y / len, z / len];
+}
+
+/**
+ * Effective ambient for lighting / mesopic vision this frame.
+ * Atmosphere ON → SPA elevation; otherwise the stored EnvironmentLighting value.
+ */
+export function resolveSceneAmbientLevel(
+  ambientStored: number,
+  atmosphere: AtmosphereSettings | null | undefined,
+): number {
+  if (atmosphere?.enabled) {
+    const spa = resolveAtmosphereSolarPosition(atmosphere);
+    return ambientFromSolarElevation(spa.elevationDeg);
+  }
+  return clampAmbientLevel(ambientStored);
 }

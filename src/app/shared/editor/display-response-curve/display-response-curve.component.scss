@@ -40,11 +40,65 @@
 
 .curve-canvas {
   width: 100%;
-  height: 200px;
+  height: 240px;
   display: block;
   border-radius: 4px;
   cursor: crosshair;
   touch-action: none;
+
+  &.locked {
+    cursor: default;
+  }
+}
+
+.curve-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1rem;
+  font-size: 0.68rem;
+  color: var(--ls-muted, #9aa8b5);
+}
+
+.leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+
+  &::before {
+    content: '';
+    width: 14px;
+    height: 0;
+    border-top: 2px solid;
+  }
+
+  &.scientific::before {
+    border-color: rgba(100, 170, 220, 0.9);
+    border-style: dashed;
+    border-width: 0;
+    border-top-width: 2px;
+  }
+
+  &.active::before {
+    border-color: rgba(120, 200, 140, 0.95);
+    border-style: solid;
+  }
+
+  &.live::before {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(240, 220, 140, 0.95);
+  }
+}
+
+.live-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.72rem;
+  color: var(--ls-text, #d7e0e8);
+  font-variant-numeric: tabular-nums;
 }
 
 .axis-hint {

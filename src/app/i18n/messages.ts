@@ -134,7 +134,11 @@ export const hu = {
   ambientBright: 'Világos',
   eyeExposure: 'szem exposure',
   hintEnvironmentExposure:
-    'Egyetlen fizikai modell: CIE V(λ) + környezeti fény. A szem exposure a fill/ambient szintből jön (sötét lab → nagyobb adaptáció).',
+    'Sky OFF: CIE V(λ) + állítható környezeti fény. A szem exposure a fill/ambient szintből jön (sötét lab → nagyobb adaptáció).',
+  hintVisionAuto:
+    'Sky ON: ambient a napszakból (SPA), szem-adaptáció a HDR képkocka log-átlag luminanciájából (lézer csak a látható szóródással számít). Tudományos válaszgörbe.',
+  renderVision: 'Látás',
+  autoExposureReadout: 'Auto exposure',
   atmosphereEnabled: 'Eljárásos égbolt',
   atmosphereLatitude: 'Szélesség (°)',
   atmosphereLongitude: 'Hosszúság (°)',
@@ -168,13 +172,16 @@ export const hu = {
   seasonPreset_autumnEquinox: 'Őszi nap-éj egyenlő',
   seasonPreset_winterSolstice: 'Téli napforduló',
   modalClose: 'Bezárás',
-  resetCurve: 'Tudományos alapgörbe',
+  resetCurve: 'Vissza a tudományos görbére',
   hintDisplayCurve:
-    'Alapértelmezés: CIE V(λ)·P + Weber–Fechner log (dekádonként egyenletes HDR). A fizikai irradiance ∝ P; a display skála kompresszív. X: log teljesítmény (1 mW–500 kW). Y: HDR ACES előtt (0–96).',
+    'Alapértelmezés: CIE V(λ)·P + Weber–Fechner log (dekádonként egyenletes HDR). A fizikai irradiance ∝ P; a display skála kompresszív. X: log teljesítmény (1 mW–1 kW). Y: HDR ACES előtt (0–96). A tudományos alapgörbe mindig látszik; a pontok a jelenlegi emitterek élő HDR értékét jelzik.',
   curveAxisPower: 'teljesítmény (log)',
   curveAxisHdr: 'HDR',
-  toggleVisionPanel: 'Látás',
-  tipVisionPanel: 'Szemadaptáció (ambient) és display válaszgörbe.',
+  visionCurveLegendScientific: 'Tudományos alapgörbe',
+  visionCurveLegendActive: 'Használatban / szerkesztett',
+  visionCurveLegendLive: 'Élő emitter',
+  visionCurveInUseScientific: 'Használatban: tudományos',
+  visionCurveInUseCustom: 'Használatban: egyéni',
   multiSelectionLabel: 'objektum kijelölve',
   mixedValue: '—',
   mixedComponentDisabled:
@@ -303,7 +310,7 @@ export const hu = {
   tipEnvironmentAmbient:
     'Környezeti fény / szemadaptáció: sötét → nagyobb exposure + szkotopikus V′ (Purkinje).',
   tipDisplayCurve:
-    'Szerkeszthető P→HDR görbe. Alap: Weber–Fechner log; a fizikai irradiance ettől független.',
+    'P→HDR görbe. Szaggatott: tudományos alap; folytonos: használatban lévő; pontok: élő emitter HDR.',
   tipObjectName: 'Objektum megjelenített neve a hierarchiában.',
   tipAddComponent: 'Komponens hozzáadása a kijelölt objektumhoz (LightEmitter, MediaVolume, …).',
   tipPosition: 'Helyi pozíció méterben, a szülőhöz képest.',
@@ -332,7 +339,9 @@ export const hu = {
   tipSmokePlumeLength: 'Lágy tengelymenti kifutás hossza méterben (a nozzle irányában).',
   shaderCompiling: 'Shader-ek fordítása…',
   renderSettings: 'Renderelés',
-  tipRenderSettings: 'Látvány és teljesítmény: volumetria, skybox, Light→Medium árnyék, AA, tonemap.',
+  tipRenderSettings: 'Látvány és teljesítmény: volumetria, skybox, Light→Medium árnyék.',
+  tipVisionPanel: 'Szem-adaptáció, környezeti fény és display válaszgörbe.',
+  tipPresentationPanel: 'Képminőség, AA, theatrical glow, HDR/SDR, gamma és tonemap.',
   noiseEditor: 'Zaj szerkesztő',
   tipNoiseEditor:
     'Offline multi-rétegű 2D/3D zaj bake → könyvtár. Minden MediaVolume kiválaszthat egy bakelt textúrát.',
@@ -604,7 +613,11 @@ export const en = {
   ambientBright: 'Bright',
   eyeExposure: 'eye exposure',
   hintEnvironmentExposure:
-    'One physical model: CIE V(λ) + environment fill. Eye exposure comes from ambient level (dark lab → higher adaptation).',
+    'Sky OFF: CIE V(λ) + adjustable environment fill. Eye exposure comes from ambient level (dark lab → higher adaptation).',
+  hintVisionAuto:
+    'Sky ON: ambient from time of day (SPA); eye adaptation from HDR frame log-average luminance (lasers count only via visible scatter). Scientific response curve.',
+  renderVision: 'Vision',
+  autoExposureReadout: 'Auto exposure',
   atmosphereEnabled: 'Procedural sky',
   atmosphereLatitude: 'Latitude (°)',
   atmosphereLongitude: 'Longitude (°)',
@@ -638,13 +651,16 @@ export const en = {
   seasonPreset_autumnEquinox: 'Autumn equinox',
   seasonPreset_winterSolstice: 'Winter solstice',
   modalClose: 'Close',
-  resetCurve: 'Scientific default',
+  resetCurve: 'Reset to scientific curve',
   hintDisplayCurve:
-    'Default: CIE V(λ)·P + Weber–Fechner log (even HDR per decade). Physical irradiance ∝ P; display scale is compressive. X: log power (1 mW–500 kW). Y: HDR before ACES (0–96).',
+    'Default: CIE V(λ)·P + Weber–Fechner log (even HDR per decade). Physical irradiance ∝ P; display scale is compressive. X: log power (1 mW–1 kW). Y: HDR before ACES (0–96). Scientific baseline is always shown; markers are live emitter HDR values in use.',
   curveAxisPower: 'power (log)',
   curveAxisHdr: 'HDR',
-  toggleVisionPanel: 'Vision',
-  tipVisionPanel: 'Eye adaptation (ambient) and display response curve.',
+  visionCurveLegendScientific: 'Scientific baseline',
+  visionCurveLegendActive: 'In use / edited',
+  visionCurveLegendLive: 'Live emitter',
+  visionCurveInUseScientific: 'In use: scientific',
+  visionCurveInUseCustom: 'In use: custom',
   multiSelectionLabel: 'objects selected',
   mixedValue: '—',
   mixedComponentDisabled:
@@ -773,7 +789,7 @@ export const en = {
   tipEnvironmentAmbient:
     'Environment fill / eye adaptation: dark → higher exposure + scotopic V′ (Purkinje).',
   tipDisplayCurve:
-    'Editable P→HDR curve. Default: Weber–Fechner log; physical irradiance is independent.',
+    'P→HDR curve. Dashed: scientific baseline; solid: in use; markers: live emitter HDR.',
   tipObjectName: 'Display name in the hierarchy.',
   tipAddComponent: 'Add a component to the selected object (LightEmitter, MediaVolume, …).',
   tipPosition: 'Local position in metres, relative to the parent.',
@@ -802,7 +818,9 @@ export const en = {
   tipSmokePlumeLength: 'Soft axial falloff length in metres along the nozzle.',
   shaderCompiling: 'Compiling shaders…',
   renderSettings: 'Render',
-  tipRenderSettings: 'Look and performance: volumetrics, skybox, Light→Medium shadow, AA, tonemap.',
+  tipRenderSettings: 'Look and performance: volumetrics, skybox, Light→Medium shadow.',
+  tipVisionPanel: 'Eye adaptation, ambient light, and display response curve.',
+  tipPresentationPanel: 'Image quality, AA, theatrical glow, HDR/SDR, gamma, and tonemap.',
   noiseEditor: 'Noise editor',
   tipNoiseEditor:
     'Offline multi-layer 2D/3D noise bake → library. Each MediaVolume picks a baked texture.',

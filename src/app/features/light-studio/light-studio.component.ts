@@ -8,13 +8,15 @@ import {
   effect,
   inject,
   signal,
+  WritableSignal,
 } from '@angular/core';
 import { clampRange } from '@engine';
 import { EngineHostService } from '../../core/services/engine-host.service';
 import { EditorFacade } from '../../core/services/editor-facade.service';
 import { LocalizationService } from '../../core/services/localization.service';
-import { DisplayResponseCurveComponent } from '../../shared/editor/display-response-curve/display-response-curve.component';
 import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
+import { PresentationSettingsPanelComponent } from '../../shared/editor/presentation-settings-panel/presentation-settings-panel.component';
+import { VisionSettingsPanelComponent } from '../../shared/editor/vision-settings-panel/vision-settings-panel.component';
 import { TimeOfDayPanelComponent } from '../../shared/editor/time-of-day-panel/time-of-day-panel.component';
 import { NoiseEditorComponent } from '../../shared/editor/noise-editor/noise-editor.component';
 import { AssetCatalogPanelComponent } from '../../shared/editor/asset-catalog-panel/asset-catalog-panel.component';
@@ -37,8 +39,9 @@ import { NoiseVolumeService } from '../../core/editor/noise-volume.service';
     InspectorPanelComponent,
     ScienceReadoutComponent,
     ViewportAxesComponent,
-    DisplayResponseCurveComponent,
     RenderSettingsPanelComponent,
+    PresentationSettingsPanelComponent,
+    VisionSettingsPanelComponent,
     TimeOfDayPanelComponent,
     NoiseEditorComponent,
     AssetCatalogPanelComponent,
@@ -59,11 +62,12 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
 
   leftWidth = signal(280);
   rightWidth = signal(340);
-  visionModalOpen = signal(false);
   timeOfDayModalOpen = signal(false);
   scenesModalOpen = signal(false);
   sceneLoading = signal(false);
   renderModalOpen = signal(false);
+  visionModalOpen = signal(false);
+  presentationModalOpen = signal(false);
   noiseModalOpen = signal(false);
   assetsModalOpen = signal(false);
   selectedLibraryId = signal<string | null>(null);
@@ -238,6 +242,18 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     };
     window.addEventListener('mousemove', move);
     window.addEventListener('mouseup', up);
+  }
+
+  toggleModal(open: WritableSignal<boolean>): void {
+    open.update((v) => !v);
+  }
+
+  toggleScenes(): void {
+    if (this.scenesModalOpen()) {
+      this.onScenesDismiss();
+      return;
+    }
+    this.openScenes();
   }
 
   openScenes(): void {

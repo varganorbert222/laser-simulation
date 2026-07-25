@@ -39,10 +39,10 @@ describe('display response curve', () => {
     const opts = { responseCurve: curve, ambientLevel: 0.38 };
     const m5 = laserDotDisplayBrightness(0.005, 532, opts);
     const w1 = laserDotDisplayBrightness(1, 532, opts);
-    const k500 = laserDotDisplayBrightness(500_000, 532, opts);
+    const k1 = laserDotDisplayBrightness(1_000, 532, opts);
     expect(w1).toBeGreaterThan(m5);
-    expect(k500).toBeGreaterThan(w1);
-    expect(k500).toBeLessThanOrEqual(96);
+    expect(k1).toBeGreaterThan(w1);
+    expect(k1).toBeLessThanOrEqual(96);
     const green = laserDotDisplayBrightness(1, 532, opts);
     const red = laserDotDisplayBrightness(1, 650, opts);
     expect(green).toBeGreaterThan(red);

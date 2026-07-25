@@ -88,6 +88,12 @@ export class EngineHostService {
     return this.presenter;
   }
 
+  /** Current compose auto-exposure (HDR meter); null if host not attached. */
+  presenterAutoExposure(): number | null {
+    const v = this.presenter?.autoExposure;
+    return typeof v === 'number' && Number.isFinite(v) ? v : null;
+  }
+
   disposeHost(): void {
     this.runtime?.dispose();
     this.runtime = null;

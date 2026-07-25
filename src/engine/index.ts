@@ -55,6 +55,8 @@ export * from './physics/optics/scotopic-efficacy';
 export * from './physics/optics/display-response-curve';
 export * from './physics/optics/display-vision';
 export * from './physics/optics/environment-lighting';
+export * from './physics/optics/ambient-from-solar';
+export * from './physics/optics/auto-exposure';
 export * from './physics/optics/atmosphere-model';
 export * from './physics/optics/atmosphere-settings';
 export * from './physics/astro/solar-position';

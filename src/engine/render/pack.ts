@@ -21,6 +21,7 @@ import {
   environmentSunDirUnit,
   environmentVolumetricHemiRgb,
   environmentVolumetricSunRgb,
+  resolveSceneAmbientLevel,
 } from '../physics/optics/environment-lighting';
 import {
   skyIrradianceApprox,
@@ -29,6 +30,7 @@ import {
 import { resolveAtmosphereSolarPosition } from '../physics/optics/atmosphere-settings';
 import { isSunEmitter, refreshSceneSunBinding } from '../physics/optics/scene-sun';
 import { resolveEmitterAppearance } from '../physics/optics/light-appearance';
+import { resolveVisionBrightnessOpts } from '../physics/optics/display-vision';
 import {
   PLUME_DISABLED_CONE_COS,
   coneCosFromHalfAngleDeg,
@@ -165,6 +167,16 @@ export function gatherRenderPack(world: World): GatheredFrame {
   const media: GpuMedia[] = [];
   const sunBinding = refreshSceneSunBinding(world);
 
+  const envRes = world.resources.EnvironmentLighting;
+  const atmo = world.resources.Atmosphere;
+  const vision = world.resources.DisplayVision;
+  const ambientLevel = resolveSceneAmbientLevel(envRes.ambientLevel, atmo);
+  const visionOpts = resolveVisionBrightnessOpts(
+    envRes.ambientLevel,
+    atmo,
+    vision.responseCurve,
+  );
+
   for (const id of world.query('LightEmitter', 'Transform')) {
     if (lights.length >= MAX_GPU_LIGHTS) break;
     const emitter = world.get(id, 'LightEmitter');
@@ -176,12 +188,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
     const beam = beamModelFromEmitter(emitter);
     const gpu = beamModelToGpuParams(beam);
 
-    const env = world.resources.EnvironmentLighting;
-    const vision = world.resources.DisplayVision;
-    const appearance = resolveEmitterAppearance(emitter, {
-      ambientLevel: env.ambientLevel,
-      responseCurve: vision.responseCurve,
-    });
+    const appearance = resolveEmitterAppearance(emitter, visionOpts);
 
     lights.push({
       originCam: worldToCamera(pose.position, camPos),
@@ -258,17 +265,15 @@ export function gatherRenderPack(world: World): GatheredFrame {
   media.sort((a, b) => mediaGpuPriority(a) - mediaGpuPriority(b));
 
   const q = world.resources.Quality;
-  const envRes = world.resources.EnvironmentLighting;
-  const atmo = world.resources.Atmosphere;
   let sunDirCam = normalize(environmentSunDirUnit() as Vec3);
-  let sunRgb = environmentVolumetricSunRgb(envRes.ambientLevel);
-  let hemiRgb = environmentVolumetricHemiRgb(envRes.ambientLevel);
+  let sunRgb = environmentVolumetricSunRgb(ambientLevel);
+  let hemiRgb = environmentVolumetricHemiRgb(ambientLevel);
 
   if (atmo?.enabled) {
     const spa = resolveAtmosphereSolarPosition(atmo);
     sunDirCam = normalize(spa.lightDirWorld as Vec3);
-    sunRgb = sunIrradianceRgb(atmo.model, spa.lightDirWorld, envRes.ambientLevel);
-    hemiRgb = skyIrradianceApprox(atmo.model, spa.lightDirWorld, envRes.ambientLevel);
+    sunRgb = sunIrradianceRgb(atmo.model, spa.lightDirWorld, ambientLevel);
+    hemiRgb = skyIrradianceApprox(atmo.model, spa.lightDirWorld, ambientLevel);
   } else {
     const primarySunId = sunBinding.primaryId;
     if (primarySunId) {
@@ -276,10 +281,8 @@ export function gatherRenderPack(world: World): GatheredFrame {
       if (sunEm?.enabled) {
         const pose = lightWorldPose(world, primarySunId);
         sunDirCam = normalize(pose.direction);
-        const appearance = resolveEmitterAppearance(sunEm, {
-          ambientLevel: envRes.ambientLevel,
-        });
-        const base = environmentVolumetricSunRgb(envRes.ambientLevel);
+        const appearance = resolveEmitterAppearance(sunEm, visionOpts);
+        const base = environmentVolumetricSunRgb(ambientLevel);
         const k = Math.min(4, 0.35 + appearance.powerLinear * 0.002);
         sunRgb = [
           base[0] * k * appearance.chroma[0],

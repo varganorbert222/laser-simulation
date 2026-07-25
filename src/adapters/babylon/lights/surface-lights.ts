@@ -6,6 +6,7 @@ import {
   lightWorldPose,
   MAX_GPU_LIGHTS,
   resolveEmitterAppearance,
+  resolveVisionBrightnessOpts,
   surfaceBrdfWeights,
   type SurfaceMaterial,
   type World,
@@ -69,12 +70,14 @@ export class SurfaceLightSync {
       bound++;
 
       const pose = lightWorldPose(world, id);
-      const vision = world.resources.DisplayVision;
-      const env = world.resources.EnvironmentLighting;
-      const appearance = resolveEmitterAppearance(emitter, {
-        ambientLevel: env.ambientLevel,
-        responseCurve: vision.responseCurve,
-      });
+      const appearance = resolveEmitterAppearance(
+        emitter,
+        resolveVisionBrightnessOpts(
+          world.resources.EnvironmentLighting.ambientLevel,
+          world.resources.Atmosphere,
+          world.resources.DisplayVision.responseCurve,
+        ),
+      );
       const beam = beamModelFromEmitter(emitter);
       const gpu = beamModelToGpuParams(beam);
 

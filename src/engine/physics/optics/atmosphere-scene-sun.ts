@@ -13,6 +13,7 @@ import {
   resolveAtmosphereSolarPosition,
   type AtmosphereSettings,
 } from './atmosphere-settings';
+import { resolveSceneAmbientLevel } from './environment-lighting';
 import {
   isSunEmitter,
   refreshSceneSunBinding,
@@ -110,7 +111,10 @@ export function applyAtmosphereToSunEntity(
   const em = world.get(sunId, 'LightEmitter');
   if (!em || !isSunEmitter(em)) return;
 
-  const ambient = world.resources.EnvironmentLighting.ambientLevel;
+  const ambient = resolveSceneAmbientLevel(
+    world.resources.EnvironmentLighting.ambientLevel,
+    atmo,
+  );
   const sunRgb = sunIrradianceRgb(atmo.model, lightDir, ambient);
   const energy = Math.max(sunRgb[0], sunRgb[1], sunRgb[2], 1e-6);
   const chroma: [number, number, number] = [

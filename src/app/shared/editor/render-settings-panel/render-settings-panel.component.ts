@@ -51,10 +51,6 @@ export class RenderSettingsPanelComponent {
     this.editor.setAtmosphereQuality(preset);
   }
 
-  setPresentation(preset: QualityLadder): void {
-    this.editor.setPresentationPreset(preset);
-  }
-
   onNumber(
     key:
       | 'stepSize'
@@ -73,33 +69,14 @@ export class RenderSettingsPanelComponent {
     this.editor.setShadowQuality(raw as ShadowQuality);
   }
 
-  onTonemap(raw: string): void {
-    if (raw === 'reinhard' || raw === 'hable' || raw === 'aces') {
-      this.editor.setTonemapMode(raw);
-    }
-  }
-
-  onColorProfile(raw: string): void {
-    this.editor.setColorProfile(raw === 'sdr' ? 'sdr' : 'hdr');
-  }
-
-  onOutputGamma(raw: string): void {
-    const v = Number(raw);
-    if (!Number.isFinite(v)) return;
-    this.editor.setOutputGamma(v);
-  }
-
   onSkyNumber(
     key:
       | 'sunAngularDiameterDeg'
-      | 'exposure'
       | 'lutBlend'
       | 'reflectionLevel'
       | 'skyViewSamples'
       | 'transmittanceSamples'
-      | 'nightExposure'
       | 'moonAngularDiameterDeg'
-      | 'moonExposure'
       | 'nightBlendStrength',
     raw: string,
   ): void {

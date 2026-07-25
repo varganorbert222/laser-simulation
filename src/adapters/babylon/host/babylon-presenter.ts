@@ -26,6 +26,8 @@ import {
   lightWorldPose,
   resolveAtmosphereSolarPosition,
   resolveEmitterAppearance,
+  resolveSceneAmbientLevel,
+  resolveVisionBrightnessOpts,
   skyIrradianceApprox,
   sunIrradianceRgb,
   type CameraPose,
@@ -389,7 +391,10 @@ export class BabylonPresenter implements FramePresenter {
     const spa = resolveAtmosphereSolarPosition(atmo);
     this.atmosphereBaker.sync(atmo, spa.lightDirWorld);
     this.atmosphereSkybox.setEnabled(true);
-    const ambientLevel = world.resources.EnvironmentLighting.ambientLevel;
+    const ambientLevel = resolveSceneAmbientLevel(
+      world.resources.EnvironmentLighting.ambientLevel,
+      atmo,
+    );
     const quality = world.resources.Quality;
     const skyOpts = {
       ambientLevel,
@@ -423,8 +428,11 @@ export class BabylonPresenter implements FramePresenter {
 
   /** Apply environment ambient + optional primary Sun entity / SPA to fill lights. */
   private syncEnvironmentLighting(world: World): void {
-    const ambientLevel = world.resources.EnvironmentLighting.ambientLevel;
     const atmo = world.resources.Atmosphere;
+    const ambientLevel = resolveSceneAmbientLevel(
+      world.resources.EnvironmentLighting.ambientLevel,
+      atmo,
+    );
 
     if (atmo?.enabled) {
       const spa = resolveAtmosphereSolarPosition(atmo);
@@ -469,7 +477,14 @@ export class BabylonPresenter implements FramePresenter {
           pose.direction[2],
         );
         const base = environmentSunIntensity(ambientLevel);
-        const appearance = resolveEmitterAppearance(emitter, { ambientLevel });
+        const appearance = resolveEmitterAppearance(
+          emitter,
+          resolveVisionBrightnessOpts(
+            world.resources.EnvironmentLighting.ambientLevel,
+            atmo,
+            world.resources.DisplayVision.responseCurve,
+          ),
+        );
         // Soft educational scale from lumen intensity (~80 klm ≈ default demo sun).
         const powerScale = Math.min(3, 0.35 + emitter.intensityLm * 8e-6);
         this.sun.intensity = base * powerScale;
@@ -498,6 +513,11 @@ export class BabylonPresenter implements FramePresenter {
 
   get lastPack() {
     return this.volumetrics.lastPack;
+  }
+
+  /** Smoothed compose exposure (auto when sky ON). */
+  get autoExposure(): number {
+    return this.volumetrics.autoExposure;
   }
 
   getCameraPose(): CameraPose {

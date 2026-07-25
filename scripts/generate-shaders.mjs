@@ -450,6 +450,18 @@ function main() {
   const compose = resolveIncludes(readSrc('volumetric/compose.glsl'), path.join(srcDir, 'volumetric/compose.glsl'));
   writeOut('volumetric_compose', compose, 'VOLUMETRIC_COMPOSE_FRAGMENT');
 
+  const lumMeter = resolveIncludes(
+    readSrc('volumetric/luminance.glsl'),
+    path.join(srcDir, 'volumetric/luminance.glsl'),
+  );
+  writeOut('volumetric_luminance', lumMeter, 'VOLUMETRIC_LUMINANCE_FRAGMENT');
+
+  const lumReduce = resolveIncludes(
+    readSrc('volumetric/luminance_reduce.glsl'),
+    path.join(srcDir, 'volumetric/luminance_reduce.glsl'),
+  );
+  writeOut('volumetric_luminance_reduce', lumReduce, 'VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT');
+
   // --- Surface plugin ---
   const surfDefsPath = path.join(srcDir, 'surface/radiance_plugin_definitions.tpl.glsl');
   let surfDefs = normalizeNewlines(fs.readFileSync(surfDefsPath, 'utf8'));
@@ -519,6 +531,8 @@ export { INCIDENT_LIGHT_GLSL } from './incident_light';
 export { MICROFACET_BRDF_GLSL } from './microfacet_brdf';
 export { VOLUMETRIC_FRAGMENT } from './volumetric_raymarch';
 export { VOLUMETRIC_COMPOSE_FRAGMENT } from './volumetric_compose';
+export { VOLUMETRIC_LUMINANCE_FRAGMENT } from './volumetric_luminance';
+export { VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT } from './volumetric_luminance_reduce';
 export { SURFACE_RADIANCE_DEFINITIONS } from './surface_radiance_definitions';
 export { SURFACE_RADIANCE_BEFORE_FRAGCOLOR } from './surface_radiance_before_fragcolor';
 export { SURFACE_RADIANCE_UNIFORMS } from './surface_radiance_uniforms';

@@ -9,6 +9,7 @@ import {
   deriveBloomContribution,
   deriveGlowContribution,
   laserDotDisplayBrightness,
+  resolveVisionBrightnessOpts,
   type World,
 } from '@engine';
 
@@ -56,10 +57,15 @@ export class StudioPipeline {
     for (const id of world.query('LightEmitter')) {
       const emitter = world.get(id, 'LightEmitter');
       if (!emitter?.enabled) continue;
-      const power = laserDotDisplayBrightness(emitter.powerW, emitter.wavelengthNm, {
-        ambientLevel: world.resources.EnvironmentLighting.ambientLevel,
-        responseCurve: world.resources.DisplayVision.responseCurve,
-      });
+      const power = laserDotDisplayBrightness(
+        emitter.powerW,
+        emitter.wavelengthNm,
+        resolveVisionBrightnessOpts(
+          world.resources.EnvironmentLighting.ambientLevel,
+          world.resources.Atmosphere,
+          world.resources.DisplayVision.responseCurve,
+        ),
+      );
       const sm = world.get(id, 'SurfaceMaterial') ?? null;
       bloomSum += deriveBloomContribution(emitter.bloomGain, power, sm);
       glowSum += deriveGlowContribution(

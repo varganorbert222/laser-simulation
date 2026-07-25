@@ -1,0 +1,9 @@
+@use '../render-settings-panel/panel-form';
+
+.vision-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: 100%;
+  box-sizing: border-box;
+}

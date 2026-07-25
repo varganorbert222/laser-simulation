@@ -1,7 +1,7 @@
 /**
  * Editable power → display HDR response curve.
  *
- * X: log optical power 1 mW … 500 kW (same map as the power slider).
+ * X: log optical power 1 mW … 1 kW (same map as the power slider).
  * Y: linear HDR intensity 0 … HDR_CEILING (before volumetric ACES).
  *
  * Evaluation input is luminous product P(mW)·V(λ)·exposure; at V=1 this equals
@@ -23,7 +23,7 @@ export const DISPLAY_RESPONSE_HDR_MAX = 96;
  */
 export const DISPLAY_LUMINOUS_LOG_REF = 1;
 
-/** Upper luminous product for the log map (500 kW at V=1). */
+/** Upper luminous product for the log map (1 kW at V=1). */
 export const DISPLAY_LUMINOUS_LOG_MAX = POWER_W_MAX * 1000;
 
 export interface DisplayResponsePoint {
@@ -42,13 +42,13 @@ export const DISPLAY_RESPONSE_POINT_MAX = 12;
 
 /** Powers (W) used to seed the default scientific curve. */
 const DEFAULT_SAMPLE_POWERS_W = [
-  0.001, 0.005, 0.05, 0.1, 1, 10, 1_000, 100_000, 500_000,
+  0.001, 0.005, 0.05, 0.1, 1, 10, 50, 100, 1_000,
 ] as const;
 
 /**
  * Scientific display map (Weber–Fechner):
  *   perceived ∝ log₁₀(1 + L / L_ref)
- * mapped so 1 mW·V … 500 kW·V span the HDR range evenly in log decades.
+ * mapped so 1 mW·V … 1 kW·V span the HDR range evenly in log decades.
  *
  * Each decade of power gets a similar HDR step — so 1 W → 10 W → 1 kW stays
  * visibly distinct (unlike the old Stevens^0.7 + soft ceil that flattened >1 W).

@@ -49,10 +49,15 @@ const PHOTOPIC_AMBIENT_FLOOR = 0.35;
 const PHYSICAL_LUMINOUS_REF = 35;
 
 export interface VisionBrightnessOpts {
-  /** Scene ambient level [0,1] from EnvironmentLighting — drives eye exposure. */
+  /** Scene ambient level [0,1] — drives mesopic V_eff and (when pack-side) eye gain. */
   ambientLevel?: number;
   /** Editable power→HDR curve; omit to use scientific Weber–Fechner default. */
   responseCurve?: DisplayResponseCurve | null;
+  /**
+   * When false, pack-side eyeAdaptationGain is 1 — compose HDR auto-exposure
+   * handles display adaptation (Atmosphere / sky ON). Default true (lab / sky OFF).
+   */
+  packSideAdaptation?: boolean;
 }
 
 /**
@@ -94,10 +99,17 @@ export function eyeSensitivity(
 /**
  * Eye exposure from environment brightness (inverse of ambient fill).
  * Dark lab → high gain; bright day → ~1×.
+ * Used only when pack-side adaptation is on (sky OFF); sky ON uses compose AE.
  */
 export function eyeAdaptationGainFromAmbient(ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT): number {
   const a = clampAmbientLevel(ambientLevel);
   return 1 + (1 - a) * (DARK_ENVIRONMENT_ADAPTATION_GAIN - 1);
+}
+
+/** Pack-side adaptation gain from vision opts (1 when compose auto-exposure owns display). */
+export function packSideEyeAdaptationGain(opts?: VisionBrightnessOpts | null): number {
+  if (opts?.packSideAdaptation === false) return 1;
+  return eyeAdaptationGainFromAmbient(opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT);
 }
 
 /** Relative perceived brightness of a laser spot: P(mW) · V_eff(λ) · exposure(ambient). */
@@ -105,13 +117,13 @@ export function laserDotLuminousProduct(
   powerW: number,
   wavelengthNm: number,
   ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT,
+  packSideAdaptation = true,
 ): number {
   const powerMw = Math.max(0, powerW) * 1000;
-  return (
-    powerMw *
-    eyeSensitivity(wavelengthNm, ambientLevel) *
-    eyeAdaptationGainFromAmbient(ambientLevel)
-  );
+  const gain = packSideAdaptation
+    ? eyeAdaptationGainFromAmbient(ambientLevel)
+    : 1;
+  return powerMw * eyeSensitivity(wavelengthNm, ambientLevel) * gain;
 }
 
 /**
@@ -141,7 +153,10 @@ export function physicalLuminousScale(
   opts?: VisionBrightnessOpts | null,
 ): number {
   const ambient = opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
-  return laserDotLuminousProduct(powerW, wavelengthNm, ambient) / PHYSICAL_LUMINOUS_REF;
+  const packSide = opts?.packSideAdaptation !== false;
+  return (
+    laserDotLuminousProduct(powerW, wavelengthNm, ambient, packSide) / PHYSICAL_LUMINOUS_REF
+  );
 }
 
 /**
@@ -165,8 +180,9 @@ export function laserDotDisplayBrightness(
   opts?: VisionBrightnessOpts | null,
 ): number {
   const ambient = opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
+  const packSide = opts?.packSideAdaptation !== false;
   return displayLuminousToneMap(
-    laserDotLuminousProduct(powerW, wavelengthNm, ambient),
+    laserDotLuminousProduct(powerW, wavelengthNm, ambient, packSide),
     opts?.responseCurve,
   );
 }

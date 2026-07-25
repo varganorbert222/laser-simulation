@@ -1,0 +1,9 @@
+@use '../render-settings-panel/panel-form';
+
+.presentation-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  width: 100%;
+  box-sizing: border-box;
+}

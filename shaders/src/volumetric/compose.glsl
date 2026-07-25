@@ -10,6 +10,8 @@ uniform float uTonemapMode;
 uniform float uColorProfile;
 /** Display gamma for canvas encode after tonemap (typically 2.2 / 2.4). */
 uniform float uOutputGamma;
+/** Pre-tonemap exposure (auto from HDR log-avg when sky ON; manual HDR/SDR baseline otherwise). */
+uniform float uAutoExposure;
 uniform float uAerialEnabled;
 uniform sampler3D uAerialPerspectiveLUT;
 
@@ -91,14 +93,11 @@ void main(void) {
     vol = clamp(vol, 0.0, 1.0);
   }
 
-  // Linear HDR composite (scene + volumetric contribution).
-  vec3 combined = scene + vol;
+  // Linear HDR composite (scene + volumetric contribution), then eye / display exposure.
+  vec3 combined = (scene + vol) * max(uAutoExposure, 1e-6);
 
-  // Tonemap once for the full frame.
-  // SDR: full-strength operator. HDR: weaker pre-exposure keeps more relative dynamic range.
-  vec3 mapped = (uColorProfile < 0.5)
-      ? applyTonemap(combined)
-      : applyTonemap(combined * 0.25);
+  // Tonemap once for the full frame (ACES / Reinhard / Hable).
+  vec3 mapped = applyTonemap(combined);
 
   // Final display encode for the LDR canvas (both profiles).
   vec3 outc = applyDisplayGamma(mapped, uOutputGamma);

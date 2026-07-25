@@ -14,12 +14,19 @@ import {
   type Engine,
   type Scene,
 } from '@babylonjs/core';
+import '@babylonjs/core/Engines/engine.js';
+import '@babylonjs/core/Engines/Extensions/engine.readTexture.js';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import {
+  AUTO_EXPOSURE_KEY,
+  MANUAL_HDR_EXPOSURE,
   VOLUMETRIC_LIGHT_SLOTS,
   VOLUMETRIC_MEDIA_SLOTS,
   clampRenderScale,
+  exposureFromAvgLuminance,
   gatherRenderPack,
+  manualComposeExposure,
+  smoothExposure,
   type BakedNoiseVolume,
   type GatheredFrame,
   type World,
@@ -28,6 +35,8 @@ import {
   VOLUMETRIC_COMPOSE_FRAGMENT,
   VOLUMETRIC_COMPOSE_SHADER_KEY,
   VOLUMETRIC_FRAGMENT,
+  VOLUMETRIC_LUMINANCE_FRAGMENT,
+  VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT,
   VOLUMETRIC_SAMPLERS,
   VOLUMETRIC_SHADER_KEY,
   VOLUMETRIC_UNIFORMS,
@@ -47,6 +56,8 @@ type EffectLike = {
 
 type AbsoluteSize = { width: number; height: number };
 
+const LUMINANCE_METER_SIZE = 32;
+
 /**
  * Volumetric lights via Babylon multi-pass RTT pattern:
  * https://doc.babylonjs.com/features/featuresDeepDive/postProcesses/renderTargetTextureMultiPass
@@ -62,8 +73,17 @@ export class VolumetricBinder {
   /** Native-res compose: scene + upsampled volumetrics. */
   readonly compose: PostProcess;
 
+  /** Last smoothed compose exposure (for UI readout). */
+  get autoExposure(): number {
+    return this.smoothedExposure;
+  }
+
   private readonly effectRenderer: EffectRenderer;
   private readonly volumetricEffect: EffectWrapper;
+  private readonly luminanceEffect: EffectWrapper;
+  private readonly luminanceReduceEffect: EffectWrapper;
+  private readonly luminanceMeter: RenderTargetTexture;
+  private readonly luminanceAvg: RenderTargetTexture;
   private readonly noiseTextures: NoiseTextureCache;
 
   private lastRenderScale = 1;
@@ -77,6 +97,10 @@ export class VolumetricBinder {
   /** Optional atmosphere aerial-perspective 3D LUT (distant haze in compose). */
   private _aerialLut: BaseTexture | null = null;
   private readonly _aerialDummy: RawTexture3D;
+
+  private smoothedExposure = MANUAL_HDR_EXPOSURE;
+  private readingLuminance = false;
+  private _meterSceneTex: BaseTexture | null = null;
 
   constructor(
     private readonly engine: Engine,
@@ -136,11 +160,75 @@ export class VolumetricBinder {
       this.applyUniforms(this.volumetricEffect.effect as unknown as EffectLike);
     });
 
+    this.luminanceMeter = new RenderTargetTexture(
+      'volumetricLumMeter',
+      { width: LUMINANCE_METER_SIZE, height: LUMINANCE_METER_SIZE },
+      scene,
+      false,
+      true,
+      Constants.TEXTURETYPE_HALF_FLOAT,
+      false,
+      Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+      false,
+      false,
+    );
+    this.luminanceMeter.renderList = [];
+    this.luminanceMeter.wrapU = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+    this.luminanceMeter.wrapV = Constants.TEXTURE_CLAMP_ADDRESSMODE;
+
+    this.luminanceAvg = new RenderTargetTexture(
+      'volumetricLumAvg',
+      { width: 1, height: 1 },
+      scene,
+      false,
+      true,
+      Constants.TEXTURETYPE_HALF_FLOAT,
+      false,
+      Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+      false,
+      false,
+    );
+    this.luminanceAvg.renderList = [];
+
+    this.luminanceEffect = new EffectWrapper({
+      engine,
+      name: 'volumetricLuminance',
+      fragmentShader: VOLUMETRIC_LUMINANCE_FRAGMENT,
+      uniformNames: [],
+      samplerNames: ['textureSampler', 'volumetricTexture'],
+      useAsPostProcess: true,
+      allowEmptySourceTexture: true,
+    });
+    this.luminanceEffect.onApplyObservable.add(() => {
+      const fx = this.luminanceEffect.effect as unknown as EffectLike;
+      if (this._meterSceneTex) {
+        fx.setTexture('textureSampler', this._meterSceneTex);
+      }
+      fx.setTexture('volumetricTexture', this.volumetricTarget);
+    });
+
+    this.luminanceReduceEffect = new EffectWrapper({
+      engine,
+      name: 'volumetricLuminanceReduce',
+      fragmentShader: VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT,
+      uniformNames: ['uTexel', 'uSize'],
+      samplerNames: ['textureSampler'],
+      useAsPostProcess: true,
+      allowEmptySourceTexture: true,
+    });
+    this.luminanceReduceEffect.onApplyObservable.add(() => {
+      const fx = this.luminanceReduceEffect.effect as unknown as EffectLike;
+      const inv = 1 / LUMINANCE_METER_SIZE;
+      fx.setVector2('uTexel', new Vector2(inv, inv));
+      fx.setFloat('uSize', LUMINANCE_METER_SIZE);
+      fx.setTexture('textureSampler', this.luminanceMeter);
+    });
+
     // Native compose only — keeps the camera PP chain (and scene RT) at full resolution.
     this.compose = new PostProcess(
       'volumetricCompose',
       'volumetricCompose',
-      ['uTonemapMode', 'uColorProfile', 'uOutputGamma', 'uAerialEnabled'],
+      ['uTonemapMode', 'uColorProfile', 'uOutputGamma', 'uAutoExposure', 'uAerialEnabled'],
       ['volumetricTexture', 'uAerialPerspectiveLUT'],
       1.0,
       camera,
@@ -154,9 +242,24 @@ export class VolumetricBinder {
       const q = this._world?.resources.Quality;
       const mode =
         q?.tonemapMode === 'hable' ? 2 : q?.tonemapMode === 'reinhard' ? 1 : 0;
+      const profile = q?.colorProfile === 'sdr' ? 'sdr' : 'hdr';
       fx.setFloat('uTonemapMode', mode);
-      fx.setFloat('uColorProfile', q?.colorProfile === 'sdr' ? 0 : 1);
+      fx.setFloat('uColorProfile', profile === 'sdr' ? 0 : 1);
       fx.setFloat('uOutputGamma', typeof q?.outputGamma === 'number' ? q.outputGamma : 2.2);
+
+      const autoSky = !!this._world?.resources.Atmosphere?.enabled;
+      if (autoSky) {
+        // Scene color is already bound as textureSampler on the compose effect.
+        const sceneTex =
+          (effect as { getTexture?: (n: string) => BaseTexture | null }).getTexture?.(
+            'textureSampler',
+          ) ?? null;
+        this.meterAutoExposure(sceneTex);
+      } else {
+        this.smoothedExposure = manualComposeExposure(profile);
+      }
+      fx.setFloat('uAutoExposure', this.smoothedExposure);
+
       const aerialOn = this._aerialLut && this._world?.resources.Atmosphere?.enabled ? 1 : 0;
       fx.setFloat('uAerialEnabled', aerialOn);
       fx.setTexture('uAerialPerspectiveLUT', this._aerialLut ?? this._aerialDummy);
@@ -240,10 +343,69 @@ export class VolumetricBinder {
   dispose(): void {
     this.compose.dispose();
     this.volumetricEffect.dispose();
+    this.luminanceEffect.dispose();
+    this.luminanceReduceEffect.dispose();
     this.effectRenderer.dispose();
     this.volumetricTarget.dispose();
+    this.luminanceMeter.dispose();
+    this.luminanceAvg.dispose();
     this.noiseTextures.dispose();
     this._aerialDummy.dispose();
+  }
+
+  /**
+   * Meter scene+vol HDR log-average → temporal exposure (1-frame lag via async read).
+   * Lasers only affect AE through visible energy in these buffers.
+   */
+  private meterAutoExposure(sceneTex: BaseTexture | null): void {
+    if (!sceneTex) return;
+    if (!this.luminanceEffect.isReady() || !this.luminanceReduceEffect.isReady()) return;
+    const lumFx = this.luminanceEffect.effect;
+    const redFx = this.luminanceReduceEffect.effect;
+    if (!lumFx?.isReady() || !redFx?.isReady()) return;
+
+    this._meterSceneTex = sceneTex;
+    this.effectRenderer.render(this.luminanceEffect, this.luminanceMeter);
+    this.effectRenderer.render(this.luminanceReduceEffect, this.luminanceAvg);
+
+    if (this.readingLuminance) return;
+    const internal = this.luminanceAvg.getInternalTexture();
+    if (!internal) return;
+    this.readingLuminance = true;
+    const engine = this.engine as Engine & {
+      _readTexturePixels?: (
+        texture: ReturnType<RenderTargetTexture['getInternalTexture']>,
+        width: number,
+        height: number,
+        faceIndex?: number,
+        level?: number,
+        buffer?: ArrayBufferView | null,
+        flushRenderer?: boolean,
+        noDataConversion?: boolean,
+        x?: number,
+        y?: number,
+      ) => Promise<ArrayBufferView>;
+    };
+    const read = engine._readTexturePixels?.bind(engine);
+    if (!read) {
+      this.readingLuminance = false;
+      return;
+    }
+    read(internal, 1, 1, 0, 0, null, true, false)
+      .then((data) => {
+        this.readingLuminance = false;
+        const view = data as unknown as { length: number; [i: number]: number };
+        if (!view || view.length < 1) return;
+        const avgLum = Number(view[0]);
+        if (!Number.isFinite(avgLum) || avgLum < 0) return;
+        // UNSIGNED_BYTE fallback stores a compressed value — treat small ints as linear.
+        const lum = avgLum > 1.5 && avgLum <= 255 ? avgLum / 255 : avgLum;
+        const target = exposureFromAvgLuminance(lum, AUTO_EXPOSURE_KEY);
+        this.smoothedExposure = smoothExposure(this.smoothedExposure, target);
+      })
+      .catch(() => {
+        this.readingLuminance = false;
+      });
   }
 
   private syncVolumetricSize(scale: number, force: boolean): void {
@@ -414,4 +576,3 @@ export class VolumetricBinder {
     effect.setVector3(`uMediaPlumeDir${s}`, new Vector3(...M.plumeDirCam));
   }
 }
-

@@ -3,8 +3,10 @@ import {
   eyeSensitivity,
   laserBeamLuminousProduct,
   laserDotLuminousProduct,
+  packSideEyeAdaptationGain,
   photopicLuminousEfficacy,
   photopicVisionWeight,
+  physicalLuminousScale,
   relativeBeamBrightness,
   relativeDotBrightness,
 } from './laser-brightness';
@@ -68,5 +70,19 @@ describe('laser brightness (photopic + Rayleigh)', () => {
     const greenDay = laserDotLuminousProduct(0.005, 532, 0.5);
     const redDay = laserDotLuminousProduct(0.005, 650, 0.5);
     expect(greenDark / redDark).toBeGreaterThan(greenDay / redDay);
+  });
+
+  it('sky ON disables pack-side eye adaptation gain', () => {
+    expect(packSideEyeAdaptationGain({ ambientLevel: 0, packSideAdaptation: false })).toBe(1);
+    const withGain = physicalLuminousScale(0.1, 532, { ambientLevel: 0 });
+    const without = physicalLuminousScale(0.1, 532, {
+      ambientLevel: 0,
+      packSideAdaptation: false,
+    });
+    expect(withGain).toBeGreaterThan(without);
+    expect(without).toBeCloseTo(
+      laserDotLuminousProduct(0.1, 532, 0, false) / 35,
+      5,
+    );
   });
 });
