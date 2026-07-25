@@ -90,7 +90,7 @@ vec3 atmoTransmittanceRay(vec3 origin, vec3 dir, int steps) {
 
   float ds = (t1 - t0) / float(steps);
   vec3 od = vec3(0.0);
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 96; i++) {
     if (i >= steps) break;
     float t = t0 + (float(i) + 0.5) * ds;
     vec3 p = origin + dir * t;
@@ -192,13 +192,13 @@ void main() {
     return;
   }
 
-  int steps = int(clamp(uSampleCount, 8.0, 48.0));
+  int steps = int(clamp(uSampleCount, 8.0, 64.0));
   float ds = (tEnd - t0) / float(steps);
   vec3 luminance = vec3(0.0);
   vec3 throughput = vec3(1.0);
   vec3 towardSun = normalize(-uSunDirection);
 
-  for (int i = 0; i < 48; i++) {
+  for (int i = 0; i < 64; i++) {
     if (i >= steps) break;
     float t = t0 + (float(i) + 0.5) * ds;
     vec3 p = origin + viewDir * t;

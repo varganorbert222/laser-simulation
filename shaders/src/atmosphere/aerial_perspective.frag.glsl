@@ -34,13 +34,13 @@ void main() {
     return;
   }
 
-  int steps = int(clamp(uSampleCount, 8.0, 48.0));
+  int steps = int(clamp(uSampleCount, 8.0, 64.0));
   float ds = (tEnd - t0) / float(steps);
   vec3 luminance = vec3(0.0);
   vec3 throughput = vec3(1.0);
   vec3 towardSun = normalize(-uSunDirection);
 
-  for (int i = 0; i < 48; i++) {
+  for (int i = 0; i < 64; i++) {
     if (i >= steps) break;
     float t = t0 + (float(i) + 0.5) * ds;
     vec3 p = origin + viewDir * t;

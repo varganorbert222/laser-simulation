@@ -50,7 +50,8 @@ export function createDefaultAtmosphereModel(): AtmosphereModel {
     ozoneCenterHeight: 25_000,
     ozoneWidth: 15_000,
     groundAlbedo: [0.3, 0.3, 0.3],
-    solarIrradiance: [1.0, 0.98, 0.92],
+    // Slightly warm, punchy solar RGB for vivid sky/sun after display tonemap.
+    solarIrradiance: [1.18, 1.12, 1.0],
   };
 }
 

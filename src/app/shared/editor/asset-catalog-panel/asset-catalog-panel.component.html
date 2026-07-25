@@ -1,149 +1,252 @@
-<div class="catalog">
-  <p class="hint">{{ l10n.t('hintAssetCatalog') }}</p>
+<div class="browser">
+  <header class="toolbar">
+    <div class="tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        [class.active]="tab() === 'textures'"
+        [attr.aria-selected]="tab() === 'textures'"
+        (click)="setTab('textures')"
+      >
+        {{ l10n.t('assetTabTextures') }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [class.active]="tab() === 'skyboxes'"
+        [attr.aria-selected]="tab() === 'skyboxes'"
+        (click)="setTab('skyboxes')"
+      >
+        {{ l10n.t('assetTabSkyboxes') }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        [class.active]="tab() === 'models'"
+        [attr.aria-selected]="tab() === 'models'"
+        (click)="setTab('models')"
+      >
+        {{ l10n.t('assetTabModels') }}
+      </button>
+    </div>
+    <label class="search">
+      <span class="sr-only">{{ l10n.t('assetSearch') }}</span>
+      <input
+        type="search"
+        [value]="query()"
+        [placeholder]="l10n.t('assetSearchPlaceholder')"
+        (input)="onQuery($any($event.target).value)"
+      />
+    </label>
+  </header>
 
-  <div class="tabs" role="tablist">
-    <button
-      type="button"
-      role="tab"
-      [class.active]="tab() === 'skyboxes'"
-      [attr.aria-selected]="tab() === 'skyboxes'"
-      (click)="setTab('skyboxes')"
-    >
-      {{ l10n.t('assetTabSkyboxes') }}
-    </button>
-    <button
-      type="button"
-      role="tab"
-      [class.active]="tab() === 'models'"
-      [attr.aria-selected]="tab() === 'models'"
-      (click)="setTab('models')"
-    >
-      {{ l10n.t('assetTabModels') }}
-    </button>
-    <button
-      type="button"
-      role="tab"
-      [class.active]="tab() === 'textures'"
-      [attr.aria-selected]="tab() === 'textures'"
-      (click)="setTab('textures')"
-    >
-      {{ l10n.t('assetTabTextures') }}
-    </button>
-  </div>
+  <div class="split">
+    <section class="grid-pane" [attr.aria-label]="l10n.t('assetCatalog')">
+      @if (tab() === 'models' && !canAssignModel()) {
+        <p class="banner">{{ l10n.t('hintAssetAssignModel') }}</p>
+      }
 
-  @if (tab() === 'skyboxes') {
-    <ul class="asset-list">
-      @for (row of skyboxRows(); track row.id) {
-        <li [class.active]="isActiveSkybox(row.id)">
-          <div class="meta">
-            <strong>{{ row.entry.label ?? row.id }}</strong>
-            <code>{{ row.id }}</code>
-            <span class="path">{{ row.summary }}</span>
+      <div class="grid">
+        @for (item of filtered(); track item.kind + ':' + item.id) {
+          <button
+            type="button"
+            class="tile"
+            [class.selected]="isSelected(item)"
+            [class.applied]="isApplied(item)"
+            (click)="select(item)"
+            (dblclick)="onTileActivate(item)"
+          >
+            <div class="thumb" [class.checker]="!!item.thumbUrl">
+              @if (item.thumbUrl) {
+                <img [src]="item.thumbUrl" [alt]="item.label" loading="lazy" />
+              } @else if (item.kind === 'model') {
+                <div class="model-glyph" aria-hidden="true">
+                  <svg viewBox="0 0 64 64" width="48" height="48">
+                    <path
+                      fill="currentColor"
+                      opacity="0.85"
+                      d="M32 8 52 20v24L32 56 12 44V20L32 8zm0 6.5L17.5 22.5v19L32 49.5l14.5-8V22.5L32 14.5z"
+                    />
+                    <path
+                      fill="currentColor"
+                      opacity="0.35"
+                      d="M32 14.5 46.5 22.5 32 30.5 17.5 22.5 32 14.5z"
+                    />
+                  </svg>
+                </div>
+              } @else {
+                <span class="missing">?</span>
+              }
+              <span class="ext">{{ item.extension }}</span>
+              @if (isApplied(item)) {
+                <span class="dot" [attr.title]="l10n.t('assetInUse')"></span>
+              }
+            </div>
+            <span class="tile-label">{{ item.label }}</span>
+            <span class="tile-id">{{ item.id }}</span>
+          </button>
+        } @empty {
+          <p class="empty">{{ l10n.t('assetCatalogEmpty') }}</p>
+        }
+      </div>
+    </section>
+
+    <aside class="inspector" [attr.aria-label]="l10n.t('assetInspector')">
+      @if (selected(); as item) {
+        <div class="preview-stage" [class.checker]="!!item.thumbUrl && !previewFailed()">
+          @if (item.kind === 'skybox' && item.faceUrls.length >= 6) {
+            <div class="cube-faces">
+              @for (face of item.faceUrls; track $index) {
+                <img [src]="face" [alt]="item.label + ' face ' + $index" loading="lazy" />
+              }
+            </div>
+          } @else if (item.thumbUrl && !previewFailed()) {
+            <img
+              class="preview-img"
+              [src]="item.thumbUrl"
+              [alt]="item.label"
+              (error)="onPreviewError()"
+            />
+          } @else if (item.kind === 'model') {
+            <div class="model-preview">
+              <svg viewBox="0 0 64 64" width="96" height="96">
+                <path
+                  fill="currentColor"
+                  opacity="0.9"
+                  d="M32 8 52 20v24L32 56 12 44V20L32 8zm0 6.5L17.5 22.5v19L32 49.5l14.5-8V22.5L32 14.5z"
+                />
+              </svg>
+              <span>{{ item.extension }}</span>
+            </div>
+          } @else {
+            <p class="preview-missing">{{ l10n.t('assetPreviewMissing') }}</p>
+          }
+        </div>
+
+        <div class="inspector-head">
+          <h3>{{ item.label }}</h3>
+          <code>{{ item.id }}</code>
+          <div class="badges">
+            <span class="badge type">{{ item.typeLabel }}</span>
+            @if (item.kind === 'skybox' && isActiveSkybox(item.id)) {
+              <span class="badge on">{{ l10n.t('assetBadgeSceneSkybox') }}</span>
+            }
+            @if (item.kind === 'texture' && isActiveNightSky(item.id)) {
+              <span class="badge on">{{ l10n.t('assetBadgeNightSky') }}</span>
+            }
+            @if (item.kind === 'texture' && isActiveMoon(item.id)) {
+              <span class="badge on">{{ l10n.t('assetBadgeMoon') }}</span>
+            }
+            @if (item.kind === 'model' && isActiveModel(item.id)) {
+              <span class="badge on">{{ l10n.t('assetBadgeAssigned') }}</span>
+            }
           </div>
-          <div class="actions">
+        </div>
+
+        <dl class="props">
+          <div>
+            <dt>{{ l10n.t('assetPropType') }}</dt>
+            <dd>{{ item.typeLabel }}</dd>
+          </div>
+          <div>
+            <dt>{{ l10n.t('assetPropCategory') }}</dt>
+            <dd>{{ item.category }}</dd>
+          </div>
+          <div>
+            <dt>{{ l10n.t('assetPropUsage') }}</dt>
+            <dd>{{ item.usage }}</dd>
+          </div>
+          <div>
+            <dt>{{ l10n.t('assetPropPath') }}</dt>
+            <dd class="mono">{{ item.path }}</dd>
+          </div>
+          <div>
+            <dt>{{ l10n.t('assetPropExtension') }}</dt>
+            <dd>{{ item.extension }}</dd>
+          </div>
+          <div>
+            <dt>{{ l10n.t('assetPropDimensions') }}</dt>
+            <dd>{{ previewPixels() }}</dd>
+          </div>
+          <div>
+            <dt>{{ l10n.t('assetPropFileSize') }}</dt>
+            <dd>{{ previewBytes() }}</dd>
+          </div>
+          @if (item.kind === 'model') {
+            <div>
+              <dt>{{ l10n.t('assetPropScale') }}</dt>
+              <dd>{{ item.scaleLabel }}</dd>
+            </div>
+          }
+          @if (item.kind === 'skybox' && item.typeLabel === 'photodome') {
+            <div>
+              <dt>{{ l10n.t('assetPropDomeResolution') }}</dt>
+              <dd>{{ item.resolutionLabel }}</dd>
+            </div>
+            <div>
+              <dt>{{ l10n.t('assetPropDomeSize') }}</dt>
+              <dd>{{ item.scaleLabel }}</dd>
+            </div>
+          }
+        </dl>
+
+        <div class="inspector-actions">
+          @if (item.kind === 'skybox') {
             <button
               type="button"
-              class="tiny"
+              class="primary"
               [disabled]="!editor.isEditMode()"
-              (click)="useAsSceneSkybox(row.id)"
+              (click)="useAsSceneSkybox(item.id)"
             >
               {{ l10n.t('assetUseAsSkybox') }}
             </button>
-          </div>
-        </li>
-      } @empty {
-        <li class="empty">{{ l10n.t('assetCatalogEmpty') }}</li>
-      }
-    </ul>
-    @if (editor.atmosphere().skyboxAssetId) {
-      <button
-        type="button"
-        class="tiny clear"
-        [disabled]="!editor.isEditMode()"
-        (click)="clearSceneSkybox()"
-      >
-        {{ l10n.t('assetClearSkybox') }}
-      </button>
-    }
-  }
-
-  @if (tab() === 'models') {
-    @if (!canAssignModel()) {
-      <p class="hint">{{ l10n.t('hintAssetAssignModel') }}</p>
-    }
-    <ul class="asset-list">
-      @for (row of modelRows(); track row.id) {
-        <li [class.active]="isActiveModel(row.id)">
-          <div class="meta">
-            <strong>{{ row.entry.label ?? row.id }}</strong>
-            <code>{{ row.id }}</code>
-            <span class="path">{{ row.summary }}</span>
-          </div>
-          <div class="actions">
+            @if (isActiveSkybox(item.id)) {
+              <button
+                type="button"
+                [disabled]="!editor.isEditMode()"
+                (click)="clearSceneSkybox()"
+              >
+                {{ l10n.t('assetClearSkybox') }}
+              </button>
+            }
+          }
+          @if (item.kind === 'texture') {
             <button
               type="button"
-              class="tiny"
-              [disabled]="!canAssignModel()"
-              (click)="assignModelToSelection(row.id)"
-            >
-              {{ l10n.t('assetAssignModel') }}
-            </button>
-          </div>
-        </li>
-      } @empty {
-        <li class="empty">{{ l10n.t('assetCatalogEmpty') }}</li>
-      }
-    </ul>
-    @if (canAssignModel() && editor.selectedEnvironmentPiece()?.catalogId) {
-      <button
-        type="button"
-        class="tiny clear"
-        (click)="clearModelFromSelection()"
-      >
-        {{ l10n.t('assetClearModel') }}
-      </button>
-    }
-  }
-
-  @if (tab() === 'textures') {
-    <ul class="asset-list">
-      @for (row of textureRows(); track row.id) {
-        <li
-          [class.active]="isActiveNightSky(row.id) || isActiveMoon(row.id)"
-        >
-          <div class="meta">
-            <strong>{{ row.entry.label ?? row.id }}</strong>
-            <code>{{ row.id }}</code>
-            <span class="path">{{ row.summary }}</span>
-            @if (isActiveNightSky(row.id)) {
-              <span class="badge">{{ l10n.t('assetBadgeNightSky') }}</span>
-            }
-            @if (isActiveMoon(row.id)) {
-              <span class="badge">{{ l10n.t('assetBadgeMoon') }}</span>
-            }
-          </div>
-          <div class="actions">
-            <button
-              type="button"
-              class="tiny"
+              class="primary"
               [disabled]="!editor.isEditMode()"
-              (click)="useAsNightSky(row.id)"
+              (click)="useAsNightSky(item.id)"
             >
               {{ l10n.t('assetUseAsNightSky') }}
             </button>
             <button
               type="button"
-              class="tiny"
               [disabled]="!editor.isEditMode()"
-              (click)="useAsMoon(row.id)"
+              (click)="useAsMoon(item.id)"
             >
               {{ l10n.t('assetUseAsMoon') }}
             </button>
-          </div>
-        </li>
-      } @empty {
-        <li class="empty">{{ l10n.t('assetCatalogEmpty') }}</li>
+          }
+          @if (item.kind === 'model') {
+            <button
+              type="button"
+              class="primary"
+              [disabled]="!canAssignModel()"
+              (click)="assignModelToSelection(item.id)"
+            >
+              {{ l10n.t('assetAssignModel') }}
+            </button>
+            @if (canAssignModel() && isActiveModel(item.id)) {
+              <button type="button" (click)="clearModelFromSelection()">
+                {{ l10n.t('assetClearModel') }}
+              </button>
+            }
+          }
+        </div>
+        <p class="hint-foot">{{ l10n.t('hintAssetDblClick') }}</p>
+      } @else {
+        <p class="empty-inspector">{{ l10n.t('assetSelectPrompt') }}</p>
       }
-    </ul>
-  }
+    </aside>
+  </div>
 </div>

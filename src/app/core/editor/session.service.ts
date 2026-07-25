@@ -1,6 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
 import {
-  createDemoWorld,
   createDefaultDisplayResponseCurve,
   createQuality,
   createAtmosphereSettingsForQuality,
@@ -42,6 +41,9 @@ import {
   downloadSceneJson,
   readFileAsText,
   sanitizeSceneFilename,
+  captureRenderPreferences,
+  createDemoWorldWithPreferences,
+  writeRenderPreferences,
 } from '@platform/persistence';
 import { EngineHostService } from '../services/engine-host.service';
 import { SceneLibraryService } from './scene-library.service';
@@ -50,6 +52,11 @@ import { SceneLibraryService } from './scene-library.service';
 export class SessionService {
   private readonly engine = inject(EngineHostService);
   private readonly scenes = inject(SceneLibraryService);
+
+  /** Remember live Quality + Atmosphere in the browser (presets stay static). */
+  private persistRenderPreferences(): void {
+    writeRenderPreferences(captureRenderPreferences(this.engine.world()));
+  }
 
   readonly presentationMode = computed(() => {
     this.engine.epoch();
@@ -122,6 +129,7 @@ export class SessionService {
       );
       world.bump();
     });
+    this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
   }
 
@@ -134,6 +142,7 @@ export class SessionService {
       );
       world.bump();
     });
+    this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
   }
 
@@ -146,6 +155,7 @@ export class SessionService {
       );
       world.bump();
     });
+    this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
   }
 
@@ -158,6 +168,7 @@ export class SessionService {
       );
       world.bump();
     });
+    this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
   }
 
@@ -203,6 +214,7 @@ export class SessionService {
       }
       world.bump();
     });
+    this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
   }
 
@@ -277,6 +289,7 @@ export class SessionService {
       }
       world.bump();
     });
+    this.persistRenderPreferences();
   }
 
   patchAtmosphere(partial: Partial<AtmosphereSettings>): void {
@@ -294,6 +307,7 @@ export class SessionService {
       }
       world.bump();
     });
+    this.persistRenderPreferences();
   }
 
   setAtmosphereQuality(preset: QualityLadder): void {
@@ -309,6 +323,7 @@ export class SessionService {
       this.syncSunIfAtmosphere(world);
       world.bump();
     });
+    this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
   }
 
@@ -322,6 +337,7 @@ export class SessionService {
       this.syncSunIfAtmosphere(world);
       world.bump();
     });
+    this.persistRenderPreferences();
   }
 
   setAtmosphereTimePreset(id: AtmosphereTimePresetId): void {
@@ -333,6 +349,7 @@ export class SessionService {
       this.syncSunIfAtmosphere(world);
       world.bump();
     });
+    this.persistRenderPreferences();
   }
 
   setAtmosphereSeasonPreset(id: AtmosphereSeasonPresetId): void {
@@ -344,6 +361,7 @@ export class SessionService {
       this.syncSunIfAtmosphere(world);
       world.bump();
     });
+    this.persistRenderPreferences();
   }
 
   setAtmosphereTimeAnimating(animating: boolean): void {
@@ -359,6 +377,7 @@ export class SessionService {
       this.syncSunIfAtmosphere(world);
       world.bump();
     });
+    this.persistRenderPreferences();
   }
 
   private syncSunIfAtmosphere(world: World): void {
@@ -399,7 +418,7 @@ export class SessionService {
     const wasActive = this.scenes.activeId() === id;
     this.scenes.delete(id);
     if (wasActive) {
-      this.engine.replaceWorld(createDemoWorld());
+      this.engine.replaceWorld(createDemoWorldWithPreferences());
     }
   }
 
@@ -435,7 +454,7 @@ export class SessionService {
 
   resetDemo(): void {
     this.scenes.clearActive();
-    this.engine.replaceWorld(createDemoWorld());
+    this.engine.replaceWorld(createDemoWorldWithPreferences());
   }
 
   screenshot(): void {

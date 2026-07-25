@@ -29,35 +29,78 @@ export interface AtmosphereQualityTune {
   aerialSamples: number;
   /** ReflectionProbe face resolution. */
   envCubeSize: number;
+  /** Sky View LUT resolution (higher = smoother horizon / sun limb). */
+  skyViewLutWidth: number;
+  skyViewLutHeight: number;
+  /** Transmittance LUT resolution (Bruneton baseline 256×64). */
+  transmittanceLutWidth: number;
+  transmittanceLutHeight: number;
+  /** Camera aerial-perspective volume (UE-style XYZ). */
+  aerialLutWidth: number;
+  aerialLutHeight: number;
+  aerialLutDepth: number;
 }
 
+/**
+ * Sky quality ladder aligned with Unity HDRP PBS / Unreal SkyAtmosphere tiers:
+ * - medium ≈ Bruneton + UE default SkyView / Aerial volume
+ * - high/ultra ≈ Epic / cinematic realtime (larger LUTs + denser marches)
+ */
 const ATMOSPHERE_QUALITY_TUNE: Record<
   Exclude<AtmosphereQualityPreset, 'custom'>,
   AtmosphereQualityTune
 > = {
   low: {
-    skyViewSamples: 16,
-    transmittanceSamples: 24,
-    aerialSamples: 8,
-    envCubeSize: 64,
-  },
-  medium: {
     skyViewSamples: 32,
-    transmittanceSamples: 48,
+    transmittanceSamples: 40,
     aerialSamples: 12,
     envCubeSize: 128,
+    skyViewLutWidth: 192,
+    skyViewLutHeight: 96,
+    transmittanceLutWidth: 256,
+    transmittanceLutHeight: 64,
+    aerialLutWidth: 24,
+    aerialLutHeight: 24,
+    aerialLutDepth: 16,
   },
-  high: {
-    skyViewSamples: 48,
-    transmittanceSamples: 64,
-    aerialSamples: 16,
-    envCubeSize: 256,
-  },
-  ultra: {
+  medium: {
     skyViewSamples: 64,
-    transmittanceSamples: 96,
+    transmittanceSamples: 64,
     aerialSamples: 20,
     envCubeSize: 256,
+    skyViewLutWidth: 256,
+    skyViewLutHeight: 128,
+    transmittanceLutWidth: 256,
+    transmittanceLutHeight: 64,
+    aerialLutWidth: 32,
+    aerialLutHeight: 32,
+    aerialLutDepth: 16,
+  },
+  high: {
+    skyViewSamples: 96,
+    transmittanceSamples: 80,
+    aerialSamples: 28,
+    envCubeSize: 512,
+    skyViewLutWidth: 384,
+    skyViewLutHeight: 192,
+    transmittanceLutWidth: 512,
+    transmittanceLutHeight: 128,
+    aerialLutWidth: 32,
+    aerialLutHeight: 32,
+    aerialLutDepth: 32,
+  },
+  ultra: {
+    skyViewSamples: 128,
+    transmittanceSamples: 96,
+    aerialSamples: 40,
+    envCubeSize: 512,
+    skyViewLutWidth: 512,
+    skyViewLutHeight: 256,
+    transmittanceLutWidth: 512,
+    transmittanceLutHeight: 128,
+    aerialLutWidth: 48,
+    aerialLutHeight: 48,
+    aerialLutDepth: 32,
   },
 };
 
@@ -79,6 +122,13 @@ export function matchAtmosphereQualityPreset(s: {
   transmittanceSamples: number;
   aerialSamples: number;
   envCubeSize: number;
+  skyViewLutWidth?: number;
+  skyViewLutHeight?: number;
+  transmittanceLutWidth?: number;
+  transmittanceLutHeight?: number;
+  aerialLutWidth?: number;
+  aerialLutHeight?: number;
+  aerialLutDepth?: number;
 }): AtmosphereQualityPreset {
   for (const id of ['low', 'medium', 'high', 'ultra'] as const) {
     const t = ATMOSPHERE_QUALITY_TUNE[id];
@@ -86,7 +136,16 @@ export function matchAtmosphereQualityPreset(s: {
       s.skyViewSamples === t.skyViewSamples &&
       s.transmittanceSamples === t.transmittanceSamples &&
       s.aerialSamples === t.aerialSamples &&
-      s.envCubeSize === t.envCubeSize
+      s.envCubeSize === t.envCubeSize &&
+      (s.skyViewLutWidth === undefined || s.skyViewLutWidth === t.skyViewLutWidth) &&
+      (s.skyViewLutHeight === undefined || s.skyViewLutHeight === t.skyViewLutHeight) &&
+      (s.transmittanceLutWidth === undefined ||
+        s.transmittanceLutWidth === t.transmittanceLutWidth) &&
+      (s.transmittanceLutHeight === undefined ||
+        s.transmittanceLutHeight === t.transmittanceLutHeight) &&
+      (s.aerialLutWidth === undefined || s.aerialLutWidth === t.aerialLutWidth) &&
+      (s.aerialLutHeight === undefined || s.aerialLutHeight === t.aerialLutHeight) &&
+      (s.aerialLutDepth === undefined || s.aerialLutDepth === t.aerialLutDepth)
     ) {
       return id;
     }
@@ -141,9 +200,16 @@ export interface AtmosphereSettings {
   transmittanceSamples: number;
   aerialSamples: number;
   envCubeSize: number;
+  skyViewLutWidth: number;
+  skyViewLutHeight: number;
+  transmittanceLutWidth: number;
+  transmittanceLutHeight: number;
+  aerialLutWidth: number;
+  aerialLutHeight: number;
+  aerialLutDepth: number;
   /** Apparent sun disc diameter in degrees (real ≈ 0.53). */
   sunAngularDiameterDeg: number;
-  /** Sky / IBL exposure multiplier (typical engines: 0.05–8). */
+  /** Sky / IBL exposure multiplier (typical engines: 0.05–8). Default ~1.35 for vivid noon. */
   exposure: number;
   /** 0 = analytical sky only, 1 = full Sky View LUT when ready. */
   lutBlend: number;
@@ -210,9 +276,9 @@ export function createDefaultAtmosphereSettings(): AtmosphereSettings {
     qualityPreset,
     ...tune,
     sunAngularDiameterDeg: 0.53,
-    exposure: 1,
+    exposure: 1.35,
     lutBlend: 1,
-    reflectionLevel: 0.85,
+    reflectionLevel: 0.95,
     skyboxHdrColors: true,
     nightExposure: 1,
     // Previous disc was ~1.15× sun diameter; default is 3× that for visibility.
@@ -221,8 +287,8 @@ export function createDefaultAtmosphereSettings(): AtmosphereSettings {
     nightBlendStrength: 1,
     // Unity Procedural Skybox Ground — dark void under the horizon.
     skyboxGroundColor: [0.02, 0.02, 0.025],
-    // Horizon / equator band (Unity-like rim between sky and ground).
-    skyboxEquatorColor: [0.45, 0.48, 0.52],
+    // Horizon / equator band — cooler cyan so noon sky stays vivid.
+    skyboxEquatorColor: [0.36, 0.58, 0.88],
     skyboxAssetId: null,
     nightSkyTextureId: DEFAULT_NIGHT_SKY_TEXTURE_ID,
     moonTextureId: DEFAULT_MOON_TEXTURE_ID,
@@ -248,6 +314,10 @@ function clampEnvCubeSize(n: number, d: number): number {
     }
   }
   return best;
+}
+
+function clampLutDim(n: number, lo: number, hi: number, d: number): number {
+  return Math.round(clamp(n, lo, hi, d));
 }
 
 export function createAtmosphereSettingsForQuality(
@@ -301,24 +371,68 @@ export function normalizeAtmosphereSettings(
     skyViewSamples: clamp(
       Math.round((raw.skyViewSamples as number) ?? tune.skyViewSamples),
       8,
-      128,
+      160,
       tune.skyViewSamples,
     ),
     transmittanceSamples: clamp(
       Math.round((raw.transmittanceSamples as number) ?? tune.transmittanceSamples),
       8,
-      128,
+      160,
       tune.transmittanceSamples,
     ),
     aerialSamples: clamp(
       Math.round((raw.aerialSamples as number) ?? tune.aerialSamples),
       4,
-      32,
+      64,
       tune.aerialSamples,
     ),
     envCubeSize: clampEnvCubeSize(
       (raw.envCubeSize as number) ?? tune.envCubeSize,
       tune.envCubeSize,
+    ),
+    skyViewLutWidth: clampLutDim(
+      Math.round((raw.skyViewLutWidth as number) ?? tune.skyViewLutWidth),
+      64,
+      512,
+      tune.skyViewLutWidth,
+    ),
+    skyViewLutHeight: clampLutDim(
+      Math.round((raw.skyViewLutHeight as number) ?? tune.skyViewLutHeight),
+      32,
+      256,
+      tune.skyViewLutHeight,
+    ),
+    transmittanceLutWidth: clampLutDim(
+      Math.round((raw.transmittanceLutWidth as number) ?? tune.transmittanceLutWidth),
+      128,
+      512,
+      tune.transmittanceLutWidth,
+    ),
+    transmittanceLutHeight: clampLutDim(
+      Math.round(
+        (raw.transmittanceLutHeight as number) ?? tune.transmittanceLutHeight,
+      ),
+      32,
+      128,
+      tune.transmittanceLutHeight,
+    ),
+    aerialLutWidth: clampLutDim(
+      Math.round((raw.aerialLutWidth as number) ?? tune.aerialLutWidth),
+      8,
+      64,
+      tune.aerialLutWidth,
+    ),
+    aerialLutHeight: clampLutDim(
+      Math.round((raw.aerialLutHeight as number) ?? tune.aerialLutHeight),
+      8,
+      64,
+      tune.aerialLutHeight,
+    ),
+    aerialLutDepth: clampLutDim(
+      Math.round((raw.aerialLutDepth as number) ?? tune.aerialLutDepth),
+      8,
+      64,
+      tune.aerialLutDepth,
     ),
     sunAngularDiameterDeg: clamp(
       raw.sunAngularDiameterDeg as number,
@@ -363,7 +477,7 @@ export function normalizeAtmosphereSettings(
     moonTextureId: normalizeMoonTextureId(raw.moonTextureId, base.moonTextureId),
     model: normalizeAtmosphereModel(raw.model),
   };
-  // Keep qualityPreset honest vs sample counts (Custom when tweaked).
+  // Keep qualityPreset honest vs sample counts / LUT sizes (Custom when tweaked).
   next.qualityPreset = matchAtmosphereQualityPreset(next);
   return next;
 }

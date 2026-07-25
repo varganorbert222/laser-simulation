@@ -24,13 +24,13 @@ void main() {
   bool hitGround = ground.x > 0.0;
   if (hitGround) t1 = min(t1, ground.x);
 
-  int steps = int(clamp(uSampleCount, 8.0, 64.0));
+  int steps = int(clamp(uSampleCount, 8.0, 128.0));
   float ds = (t1 - t0) / float(steps);
   vec3 luminance = vec3(0.0);
   vec3 throughput = vec3(1.0);
   vec3 towardSun = normalize(-uSunDirection);
 
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 128; i++) {
     if (i >= steps) break;
     float t = t0 + (float(i) + 0.5) * ds;
     vec3 p = origin + viewDir * t;
@@ -48,8 +48,8 @@ void main() {
     float pm = atmoPhaseHG(mu, uMieG);
     vec3 inscat = (atmoScatterR(h) * pr + atmoScatterM(h) * pm) * Tsun * uSolarIrradiance;
 
-    // Cheap isotropic multi-scatter fill
-    inscat += sigmaS * ATMO_INV_4PI * uSolarIrradiance * Tsun * 0.15 * uGroundAlbedo;
+    // Cheap isotropic multi-scatter fill — slightly stronger for fuller blue sky
+    inscat += sigmaS * ATMO_INV_4PI * uSolarIrradiance * Tsun * 0.22 * uGroundAlbedo;
 
     luminance += throughput * inscat * ds;
     throughput *= exp(-sigmaT * ds);

@@ -11,7 +11,10 @@ import {
   type Scene,
 } from '@babylonjs/core';
 import type { AtmosphereModel } from '@engine';
-import type { AtmosphereLutBaker } from './atmosphere-lut-baker';
+import {
+  atmosphereDisplayExposure,
+  type AtmosphereLutBaker,
+} from './atmosphere-lut-baker';
 import type { AtmosphereNightTextures } from './atmosphere-night-textures';
 import {
   ATMOSPHERE_SKYBOX_FRAG,
@@ -180,7 +183,7 @@ export class AtmosphereSkybox {
     m.setFloat('uSunAngularRadius', sunRad);
     m.setFloat('uMoonAngularRadius', moonRad);
     // Exposure is artistic; ambient still lifts the floor slightly for night→day eye feel.
-    m.setFloat('uExposure', opts.exposure * (0.55 + opts.ambientLevel * 0.9));
+    m.setFloat('uExposure', atmosphereDisplayExposure(opts.exposure, opts.ambientLevel));
     m.setFloat('uLutBlend', opts.lutReady ? opts.lutBlend : 0.0);
     m.setFloat('uSkyboxHdrColors', opts.skyboxHdrColors ? 1 : 0);
     m.setFloat('uNightExposure', opts.nightExposure);

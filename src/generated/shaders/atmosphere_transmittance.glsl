@@ -90,7 +90,7 @@ vec3 atmoTransmittanceRay(vec3 origin, vec3 dir, int steps) {
 
   float ds = (t1 - t0) / float(steps);
   vec3 od = vec3(0.0);
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 96; i++) {
     if (i >= steps) break;
     float t = t0 + (float(i) + 0.5) * ds;
     vec3 p = origin + dir * t;
@@ -164,6 +164,8 @@ vec2 atmoSkyViewUvFromDir(vec3 viewDir, vec3 sunDir) {
 
 uniform vec2 uResolution;
 
+uniform float uSampleCount;
+
 void main() {
   vec2 uv = gl_FragCoord.xy / max(uResolution, vec2(1.0));
   // Encode (rho, mu) like Bruneton transmittance table.
@@ -178,6 +180,7 @@ void main() {
 
   vec3 origin = vec3(0.0, r, 0.0);
   vec3 dir = vec3(sqrt(max(1.0 - mu * mu, 0.0)), mu, 0.0);
-  vec3 T = atmoTransmittanceRay(origin, normalize(dir), 48);
+  int steps = int(clamp(uSampleCount, 8.0, 96.0));
+  vec3 T = atmoTransmittanceRay(origin, normalize(dir), steps);
   gl_FragColor = vec4(T, 1.0);
 }

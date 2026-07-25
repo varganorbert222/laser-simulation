@@ -75,11 +75,17 @@ vec3 atmoSampleMoon(vec3 viewDir, vec3 moonDir, float angularRadius) {
   return rgb * 1.35 * max(uMoonExposure, 0.0);
 }
 
+/** Push chroma away from luminance — vivid noon blues without blowing energy. */
+vec3 atmoBoostChroma(vec3 c, float amount) {
+  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  return max(mix(vec3(y), c, amount), vec3(0.0));
+}
+
 /** Simple display sky so the dome is never pitch-black if LUTs are empty/unready. */
 vec3 analyticalSky(vec3 viewDir, vec3 sunLightDir) {
   vec3 towardSun = normalize(-sunLightDir);
   float elev = clamp(viewDir.y * 0.5 + 0.5, 0.0, 1.0);
-  vec3 zenith = vec3(0.15, 0.35, 0.75);
+  vec3 zenith = vec3(0.10, 0.42, 0.98);
   vec3 equator = uSkyboxEquatorColor;
   vec3 ground = uSkyboxGroundColor;
   // Unity Procedural Sky-like: zenith ↔ equator above, equator ↔ ground below.
@@ -87,18 +93,18 @@ vec3 analyticalSky(vec3 viewDir, vec3 sunLightDir) {
   if (viewDir.y < 0.0) {
     sky = mix(equator, ground, clamp(-viewDir.y * 2.0, 0.0, 1.0));
   }
-  // Rayleigh-ish blue bias toward zenith
-  sky += vec3(0.02, 0.05, 0.12) * max(viewDir.y, 0.0);
+  // Stronger Rayleigh-ish blue bias toward zenith
+  sky += vec3(0.04, 0.10, 0.22) * max(viewDir.y, 0.0);
   // Mie sun glow
   float mu = max(dot(viewDir, towardSun), 0.0);
-  float mie = pow(mu, 8.0) * 0.35 + pow(mu, 64.0) * 0.85;
+  float mie = pow(mu, 8.0) * 0.45 + pow(mu, 64.0) * 1.1 + pow(mu, 256.0) * 1.4;
   float sunUp = max(towardSun.y, 0.0);
-  vec3 sunCol = mix(vec3(1.0, 0.45, 0.15), vec3(1.0, 0.95, 0.85), sunUp);
-  sky += sunCol * mie * (0.25 + 0.75 * sunUp);
-  // Soft sun disc
+  vec3 sunCol = mix(vec3(1.0, 0.42, 0.12), vec3(1.0, 0.96, 0.82), sunUp);
+  sky += sunCol * mie * (0.35 + 0.9 * sunUp);
+  // Soft sun disc (fallback when LUT sun is weak)
   float cosLim = cos(uSunAngularRadius * 1.5);
   if (mu > cosLim && towardSun.y > -0.05) {
-    sky += sunCol * smoothstep(cosLim, 1.0, mu) * (4.0 + 12.0 * sunUp);
+    sky += sunCol * smoothstep(cosLim, 1.0, mu) * (8.0 + 22.0 * sunUp);
   }
   // Night fallback (before texture blend)
   if (towardSun.y < -0.05) {
@@ -115,23 +121,30 @@ void main() {
   vec2 uv = atmoSkyViewUvFromDir(viewDir, uSunDirection);
   vec3 lutSky = texture2D(uSkyViewLUT, uv).rgb;
 
-  // Soft sun from transmittance LUT (physical limb darkening / sunset color)
+  // Bright sun disc + corona from transmittance LUT (limb darkening / sunset color)
   vec3 towardSun = normalize(-uSunDirection);
   float cosA = dot(viewDir, towardSun);
   float cosLim = cos(uSunAngularRadius);
-  if (cosA > cosLim) {
+  float cosCorona = cos(uSunAngularRadius * 5.0);
+  if (cosA > cosCorona) {
     vec3 origin = atmoViewerOrigin();
     float mu = dot(normalize(origin), towardSun);
     vec3 T = atmoSampleTransmittanceLUT(uTransmittanceLUT, length(origin), mu);
     float limb = smoothstep(cosLim, 1.0, cosA);
-    lutSky += uSolarIrradiance * T * limb * 25.0;
+    float corona = smoothstep(cosCorona, cosLim, cosA);
+    // Core disc — punchy enough to survive display tonemap.
+    lutSky += uSolarIrradiance * T * limb * 70.0;
+    // Soft aureole so the sun doesn't look like a flat coin.
+    lutSky += uSolarIrradiance * T * corona * (1.0 - limb) * 12.0;
   }
 
   float lutEnergy = max(lutSky.r, max(lutSky.g, lutSky.b));
   float blend = uLutBlend * smoothstep(0.0, 0.05, lutEnergy);
   vec3 daySky = mix(analytical, lutSky * max(uExposure, 0.5), blend);
   // Keep a little analytical fill so empty LUT regions never go pure black
-  daySky = max(daySky, analytical * 0.35);
+  daySky = max(daySky, analytical * 0.28);
+  // Vivid chroma (noon blue / sunset orange) without changing luminance much.
+  daySky = atmoBoostChroma(daySky, 1.4);
 
   // Night: starfield + moon (full-moon ≈ anti-solar = light travel dir).
   float night = atmoNightFactor(towardSun);

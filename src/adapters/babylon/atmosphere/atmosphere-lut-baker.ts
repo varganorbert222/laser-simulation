@@ -47,8 +47,15 @@ type EffectLike = {
 };
 
 export const TRANSMITTANCE_LUT_SIZE = { width: 256, height: 64 };
-export const SKY_VIEW_LUT_SIZE = { width: 200, height: 100 };
+/** Default = medium preset (UE-like SkyView footprint). */
+export const SKY_VIEW_LUT_SIZE = { width: 256, height: 128 };
+/** Default = medium preset aerial volume. */
 export const AERIAL_LUT_SIZE = { width: 32, height: 32, depth: 16 };
+
+/** Artistic exposure scale shared by skybox + IBL capture (less dimming at night ambient). */
+export function atmosphereDisplayExposure(exposure: number, ambientLevel: number): number {
+  return Math.max(0, exposure) * (0.9 + Math.max(0, Math.min(1, ambientLevel)) * 0.45);
+}
 
 /**
  * Bakes Transmittance + Sky View GPU LUTs; Aerial Perspective 3D via CPU twin
@@ -77,7 +84,15 @@ export class AtmosphereLutBaker {
   private _aerialSliceZ = 0;
   private _skyLutsBaked = false;
   private _skyViewSamples = 32;
+  private _transmittanceSamples = 48;
   private _aerialSamples = 12;
+  private _skyViewW = SKY_VIEW_LUT_SIZE.width;
+  private _skyViewH = SKY_VIEW_LUT_SIZE.height;
+  private _transW = TRANSMITTANCE_LUT_SIZE.width;
+  private _transH = TRANSMITTANCE_LUT_SIZE.height;
+  private _aerialW = AERIAL_LUT_SIZE.width;
+  private _aerialH = AERIAL_LUT_SIZE.height;
+  private _aerialD = AERIAL_LUT_SIZE.depth;
 
   constructor(
     private readonly engine: Engine,
@@ -112,9 +127,13 @@ export class AtmosphereLutBaker {
     });
     this.transmittanceEffect.onApplyObservable.add(() => {
       this.applyCommon(this.transmittanceEffect.effect as unknown as EffectLike, {
-        width: TRANSMITTANCE_LUT_SIZE.width,
-        height: TRANSMITTANCE_LUT_SIZE.height,
+        width: this._transW,
+        height: this._transH,
       });
+      (this.transmittanceEffect.effect as unknown as EffectLike).setFloat(
+        'uSampleCount',
+        this._transmittanceSamples,
+      );
     });
 
     this.skyViewEffect = new EffectWrapper({
@@ -129,8 +148,8 @@ export class AtmosphereLutBaker {
     this.skyViewEffect.onApplyObservable.add(() => {
       const fx = this.skyViewEffect.effect as unknown as EffectLike;
       this.applyCommon(fx, {
-        width: SKY_VIEW_LUT_SIZE.width,
-        height: SKY_VIEW_LUT_SIZE.height,
+        width: this._skyViewW,
+        height: this._skyViewH,
       });
       fx.setFloat('uSampleCount', this._skyViewSamples);
       fx.setTexture('uTransmittanceLUT', this.transmittanceLut);
@@ -148,8 +167,8 @@ export class AtmosphereLutBaker {
     this.aerialEffect.onApplyObservable.add(() => {
       const fx = this.aerialEffect.effect as unknown as EffectLike;
       this.applyCommon(fx, {
-        width: AERIAL_LUT_SIZE.width,
-        height: AERIAL_LUT_SIZE.height,
+        width: this._aerialW,
+        height: this._aerialH,
       });
       fx.setFloat('uSampleCount', this._aerialSamples);
       fx.setFloat('uSliceZ', this._aerialSliceZ);
@@ -187,16 +206,39 @@ export class AtmosphereLutBaker {
     this._model = settings.model;
     this._sunDir = [sunLightDirWorld[0], sunLightDirWorld[1], sunLightDirWorld[2]];
     this._skyViewSamples = settings.skyViewSamples;
+    this._transmittanceSamples = settings.transmittanceSamples;
     this._aerialSamples = settings.aerialSamples;
 
     const modelKey = atmosphereModelKey(settings.model);
     const sunKey = `${this._sunDir[0].toFixed(4)},${this._sunDir[1].toFixed(4)},${this._sunDir[2].toFixed(4)}`;
-    const qualityKey = `${settings.qualityPreset}|${settings.skyViewSamples}|${settings.transmittanceSamples}|${settings.aerialSamples}`;
+    const qualityKey = [
+      settings.qualityPreset,
+      settings.skyViewSamples,
+      settings.transmittanceSamples,
+      settings.aerialSamples,
+      settings.skyViewLutWidth,
+      settings.skyViewLutHeight,
+      settings.transmittanceLutWidth,
+      settings.transmittanceLutHeight,
+      settings.aerialLutWidth,
+      settings.aerialLutHeight,
+      settings.aerialLutDepth,
+    ].join('|');
 
     if (!this.isReady()) return;
 
+    const lutResized = this.ensureLutSizes(
+      settings.skyViewLutWidth,
+      settings.skyViewLutHeight,
+      settings.transmittanceLutWidth,
+      settings.transmittanceLutHeight,
+      settings.aerialLutWidth,
+      settings.aerialLutHeight,
+      settings.aerialLutDepth,
+    );
+
     let modelChanged = false;
-    if (modelKey !== this.lastModelKey) {
+    if (modelKey !== this.lastModelKey || lutResized) {
       this.bakeTransmittance();
       this.lastModelKey = modelKey;
       this.aerialDirty = true;
@@ -208,8 +250,13 @@ export class AtmosphereLutBaker {
     if (qualityChanged) {
       this.lastQualityKey = qualityKey;
       this.aerialDirty = true;
-      // Sample-count changes require a sky-view rebake even if the sun is unchanged.
+      // Sample-count / resolution changes require a sky-view rebake even if the sun is unchanged.
       this.lastSunKey = '';
+      if (!lutResized) {
+        // Transmittance sample count alone still needs a rebake.
+        this.bakeTransmittance();
+        this._skyLutsBaked = false;
+      }
     }
     if (sunKey !== this.lastSunKey || modelChanged) {
       this.bakeSkyView();
@@ -244,6 +291,44 @@ export class AtmosphereLutBaker {
     this.aerialSliceTarget.dispose();
     this.aerialPerspectiveLut?.dispose();
     this.aerialPerspectiveLut = null;
+  }
+
+  private ensureLutSizes(
+    skyW: number,
+    skyH: number,
+    transW: number,
+    transH: number,
+    aerialW: number,
+    aerialH: number,
+    aerialD: number,
+  ): boolean {
+    let changed = false;
+    if (skyW !== this._skyViewW || skyH !== this._skyViewH) {
+      this.skyViewLut.resize({ width: skyW, height: skyH });
+      this._skyViewW = skyW;
+      this._skyViewH = skyH;
+      changed = true;
+    }
+    if (transW !== this._transW || transH !== this._transH) {
+      this.transmittanceLut.resize({ width: transW, height: transH });
+      this._transW = transW;
+      this._transH = transH;
+      changed = true;
+    }
+    if (
+      aerialW !== this._aerialW ||
+      aerialH !== this._aerialH ||
+      aerialD !== this._aerialD
+    ) {
+      this._aerialW = aerialW;
+      this._aerialH = aerialH;
+      this._aerialD = aerialD;
+      this.aerialSliceTarget.resize({ width: aerialW, height: aerialH });
+      this.aerialPerspectiveLut?.dispose();
+      this.aerialPerspectiveLut = null;
+      changed = true;
+    }
+    return changed;
   }
 
   private createLut2D(name: string, w: number, h: number): RenderTargetTexture {
@@ -310,7 +395,9 @@ export class AtmosphereLutBaker {
   private bakeAerialPerspectiveCpu(): void {
     const m = this._model;
     if (!m) return;
-    const { width, height, depth } = AERIAL_LUT_SIZE;
+    const width = this._aerialW;
+    const height = this._aerialH;
+    const depth = this._aerialD;
     const bytes = new Uint8Array(width * height * depth * 4);
     const towardSun: [number, number, number] = [
       -this._sunDir[0],
@@ -323,7 +410,7 @@ export class AtmosphereLutBaker {
     towardSun[2] /= sunLen;
 
     const maxDist = 80_000;
-    const steps = 12;
+    const steps = Math.max(8, Math.min(64, this._aerialSamples));
 
     for (let z = 0; z < depth; z++) {
       const altFrac = depth <= 1 ? 0 : z / (depth - 1);

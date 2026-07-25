@@ -86,7 +86,7 @@ vec3 atmoTransmittanceRay(vec3 origin, vec3 dir, int steps) {
 
   float ds = (t1 - t0) / float(steps);
   vec3 od = vec3(0.0);
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 96; i++) {
     if (i >= steps) break;
     float t = t0 + (float(i) + 0.5) * ds;
     vec3 p = origin + dir * t;

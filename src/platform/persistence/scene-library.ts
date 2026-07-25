@@ -5,6 +5,7 @@
 
 import { createDemoWorld, type World } from '@engine';
 import { documentToWorld, worldToDocument, type SceneDocument } from './scene-io';
+import { applyRenderPreferences, readRenderPreferences } from './render-preferences';
 
 export const SCENE_LIBRARY_STORAGE_KEY = 'light-studio.scene-library.v1';
 export const SCENE_LIBRARY_VERSION = 1 as const;
@@ -222,6 +223,13 @@ export function loadWorldFromLibrary(library: SceneLibrary, id: string): World |
   }
 }
 
+/** Demo world with last-used Quality + Atmosphere from browser prefs (if any). */
+export function createDemoWorldWithPreferences(
+  storage: SceneStorage = defaultSceneStorage(),
+): World {
+  return applyRenderPreferences(createDemoWorld(), readRenderPreferences(storage));
+}
+
 /** Startup world: last active scene, or demo if none / corrupt. */
 export function resolveStartupWorld(
   storage: SceneStorage = defaultSceneStorage(),
@@ -231,5 +239,5 @@ export function resolveStartupWorld(
     const world = loadWorldFromLibrary(library, library.activeId);
     if (world) return { world, library };
   }
-  return { world: createDemoWorld(), library };
+  return { world: createDemoWorldWithPreferences(storage), library };
 }

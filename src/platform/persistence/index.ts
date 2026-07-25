@@ -7,6 +7,7 @@ export {
 } from './scene-io';
 export {
   SCENE_LIBRARY_STORAGE_KEY,
+  createDemoWorldWithPreferences,
   createEmptySceneLibrary,
   createMemorySceneStorage,
   defaultSceneStorage,
@@ -25,3 +26,16 @@ export {
   type SceneLibraryMeta,
   type SceneStorage,
 } from './scene-library';
+export {
+  RENDER_PREFERENCES_STORAGE_KEY,
+  RENDER_PREFERENCES_VERSION,
+  applyRenderPreferences,
+  captureRenderPreferences,
+  createMemoryPreferencesStorage,
+  defaultPreferencesStorage,
+  normalizeRenderPreferences,
+  readRenderPreferences,
+  writeRenderPreferences,
+  type PreferencesStorage,
+  type RenderPreferences,
+} from './render-preferences';

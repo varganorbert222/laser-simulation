@@ -406,6 +406,7 @@ export class BabylonPresenter implements FramePresenter {
       nightBlendStrength: atmo.nightBlendStrength,
       skyboxGroundColor: atmo.skyboxGroundColor,
       skyboxEquatorColor: atmo.skyboxEquatorColor,
+      envCubeSize: atmo.envCubeSize,
     };
     this.atmosphereSkybox.sync(
       this.camera,

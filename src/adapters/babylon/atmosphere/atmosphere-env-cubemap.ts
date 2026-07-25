@@ -12,7 +12,10 @@ import {
 } from '@babylonjs/core';
 import { ReflectionProbe } from '@babylonjs/core/Probes/reflectionProbe.js';
 import type { AtmosphereModel } from '@engine';
-import type { AtmosphereLutBaker } from './atmosphere-lut-baker';
+import {
+  atmosphereDisplayExposure,
+  type AtmosphereLutBaker,
+} from './atmosphere-lut-baker';
 import type { AtmosphereNightTextures } from './atmosphere-night-textures';
 import {
   ATMOSPHERE_ENV_CAPTURE_SHADER,
@@ -63,39 +66,30 @@ const CAPTURE_SAMPLERS = [
   'uMoonMap',
 ] as const;
 
-/** Face resolution for sky → IBL cubemap capture. */
-export const ATMOSPHERE_ENV_CUBE_SIZE = 128;
+/** Default face resolution when Atmosphere.envCubeSize is not yet applied. */
+export const ATMOSPHERE_ENV_CUBE_SIZE = 256;
 
 /**
  * Captures the procedural atmosphere sky into a ReflectionProbe cubemap and
  * exposes it as `scene.environmentTexture` + StandardMaterial.reflectionTexture.
  */
 export class AtmosphereEnvCubemap {
-  readonly probe: ReflectionProbe;
+  private probe: ReflectionProbe;
+  private probeSize: number;
   private readonly captureMesh: Mesh;
   private readonly material: ShaderMaterial;
   private lastKey = '';
   private active = false;
+  private cubeBindObserver: { remove: () => void } | null = null;
+  private cubeUnbindObserver: { remove: () => void } | null = null;
 
   constructor(
     private readonly scene: Scene,
     private readonly baker: AtmosphereLutBaker,
     private readonly night: AtmosphereNightTextures,
   ) {
-    this.probe = new ReflectionProbe(
-      'atmosphereEnvProbe',
-      ATMOSPHERE_ENV_CUBE_SIZE,
-      scene,
-      true, // mipmaps — softens rough-ish reflections slightly
-      true, // float/half when available
-      false, // display-referred (matches skybox exposure)
-    );
-    this.probe.position = Vector3.Zero();
-    this.probe.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
-
-    const cube = this.probe.cubeTexture;
-    cube.coordinatesMode = Texture.CUBIC_MODE;
-    cube.level = 0.85;
+    this.probeSize = ATMOSPHERE_ENV_CUBE_SIZE;
+    this.probe = this.createProbe(this.probeSize);
 
     // Inverted box: probe cameras sit at the center and look out at the inner faces.
     this.captureMesh = MeshBuilder.CreateBox(
@@ -127,15 +121,55 @@ export class AtmosphereEnvCubemap {
     this.material.disableDepthWrite = true;
     this.captureMesh.material = this.material;
 
-    this.probe.renderList = [this.captureMesh];
+    this.bindProbeMesh();
+  }
 
-    // Only visible while the probe is binding faces (stays out of the main camera).
-    cube.onBeforeBindObservable.add(() => {
+  private createProbe(size: number): ReflectionProbe {
+    const probe = new ReflectionProbe(
+      'atmosphereEnvProbe',
+      size,
+      this.scene,
+      true, // mipmaps — softens rough-ish reflections slightly
+      true, // float/half when available
+      false, // display-referred (matches skybox exposure)
+    );
+    probe.position = Vector3.Zero();
+    probe.refreshRate = RenderTargetTexture.REFRESHRATE_RENDER_ONCE;
+    const cube = probe.cubeTexture;
+    cube.coordinatesMode = Texture.CUBIC_MODE;
+    cube.level = 0.85;
+    return probe;
+  }
+
+  private bindProbeMesh(): void {
+    this.cubeBindObserver?.remove();
+    this.cubeUnbindObserver?.remove();
+    this.probe.renderList = [this.captureMesh];
+    const cube = this.probe.cubeTexture;
+    this.cubeBindObserver = cube.onBeforeBindObservable.add(() => {
       this.captureMesh.setEnabled(true);
     });
-    cube.onAfterUnbindObservable.add(() => {
+    this.cubeUnbindObserver = cube.onAfterUnbindObservable.add(() => {
       this.captureMesh.setEnabled(false);
     });
+  }
+
+  /** Recreate the IBL probe when Atmosphere.envCubeSize (quality ladder) changes. */
+  ensureCubeSize(size: number): void {
+    const next = Math.max(64, Math.min(512, Math.round(size)));
+    if (next === this.probeSize) return;
+    const level = this.probe.cubeTexture.level;
+    if (this.scene.environmentTexture === this.probe.cubeTexture) {
+      this.scene.environmentTexture = null;
+    }
+    this.cubeBindObserver?.remove();
+    this.cubeUnbindObserver?.remove();
+    this.probe.dispose();
+    this.probeSize = next;
+    this.probe = this.createProbe(next);
+    this.probe.cubeTexture.level = level;
+    this.bindProbeMesh();
+    this.lastKey = '';
   }
 
   /** Cubemap used for IBL / reflections when atmosphere is active. */
@@ -164,8 +198,10 @@ export class AtmosphereEnvCubemap {
       nightBlendStrength: number;
       skyboxGroundColor: readonly [number, number, number];
       skyboxEquatorColor: readonly [number, number, number];
+      envCubeSize: number;
     },
   ): void {
+    this.ensureCubeSize(opts.envCubeSize);
     this.active = true;
     this.probe.cubeTexture.level = opts.reflectionLevel;
     const m = this.material;
@@ -196,7 +232,7 @@ export class AtmosphereEnvCubemap {
     const moonRad = (opts.moonAngularDiameterDeg * 0.5 * Math.PI) / 180;
     m.setFloat('uSunAngularRadius', sunRad);
     m.setFloat('uMoonAngularRadius', moonRad);
-    m.setFloat('uExposure', opts.exposure * (0.55 + opts.ambientLevel * 0.9));
+    m.setFloat('uExposure', atmosphereDisplayExposure(opts.exposure, opts.ambientLevel));
     m.setFloat('uLutBlend', opts.lutReady ? opts.lutBlend : 0.0);
     m.setFloat('uSkyboxHdrColors', opts.skyboxHdrColors ? 1 : 0);
     m.setFloat('uNightExposure', opts.nightExposure);
@@ -239,6 +275,7 @@ export class AtmosphereEnvCubemap {
       opts.skyboxEquatorColor[0].toFixed(3),
       opts.skyboxEquatorColor[1].toFixed(3),
       opts.skyboxEquatorColor[2].toFixed(3),
+      this.probeSize,
       model.planetRadius.toFixed(0),
       model.atmosphereRadius.toFixed(0),
     ].join('|');
@@ -285,6 +322,8 @@ export class AtmosphereEnvCubemap {
 
   dispose(): void {
     this.clear();
+    this.cubeBindObserver?.remove();
+    this.cubeUnbindObserver?.remove();
     this.probe.dispose();
     this.material.dispose();
     this.captureMesh.dispose();
