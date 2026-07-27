@@ -3,7 +3,7 @@
  * Each entry stores a full SceneDocument (SerializedWorld).
  */
 
-import { createDemoWorld, type World } from '@engine';
+import { createDemoWorld, createEmptyWorld, type World } from '@engine';
 import { documentToWorld, worldToDocument, type SceneDocument } from './scene-io';
 import { applyRenderPreferences, readRenderPreferences } from './render-preferences';
 
@@ -152,7 +152,6 @@ export function upsertSceneInLibrary(
       'Jelenet') ||
     'Jelenet';
   world.resources.ActiveScene = { sceneId: id, label };
-  world.bump();
   const entry: SceneLibraryEntry = {
     id,
     label,
@@ -228,6 +227,13 @@ export function createDemoWorldWithPreferences(
   storage: SceneStorage = defaultSceneStorage(),
 ): World {
   return applyRenderPreferences(createDemoWorld(), readRenderPreferences(storage));
+}
+
+/** Empty starter (floor + sun) with last-used Quality + Atmosphere from browser prefs. */
+export function createEmptyWorldWithPreferences(
+  storage: SceneStorage = defaultSceneStorage(),
+): World {
+  return applyRenderPreferences(createEmptyWorld(), readRenderPreferences(storage));
 }
 
 /** Startup world: last active scene, or demo if none / corrupt. */

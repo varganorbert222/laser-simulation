@@ -1,4 +1,14 @@
 import { clampRange } from '../math/clamp';
+import {
+  isFluidGridRes,
+  type FluidGridRes,
+} from '../physics/fluid/presets';
+import {
+  defaultLensFlareLightsTune,
+  defaultLensFlareSunTune,
+  normalizeLensFlareGroupTune,
+  type LensFlareGroupTune,
+} from './lens-flare';
 
 /**
  * Graphics-settings ladder (modern game Options UI).
@@ -38,12 +48,19 @@ export function skyAllowsHdrColors(profile: ColorProfile): boolean {
   return profile === 'hdr';
 }
 
+/** Fluid solver advection scheme (quality ladder). */
+export type FluidAdvectionMode = 'semiLagrangian' | 'macCormack' | 'bfecc';
+
+/** Vorticity confinement intensity (quality ladder). */
+export type FluidVorticityMode = 'off' | 'medium' | 'high';
+
 export interface Quality {
   /** Overall / global preset — `'custom'` if sections disagree. */
   overallPreset: QualityPresetSelection;
   volumetricsPreset: QualityPresetSelection;
   shadowPreset: QualityPresetSelection;
   presentationPreset: QualityPresetSelection;
+  fluidsPreset: QualityPresetSelection;
   /**
    * @deprecated Alias of {@link overallPreset} for older saves / call sites.
    * Normalized to match overallPreset.
@@ -66,6 +83,21 @@ export interface Quality {
    * Default false for physically plausible baseline.
    */
   theatricalGlow: boolean;
+  /**
+   * Screen-space lens flare (camera optical model on HDR compose, pre-tonemap).
+   * Per-light opt-in via LightEmitter.lensFlareEnabled. Default true on Medium+.
+   */
+  lensFlare: boolean;
+  /**
+   * Look params for scene lights (laser / lamp / spot / omni). Project-level —
+   * not part of the Low→Ultra presentation ladder.
+   */
+  lensFlareLights: LensFlareGroupTune;
+  /**
+   * Look params for the sun / sky key light. Project-level —
+   * not part of the Low→Ultra presentation ladder.
+   */
+  lensFlareSun: LensFlareGroupTune;
   /** Full-frame compose tonemap (project-level presentation). Default `'aces'`. */
   tonemapMode: TonemapMode;
   /**
@@ -78,6 +110,19 @@ export interface Quality {
    * Needed because Babylon image processing is disabled (LDR canvas encode).
    */
   outputGamma: number;
+  /** Fluid NS grid resolution per axis (32|48|64|96). */
+  fluidGridRes: FluidGridRes;
+  fluidJacobiIterations: number;
+  fluidAdvectionMode: FluidAdvectionMode;
+  fluidVorticityMode: FluidVorticityMode;
+  /** Smoke solver dissipation target from Fluids ladder. */
+  fluidDissipation: number;
+  /** Water optics: Snell refraction in raymarch / surface PP. */
+  fluidEnableRefraction: boolean;
+  /** Water optics: max free-surface crossings (0–3). */
+  fluidMaxSurfaceBounces: number;
+  /** Water surface PP sample count. */
+  fluidSurfaceSamples: number;
 }
 
 export interface QualityRenderScaleConfig {
@@ -105,7 +150,20 @@ export interface VolumetricsTune {
 export interface PresentationTune {
   antiAliasing: boolean;
   theatricalGlow: boolean;
+  lensFlare: boolean;
   tonemapMode: TonemapMode;
+}
+
+/** Fluids (NS solver + water optics) packed presets — AAA Low→Ultra. */
+export interface FluidsTune {
+  fluidGridRes: FluidGridRes;
+  fluidJacobiIterations: number;
+  fluidAdvectionMode: FluidAdvectionMode;
+  fluidVorticityMode: FluidVorticityMode;
+  fluidDissipation: number;
+  fluidEnableRefraction: boolean;
+  fluidMaxSurfaceBounces: number;
+  fluidSurfaceSamples: number;
 }
 
 let scaleConfig: QualityRenderScaleConfig = {
@@ -202,16 +260,129 @@ export function shadowPresetMatching(q: ShadowQuality): QualityPresetSelection {
 export function presentationTuneForPreset(preset: QualityLadder): PresentationTune {
   switch (preset) {
     case 'low':
-      return { antiAliasing: false, theatricalGlow: false, tonemapMode: 'reinhard' };
+      return { antiAliasing: false, theatricalGlow: false, lensFlare: false, tonemapMode: 'reinhard' };
     case 'medium':
-      return { antiAliasing: true, theatricalGlow: false, tonemapMode: 'aces' };
+      return { antiAliasing: true, theatricalGlow: false, lensFlare: true, tonemapMode: 'aces' };
     case 'high':
-      return { antiAliasing: true, theatricalGlow: false, tonemapMode: 'aces' };
+      return { antiAliasing: true, theatricalGlow: false, lensFlare: true, tonemapMode: 'aces' };
     case 'ultra':
-      return { antiAliasing: true, theatricalGlow: true, tonemapMode: 'aces' };
+      return { antiAliasing: true, theatricalGlow: true, lensFlare: true, tonemapMode: 'aces' };
     default:
-      return { antiAliasing: true, theatricalGlow: false, tonemapMode: 'aces' };
+      return { antiAliasing: true, theatricalGlow: false, lensFlare: true, tonemapMode: 'aces' };
   }
+}
+
+/**
+ * Fluids AAA ladder (grid + Jacobi + advection + vorticity + smoke dissipation + water optics).
+ * Refraction / bounces / surface samples apply to water only at consume sites.
+ */
+export function fluidsTuneForPreset(preset: QualityLadder): FluidsTune {
+  const table: Record<QualityLadder, FluidsTune> = {
+    low: {
+      fluidGridRes: 32,
+      fluidJacobiIterations: 12,
+      fluidAdvectionMode: 'semiLagrangian',
+      fluidVorticityMode: 'off',
+      fluidDissipation: 0.03,
+      fluidEnableRefraction: false,
+      fluidMaxSurfaceBounces: 0,
+      fluidSurfaceSamples: 1,
+    },
+    medium: {
+      fluidGridRes: 48,
+      fluidJacobiIterations: 18,
+      fluidAdvectionMode: 'macCormack',
+      fluidVorticityMode: 'medium',
+      fluidDissipation: 0.015,
+      fluidEnableRefraction: true,
+      fluidMaxSurfaceBounces: 1,
+      fluidSurfaceSamples: 2,
+    },
+    high: {
+      fluidGridRes: 64,
+      fluidJacobiIterations: 24,
+      fluidAdvectionMode: 'bfecc',
+      fluidVorticityMode: 'high',
+      fluidDissipation: 0.008,
+      fluidEnableRefraction: true,
+      fluidMaxSurfaceBounces: 2,
+      fluidSurfaceSamples: 4,
+    },
+    ultra: {
+      fluidGridRes: 96,
+      fluidJacobiIterations: 32,
+      fluidAdvectionMode: 'bfecc',
+      fluidVorticityMode: 'high',
+      fluidDissipation: 0.003,
+      fluidEnableRefraction: true,
+      fluidMaxSurfaceBounces: 3,
+      fluidSurfaceSamples: 6,
+    },
+  };
+  return { ...table[preset] };
+}
+
+/** GLSL `uAdvectionMode`: 0 Semi, 1 MacCormack, 2 BFECC. */
+export function fluidAdvectionModeIndex(mode: FluidAdvectionMode): number {
+  switch (mode) {
+    case 'semiLagrangian':
+      return 0;
+    case 'macCormack':
+      return 1;
+    case 'bfecc':
+      return 2;
+    default:
+      return 1;
+  }
+}
+
+/** Absolute vorticity strength for smoke when entity uses quality mode. */
+export function fluidVorticityStrengthForMode(mode: FluidVorticityMode): number {
+  switch (mode) {
+    case 'off':
+      return 0;
+    case 'medium':
+      return 1.8;
+    case 'high':
+      return 3.2;
+    default:
+      return 0;
+  }
+}
+
+export function normalizeFluidAdvectionMode(
+  v: unknown,
+  fallback: FluidAdvectionMode = 'macCormack',
+): FluidAdvectionMode {
+  if (v === 'semiLagrangian' || v === 'macCormack' || v === 'bfecc') return v;
+  return fallback;
+}
+
+export function normalizeFluidVorticityMode(
+  v: unknown,
+  fallback: FluidVorticityMode = 'medium',
+): FluidVorticityMode {
+  if (v === 'off' || v === 'medium' || v === 'high') return v;
+  return fallback;
+}
+
+export function clampFluidMaxSurfaceBounces(v: number, fallback = 2): number {
+  return Math.round(clampRange(v, 0, 3, fallback));
+}
+
+export function clampFluidSurfaceSamples(v: number, fallback = 2): number {
+  return Math.round(clampRange(v, 1, 16, fallback));
+}
+
+export function clampFluidJacobiIterations(v: number, fallback = 18): number {
+  return Math.round(clampRange(v, 4, 64, fallback));
+}
+
+export function normalizeFluidGridResQuality(
+  v: unknown,
+  fallback: FluidGridRes = 48,
+): FluidGridRes {
+  return isFluidGridRes(v) ? v : fallback;
 }
 
 /** GPU secondary-march step count for Light→Medium (shader hard-cap 8). */
@@ -341,7 +512,27 @@ export function matchPresentationPreset(q: PresentationTune): QualityPresetSelec
     if (
       q.antiAliasing === t.antiAliasing &&
       q.theatricalGlow === t.theatricalGlow &&
+      q.lensFlare === t.lensFlare &&
       q.tonemapMode === t.tonemapMode
+    ) {
+      return id;
+    }
+  }
+  return 'custom';
+}
+
+export function matchFluidsPreset(q: FluidsTune): QualityPresetSelection {
+  for (const id of QUALITY_LADDER_ORDER) {
+    const t = fluidsTuneForPreset(id);
+    if (
+      q.fluidGridRes === t.fluidGridRes &&
+      q.fluidJacobiIterations === t.fluidJacobiIterations &&
+      q.fluidAdvectionMode === t.fluidAdvectionMode &&
+      q.fluidVorticityMode === t.fluidVorticityMode &&
+      near(q.fluidDissipation, t.fluidDissipation) &&
+      q.fluidEnableRefraction === t.fluidEnableRefraction &&
+      q.fluidMaxSurfaceBounces === t.fluidMaxSurfaceBounces &&
+      q.fluidSurfaceSamples === t.fluidSurfaceSamples
     ) {
       return id;
     }
@@ -366,10 +557,12 @@ export function refreshQualityPresets(
   const volumetricsPreset = matchVolumetricsPreset(q);
   const shadowPreset = shadowPresetMatching(q.shadowQuality);
   const presentationPreset = matchPresentationPreset(q);
+  const fluidsPreset = matchFluidsPreset(q);
   const sections: QualityPresetSelection[] = [
     volumetricsPreset,
     shadowPreset,
     presentationPreset,
+    fluidsPreset,
   ];
   if (skyPreset !== undefined) sections.push(skyPreset);
   const overallPreset = resolveOverallPreset(sections);
@@ -378,6 +571,7 @@ export function refreshQualityPresets(
     volumetricsPreset,
     shadowPreset,
     presentationPreset,
+    fluidsPreset,
     overallPreset,
     preset: overallPreset,
   };
@@ -390,23 +584,37 @@ export function refreshQualityPresets(
  */
 export function createQuality(
   preset: QualityLadder = 'medium',
-  preserve?: Pick<Partial<Quality>, 'colorProfile' | 'outputGamma'>,
+  preserve?: Pick<
+    Partial<Quality>,
+    'colorProfile' | 'outputGamma' | 'lensFlareLights' | 'lensFlareSun'
+  >,
 ): Quality {
   const vol = volumetricsTuneForPreset(preset);
   const pres = presentationTuneForPreset(preset);
+  const fluids = fluidsTuneForPreset(preset);
   return {
     overallPreset: preset,
     volumetricsPreset: preset,
     shadowPreset: preset,
     presentationPreset: preset,
+    fluidsPreset: preset,
     preset,
     ...vol,
     shadowQuality: shadowQualityForPreset(preset),
     ...pres,
+    ...fluids,
     colorProfile: normalizeColorProfile(preserve?.colorProfile, 'hdr'),
     outputGamma: clampOutputGamma(
       typeof preserve?.outputGamma === 'number' ? preserve.outputGamma : 2.2,
       2.2,
+    ),
+    lensFlareLights: normalizeLensFlareGroupTune(
+      preserve?.lensFlareLights,
+      defaultLensFlareLightsTune(),
+    ),
+    lensFlareSun: normalizeLensFlareGroupTune(
+      preserve?.lensFlareSun,
+      defaultLensFlareSunTune(),
     ),
   };
 }
@@ -459,6 +667,22 @@ export function applyPresentationPreset(
   );
 }
 
+export function applyFluidsPreset(
+  q: Quality,
+  preset: QualityLadder,
+  skyPreset?: QualityPresetSelection,
+): Quality {
+  const fluids = fluidsTuneForPreset(preset);
+  return refreshQualityPresets(
+    {
+      ...q,
+      ...fluids,
+      fluidsPreset: preset,
+    },
+    skyPreset,
+  );
+}
+
 /** Normalize partial / legacy Quality (old `preset`-only saves). */
 export function normalizeQualityResource(
   raw: (Partial<Quality> & { preset?: QualityPresetSelection }) | null | undefined,
@@ -490,12 +714,50 @@ export function normalizeQualityResource(
       typeof raw?.antiAliasing === 'boolean' ? raw.antiAliasing : base.antiAliasing,
     theatricalGlow:
       typeof raw?.theatricalGlow === 'boolean' ? raw.theatricalGlow : base.theatricalGlow,
+    lensFlare: typeof raw?.lensFlare === 'boolean' ? raw.lensFlare : base.lensFlare,
+    lensFlareLights: normalizeLensFlareGroupTune(
+      raw?.lensFlareLights as Partial<LensFlareGroupTune> | undefined,
+      base.lensFlareLights,
+    ),
+    lensFlareSun: normalizeLensFlareGroupTune(
+      raw?.lensFlareSun as Partial<LensFlareGroupTune> | undefined,
+      base.lensFlareSun,
+    ),
     tonemapMode: normalizeTonemapMode(raw?.tonemapMode, base.tonemapMode),
     colorProfile: normalizeColorProfile(raw?.colorProfile, base.colorProfile),
     outputGamma: resolveOutputGamma(
       raw as { outputGamma?: unknown; colorSpace?: unknown } | undefined,
       base.outputGamma,
     ),
+    fluidGridRes: normalizeFluidGridResQuality(raw?.fluidGridRes, base.fluidGridRes),
+    fluidJacobiIterations:
+      typeof raw?.fluidJacobiIterations === 'number'
+        ? clampFluidJacobiIterations(raw.fluidJacobiIterations, base.fluidJacobiIterations)
+        : base.fluidJacobiIterations,
+    fluidAdvectionMode: normalizeFluidAdvectionMode(
+      raw?.fluidAdvectionMode,
+      base.fluidAdvectionMode,
+    ),
+    fluidVorticityMode: normalizeFluidVorticityMode(
+      raw?.fluidVorticityMode,
+      base.fluidVorticityMode,
+    ),
+    fluidDissipation:
+      typeof raw?.fluidDissipation === 'number'
+        ? clampRange(raw.fluidDissipation, 0, 1, base.fluidDissipation)
+        : base.fluidDissipation,
+    fluidEnableRefraction:
+      typeof raw?.fluidEnableRefraction === 'boolean'
+        ? raw.fluidEnableRefraction
+        : base.fluidEnableRefraction,
+    fluidMaxSurfaceBounces:
+      typeof raw?.fluidMaxSurfaceBounces === 'number'
+        ? clampFluidMaxSurfaceBounces(raw.fluidMaxSurfaceBounces, base.fluidMaxSurfaceBounces)
+        : base.fluidMaxSurfaceBounces,
+    fluidSurfaceSamples:
+      typeof raw?.fluidSurfaceSamples === 'number'
+        ? clampFluidSurfaceSamples(raw.fluidSurfaceSamples, base.fluidSurfaceSamples)
+        : base.fluidSurfaceSamples,
     overallPreset: overallHint,
     volumetricsPreset: normalizeQualityPresetSelection(
       raw?.volumetricsPreset,
@@ -506,6 +768,7 @@ export function normalizeQualityResource(
       raw?.presentationPreset,
       base.presentationPreset,
     ),
+    fluidsPreset: normalizeQualityPresetSelection(raw?.fluidsPreset, base.fluidsPreset),
     preset: overallHint,
   };
 

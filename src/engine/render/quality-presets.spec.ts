@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyFluidsPreset,
   applyVolumetricsPreset,
   createQuality,
+  fluidsTuneForPreset,
   normalizeQualityResource,
   refreshQualityPresets,
   resolveOverallPreset,
@@ -15,8 +17,20 @@ describe('quality section presets', () => {
     expect(q.volumetricsPreset).toBe('high');
     expect(q.shadowPreset).toBe('high');
     expect(q.presentationPreset).toBe('high');
+    expect(q.fluidsPreset).toBe('high');
     expect(q.preset).toBe('high');
     expect(q.shadowQuality).toBe('medium');
+    expect(q.fluidGridRes).toBe(64);
+    expect(q.fluidJacobiIterations).toBe(24);
+  });
+
+  it('fluidsTuneForPreset AAA ladder', () => {
+    expect(fluidsTuneForPreset('low').fluidGridRes).toBe(32);
+    expect(fluidsTuneForPreset('medium').fluidGridRes).toBe(48);
+    expect(fluidsTuneForPreset('high').fluidMaxSurfaceBounces).toBe(2);
+    expect(fluidsTuneForPreset('ultra').fluidMaxSurfaceBounces).toBe(3);
+    expect(fluidsTuneForPreset('ultra').fluidAdvectionMode).toBe('bfecc');
+    expect(fluidsTuneForPreset('low').fluidEnableRefraction).toBe(false);
   });
 
   it('overall becomes custom when a section diverges', () => {
@@ -27,12 +41,17 @@ describe('quality section presets', () => {
     expect(next.overallPreset).toBe('custom');
   });
 
+  it('applyFluidsPreset diverges overall', () => {
+    const base = createQuality('medium');
+    const next = applyFluidsPreset(base, 'ultra', 'medium');
+    expect(next.fluidsPreset).toBe('ultra');
+    expect(next.fluidGridRes).toBe(96);
+    expect(next.overallPreset).toBe('custom');
+  });
+
   it('tweaking a field marks volumetrics + overall custom', () => {
     const q = createQuality('medium');
-    const tweaked = refreshQualityPresets(
-      { ...q, stepSize: 0.11 },
-      'medium',
-    );
+    const tweaked = refreshQualityPresets({ ...q, stepSize: 0.11 }, 'medium');
     expect(tweaked.volumetricsPreset).toBe('custom');
     expect(tweaked.overallPreset).toBe('custom');
   });
@@ -57,6 +76,7 @@ describe('quality section presets', () => {
     expect(fromLinear.outputGamma).toBe(2.2);
     const fromGamma = normalizeQualityResource({ colorSpace: 'gamma' } as never);
     expect(fromGamma.outputGamma).toBe(1);
+    expect(fromLinear.fluidsPreset).toBeTruthy();
   });
 
   it('resolveOverallPreset requires unanimous ladder', () => {

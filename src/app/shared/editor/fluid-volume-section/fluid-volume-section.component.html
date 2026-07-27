@@ -1,0 +1,220 @@
+<section class="fluid-section">
+  <h3>FluidVolume</h3>
+  <p class="hint">{{ l10n.t('hintFluidVolume') }}</p>
+
+  <label class="row">
+    <span>{{ l10n.t('fluidEnabled') }}</span>
+    <input
+      type="checkbox"
+      [checked]="fluid().enabled"
+      (change)="onEnabled($any($event.target).checked)"
+    />
+  </label>
+
+  <label>
+    {{ l10n.t('waterPreset') }}
+    <select [value]="fluid().presetId" (change)="onPreset($any($event.target).value)">
+      @for (id of presetIds; track id) {
+        <option [value]="id">{{ presetLabel(id) }}</option>
+      }
+    </select>
+  </label>
+
+  <label>
+    {{ l10n.t('fluidWallMode') }}
+    <select [value]="fluid().wallMode" (change)="onWallMode($any($event.target).value)">
+      @for (mode of wallModes; track mode) {
+        <option [value]="mode">{{ wallModeLabel(mode) }}</option>
+      }
+    </select>
+  </label>
+
+  <app-vec3-field
+    [label]="l10n.t('halfExtents')"
+    [value]="halfExtentsVec()"
+    (valueChange)="onHalfExtents($event)"
+  />
+
+  <app-color-field [label]="l10n.t('fluidColor')" [rgb]="fluid().color" (rgbChange)="onColor($event)" />
+
+  <label>
+    {{ l10n.t('fluidFillHeight') }}
+    <input
+      type="range"
+      min="0.05"
+      max="0.95"
+      step="0.01"
+      [value]="fluid().fillFraction"
+      (input)="onNumber('fillFraction', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().fillFraction | number: '1.0-2' }}</span>
+  </label>
+
+  <h4 class="subhead">{{ l10n.t('fluidOpticsHeading') }}</h4>
+
+  <label>
+    {{ l10n.t('fluidIor') }}
+    <input
+      type="range"
+      min="1.01"
+      max="1.8"
+      step="0.001"
+      [value]="fluid().ior"
+      (input)="onNumber('ior', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().ior | number: '1.0-3' }}</span>
+  </label>
+
+  <label>
+    {{ l10n.t('fluidAbsorb') }}
+    <input
+      type="range"
+      min="0"
+      max="2"
+      step="0.01"
+      [value]="fluid().absorption"
+      (input)="onNumber('absorption', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().absorption | number: '1.0-2' }}</span>
+  </label>
+
+  <label>
+    {{ l10n.t('fluidScatter') }}
+    <input
+      type="range"
+      min="0"
+      max="2"
+      step="0.01"
+      [value]="fluid().scatter"
+      (input)="onNumber('scatter', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().scatter | number: '1.0-2' }}</span>
+  </label>
+
+  <label>
+    {{ l10n.t('fluidOpticalDensity') }}
+    <input
+      type="range"
+      min="0"
+      max="5"
+      step="0.05"
+      [value]="fluid().opticalDensity"
+      (input)="onNumber('opticalDensity', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().opticalDensity | number: '1.0-2' }}</span>
+  </label>
+
+  <label>
+    {{ l10n.t('fluidCaustics') }}
+    <input
+      type="range"
+      min="0"
+      max="2"
+      step="0.05"
+      [value]="fluid().causticStrength"
+      (input)="onNumber('causticStrength', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().causticStrength | number: '1.0-2' }}</span>
+  </label>
+
+  <h4 class="subhead">{{ l10n.t('fluidWavesHeading') }}</h4>
+
+  <label>
+    {{ l10n.t('fluidWaveAmplitude') }}
+    <input
+      type="range"
+      min="0"
+      max="0.12"
+      step="0.001"
+      [value]="fluid().waveAmplitude"
+      (input)="onNumber('waveAmplitude', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().waveAmplitude | number: '1.0-3' }}</span>
+  </label>
+  <label>
+    {{ l10n.t('fluidWaveFrequency') }}
+    <input
+      type="range"
+      min="0.1"
+      max="8"
+      step="0.05"
+      [value]="fluid().waveFrequency"
+      (input)="onNumber('waveFrequency', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().waveFrequency | number: '1.0-2' }}</span>
+  </label>
+  <label>
+    {{ l10n.t('fluidWaveSteepness') }}
+    <input
+      type="range"
+      min="0"
+      max="1"
+      step="0.01"
+      [value]="fluid().waveSteepness"
+      (input)="onNumber('waveSteepness', $any($event.target).value)"
+    />
+    <span class="val">{{ fluid().waveSteepness | number: '1.0-2' }}</span>
+  </label>
+
+  <details class="advanced">
+    <summary>{{ l10n.t('fluidAdvancedSph') }}</summary>
+    <p class="hint">{{ l10n.t('hintFluidAdvancedSph') }}</p>
+
+    <label>
+      {{ l10n.t('fluidParticleRadius') }}
+      <input
+        type="range"
+        min="0.02"
+        max="0.2"
+        step="0.005"
+        [value]="fluid().particleRadius"
+        (input)="onNumber('particleRadius', $any($event.target).value)"
+      />
+      <span class="val">{{ fluid().particleRadius | number: '1.0-3' }} m</span>
+    </label>
+
+    <p class="hint derived">
+      {{ l10n.t('fluidParticleCountDerived') }}:
+      <strong>{{ derivedParticleCount() }}</strong>
+    </p>
+
+    <label>
+      {{ l10n.t('fluidViscosity') }}
+      <input
+        type="range"
+        min="0"
+        max="2"
+        step="0.01"
+        [value]="fluid().viscosity"
+        (input)="onNumber('viscosity', $any($event.target).value)"
+      />
+      <span class="val">{{ fluid().viscosity | number: '1.0-3' }}</span>
+    </label>
+
+    <label>
+      {{ l10n.t('fluidStiffness') }}
+      <input
+        type="range"
+        min="0.1"
+        max="20"
+        step="0.1"
+        [value]="fluid().stiffness"
+        (input)="onNumber('stiffness', $any($event.target).value)"
+      />
+      <span class="val">{{ fluid().stiffness | number: '1.0-2' }}</span>
+    </label>
+
+    <label>
+      {{ l10n.t('fluidInertiaCoupling') }}
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        [value]="fluid().inertiaCoupling"
+        (input)="onNumber('inertiaCoupling', $any($event.target).value)"
+      />
+      <span class="val">{{ fluid().inertiaCoupling | number: '1.0-2' }}</span>
+    </label>
+  </details>
+</section>

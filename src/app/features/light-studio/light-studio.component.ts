@@ -102,7 +102,7 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
       for (const id of world.query('MediaVolume')) {
         const m = world.get(id, 'MediaVolume');
         if (!m || m.noiseAssetId) continue;
-        world.set(id, 'MediaVolume', { ...m, noiseAssetId: first.id });
+        world.setQuiet(id, 'MediaVolume', { ...m, noiseAssetId: first.id });
       }
     });
   }
@@ -293,17 +293,15 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
   async loadSelected(): Promise<void> {
     const id = this.selectedLibraryId();
     if (!id || this.sceneLoading()) return;
-    this.sceneLoading.set(true);
-    try {
-      // Let the spinner paint before synchronous world replace blocks the main thread.
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      );
-      this.editor.loadFromLibrary(id);
-    } finally {
-      this.scenesModalOpen.set(false);
-      this.sceneLoading.set(false);
-    }
+    await this.runSceneLoad(() => this.editor.loadFromLibrary(id));
+  }
+
+  async newEmptyScene(): Promise<void> {
+    if (this.sceneLoading()) return;
+    await this.runSceneLoad(() => {
+      this.editor.newEmptyScene();
+      this.selectedLibraryId.set(null);
+    });
   }
 
   renameSelected(): void {
@@ -365,5 +363,19 @@ export class LightStudioComponent implements AfterViewInit, OnDestroy {
     const raw = window.prompt(this.l10n.t('sceneNamePrompt'), initial ?? '');
     if (raw === null) return null;
     return raw.trim();
+  }
+
+  private async runSceneLoad(action: () => void): Promise<void> {
+    this.sceneLoading.set(true);
+    try {
+      // Let the spinner paint before synchronous world replace blocks the main thread.
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      action();
+    } finally {
+      this.scenesModalOpen.set(false);
+      this.sceneLoading.set(false);
+    }
   }
 }

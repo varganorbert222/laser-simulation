@@ -2,9 +2,27 @@ import type { EntityId, Transform } from '../ecs/components';
 import type { World } from '../ecs/world';
 import { clone as cloneQuat } from '../math/quat';
 import { clone as cloneVec3 } from '../math/vec3';
-import { restoreWorldFromSerialized } from '../save/serialize';
 import type { Command } from './stack';
 import { snapshotCommand } from './stack';
+
+/** Write local Transform without structural epoch bump (mesh sync updates TRS in place). */
+export function writeTransform(world: World, entityId: EntityId, value: Transform): void {
+  world.setQuiet(entityId, 'Transform', {
+    position: cloneVec3(value.position),
+    rotation: cloneQuat(value.rotation),
+    scale: cloneVec3(value.scale),
+  });
+}
+
+/** Name is hierarchy/UI only — no mesh topology. */
+export function writeName(world: World, entityId: EntityId, value: string): void {
+  world.setQuiet(entityId, 'Name', { value });
+}
+
+/** Visibility is toggled via applyPresentationMode — no mesh recreate. */
+export function writeViewportHidden(world: World, entityId: EntityId, hidden: boolean): void {
+  world.setQuiet(entityId, 'ViewportHidden', { hidden });
+}
 
 export function setTransformCommand(
   world: World,
@@ -16,13 +34,7 @@ export function setTransformCommand(
     'Transform',
     structuredClone(before),
     structuredClone(after),
-    (t) => {
-      world.set(entityId, 'Transform', {
-        position: cloneVec3(t.position),
-        rotation: cloneQuat(t.rotation),
-        scale: cloneVec3(t.scale),
-      });
-    },
+    (t) => writeTransform(world, entityId, t),
   );
 }
 
@@ -32,19 +44,20 @@ export function setTransformsCommand(
   entries: ReadonlyArray<{ entityId: EntityId; before: Transform; after: Transform }>,
 ): Command | null {
   if (!entries.length) return null;
-  const before = world.cloneSerializable();
-  for (const e of entries) {
-    world.set(e.entityId, 'Transform', {
-      position: cloneVec3(e.after.position),
-      rotation: cloneQuat(e.after.rotation),
-      scale: cloneVec3(e.after.scale),
-    });
-  }
-  const after = world.cloneSerializable();
+  const snap = entries.map((e) => ({
+    entityId: e.entityId,
+    before: structuredClone(e.before),
+    after: structuredClone(e.after),
+  }));
+  const applyAll = (which: 'before' | 'after') => {
+    for (const e of snap) {
+      writeTransform(world, e.entityId, which === 'before' ? e.before : e.after);
+    }
+  };
   return {
     label: entries.length > 1 ? `Transform (${entries.length})` : 'Transform',
-    execute: () => restoreWorldFromSerialized(world, after),
-    undo: () => restoreWorldFromSerialized(world, before),
+    execute: () => applyAll('after'),
+    undo: () => applyAll('before'),
   };
 }
 
@@ -56,12 +69,8 @@ export function setNameCommand(
 ): Command {
   return {
     label: 'Átnevezés',
-    execute: () => {
-      world.set(entityId, 'Name', { value: after });
-    },
-    undo: () => {
-      world.set(entityId, 'Name', { value: before });
-    },
+    execute: () => writeName(world, entityId, after),
+    undo: () => writeName(world, entityId, before),
   };
 }
 
@@ -70,15 +79,15 @@ export function setNamesCommand(
   entries: ReadonlyArray<{ entityId: EntityId; before: string; after: string }>,
 ): Command | null {
   if (!entries.length) return null;
-  const beforeSnap = world.cloneSerializable();
-  for (const e of entries) {
-    world.set(e.entityId, 'Name', { value: e.after });
-  }
-  const afterSnap = world.cloneSerializable();
+  const beforeSnap = entries.map((e) => ({ entityId: e.entityId, value: e.before }));
+  const afterSnap = entries.map((e) => ({ entityId: e.entityId, value: e.after }));
+  const apply = (list: ReadonlyArray<{ entityId: EntityId; value: string }>) => {
+    for (const e of list) writeName(world, e.entityId, e.value);
+  };
   return {
     label: entries.length > 1 ? `Átnevezés (${entries.length})` : 'Átnevezés',
-    execute: () => restoreWorldFromSerialized(world, afterSnap),
-    undo: () => restoreWorldFromSerialized(world, beforeSnap),
+    execute: () => apply(afterSnap),
+    undo: () => apply(beforeSnap),
   };
 }
 
@@ -90,11 +99,7 @@ export function setViewportHiddenCommand(
   const before = world.get(entityId, 'ViewportHidden')?.hidden ?? false;
   return {
     label: 'Láthatóság',
-    execute: () => {
-      world.set(entityId, 'ViewportHidden', { hidden });
-    },
-    undo: () => {
-      world.set(entityId, 'ViewportHidden', { hidden: before });
-    },
+    execute: () => writeViewportHidden(world, entityId, hidden),
+    undo: () => writeViewportHidden(world, entityId, before),
   };
 }

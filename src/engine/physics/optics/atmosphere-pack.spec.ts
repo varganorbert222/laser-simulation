@@ -29,5 +29,9 @@ describe('atmosphere pack integration', () => {
     // Physical sun RGB should be warm-white-ish and positive
     expect(after.env.sunRgb[0]).toBeGreaterThan(0);
     expect(after.env.hemiRgb[2]).toBeGreaterThan(0);
+    // Lens flare sits toward the sun disc (−lightDir), not along light travel.
+    const sunFlare = after.lensFlares.find((f) => f.directional > 0.5);
+    expect(sunFlare).toBeTruthy();
+    expect(sunFlare!.originCam[1]).toBeGreaterThan(0);
   });
 });

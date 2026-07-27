@@ -45,7 +45,7 @@ describe('save/load', () => {
     worldTransformSystem(world);
     const json = serializeWorld(world);
     const parsed = JSON.parse(json);
-    expect(parsed.schemaVersion).toBe(2);
+    expect(parsed.schemaVersion).toBe(3);
     expect(parsed.resources.DisplayVision).toBeDefined();
     expect(parsed.resources.DisplayVision.responseCurve.points.length).toBeGreaterThanOrEqual(2);
     expect(parsed.resources.EnvironmentLighting.ambientLevel).toBeGreaterThan(0);
@@ -67,6 +67,8 @@ describe('render pack', () => {
     expect(pack.lights).toHaveLength(1);
     expect(pack.media).toHaveLength(1);
     expect(pack.lights[0].mode).toBe(3);
+    expect(pack.lensFlares.length).toBeGreaterThanOrEqual(1);
+    expect(pack.lensFlares[0]!.intensity).toBeGreaterThan(0);
   });
 
   it('packs spotlight and omni into volumetric slots like lasers', () => {

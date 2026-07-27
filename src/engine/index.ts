@@ -15,12 +15,16 @@ export {
   identity as quatIdentity,
   fromEulerYXZ,
   forward,
+  angularVelocity,
+  invert as quatInvert,
   clone as cloneQuat,
   type Quat,
 } from './math/quat';
 export {
   fromTRS,
   getTranslation,
+  getRotation,
+  getBasis,
   transformDirection,
   type Mat4,
 } from './math/mat4';
@@ -55,6 +59,7 @@ export * from './physics/optics/scotopic-efficacy';
 export * from './physics/optics/display-response-curve';
 export * from './physics/optics/display-vision';
 export * from './physics/optics/environment-lighting';
+export * from './physics/optics/global-sun-volumetrics';
 export * from './physics/optics/ambient-from-solar';
 export * from './physics/optics/auto-exposure';
 export * from './physics/optics/atmosphere-model';
@@ -70,6 +75,13 @@ export * from './physics/optics/microfacet-brdf';
 export * from './physics/optics/light-incident';
 export * from './physics/optics/light-appearance';
 export * from './physics/optics/science-readout';
+export * from './physics/fluid/atlas';
+export * from './physics/fluid/presets';
+export * from './physics/fluid/water-presets';
+export * from './physics/fluid/gravity-environment';
+export * from './physics/fluid/wind-environment';
+export * from './physics/fluid/sph-sim';
+export * from './physics/fog/presets';
 
 /* ── Noise ────────────────────────────────────────────────────────── */
 export * from './noise/volume-noise';
@@ -78,6 +90,7 @@ export * from './noise/volume-noise-io';
 /* ── Render contract + pack ───────────────────────────────────────── */
 export * from './render/contract';
 export * from './render/pack';
+export * from './render/lens-flare';
 export * from './render/quality';
 
 /* ── ECS ──────────────────────────────────────────────────────────── */

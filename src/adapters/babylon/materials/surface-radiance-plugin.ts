@@ -39,6 +39,19 @@ function uboEntries(slots: number): Array<{ name: string; size: number; type: st
     { name: 'uSrMetalness', size: 1, type: 'float' },
     { name: 'uSrRoughness', size: 1, type: 'float' },
     { name: 'uSrAbsorption', size: 1, type: 'float' },
+    { name: 'uSrCausticStrength', size: 1, type: 'float' },
+    { name: 'uSrCausticFill', size: 1, type: 'float' },
+    { name: 'uSrCausticTime', size: 1, type: 'float' },
+    { name: 'uSrCausticSunDir', size: 3, type: 'vec3' },
+    { name: 'uSrCausticSunRgb', size: 3, type: 'vec3' },
+    { name: 'uSrCausticCenter', size: 3, type: 'vec3' },
+    { name: 'uSrCausticHalfExt', size: 3, type: 'vec3' },
+    { name: 'uSrCausticAxisX', size: 3, type: 'vec3' },
+    { name: 'uSrCausticAxisY', size: 3, type: 'vec3' },
+    { name: 'uSrCausticAxisZ', size: 3, type: 'vec3' },
+    { name: 'uSrCausticWaveAmp', size: 1, type: 'float' },
+    { name: 'uSrCausticWaveFreq', size: 1, type: 'float' },
+    { name: 'uSrCausticWaveSteep', size: 1, type: 'float' },
   ];
   for (let i = 0; i < slots; i++) {
     entries.push(
@@ -59,6 +72,23 @@ function uboEntries(slots: number): Array<{ name: string; size: number; type: st
   return entries;
 }
 
+export interface SurfaceRadianceCaustic {
+  strength: number;
+  fillHeight: number;
+  timeS: number;
+  sunDir: [number, number, number];
+  sunRgb: [number, number, number];
+  center: [number, number, number];
+  halfExtents: [number, number, number];
+  axisX: [number, number, number];
+  axisY: [number, number, number];
+  axisZ: [number, number, number];
+  /** Free-surface wave params (same as water PP). */
+  waveAmplitude: number;
+  waveFrequency: number;
+  waveSteepness: number;
+}
+
 /**
  * StandardMaterial plugin: optical surface BRDF for LightEmitters.
  *
@@ -68,6 +98,7 @@ function uboEntries(slots: number): Array<{ name: string; size: number; type: st
  *   with Unity-like L (Point / Spot / Directional by beam mode).
  *
  * Env fill still comes from StandardMaterial hemi/sun.
+ * Water projected caustics are an additive cookie along env sun.
  */
 export class SurfaceRadiancePlugin extends MaterialPluginBase {
   static readonly PLUGIN_NAME = 'SurfaceRadiancePlugin';
@@ -79,6 +110,21 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
   private _metalness = 0.2;
   private _roughness = 0.45;
   private _absorption = 0.4;
+  private _caustic: SurfaceRadianceCaustic = {
+    strength: 0,
+    fillHeight: 0.65,
+    timeS: 0,
+    sunDir: [0, -1, 0],
+    sunRgb: [0, 0, 0],
+    center: [0, 0, 0],
+    halfExtents: [0, 0, 0],
+    axisX: [1, 0, 0],
+    axisY: [0, 1, 0],
+    axisZ: [0, 0, 1],
+    waveAmplitude: 0,
+    waveFrequency: 1,
+    waveSteepness: 0,
+  };
 
   constructor(material: Material) {
     super(material, SurfaceRadiancePlugin.PLUGIN_NAME, 200, { SURFACE_RADIANCE: false });
@@ -110,8 +156,16 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
     if (countChanged) this.markAllDefinesAsDirty();
   }
 
+  setCaustic(c: SurfaceRadianceCaustic): void {
+    const wasOn = this._caustic.strength > 1e-5;
+    const nowOn = c.strength > 1e-5;
+    this._caustic = c;
+    if (wasOn !== nowOn) this.markAllDefinesAsDirty();
+  }
+
   override prepareDefines(defines: Record<string, unknown>): void {
-    defines['SURFACE_RADIANCE'] = this._enabled && this._count > 0;
+    defines['SURFACE_RADIANCE'] =
+      this._enabled && (this._count > 0 || this._caustic.strength > 1e-5);
   }
 
   override getUniforms(): {
@@ -136,6 +190,25 @@ export class SurfaceRadiancePlugin extends MaterialPluginBase {
     uniformBuffer.updateFloat('uSrMetalness', this._metalness);
     uniformBuffer.updateFloat('uSrRoughness', this._roughness);
     uniformBuffer.updateFloat('uSrAbsorption', this._absorption);
+    const c = this._caustic;
+    uniformBuffer.updateFloat('uSrCausticStrength', c.strength);
+    uniformBuffer.updateFloat('uSrCausticFill', c.fillHeight);
+    uniformBuffer.updateFloat('uSrCausticTime', c.timeS);
+    uniformBuffer.updateFloat3('uSrCausticSunDir', c.sunDir[0], c.sunDir[1], c.sunDir[2]);
+    uniformBuffer.updateFloat3('uSrCausticSunRgb', c.sunRgb[0], c.sunRgb[1], c.sunRgb[2]);
+    uniformBuffer.updateFloat3('uSrCausticCenter', c.center[0], c.center[1], c.center[2]);
+    uniformBuffer.updateFloat3(
+      'uSrCausticHalfExt',
+      c.halfExtents[0],
+      c.halfExtents[1],
+      c.halfExtents[2],
+    );
+    uniformBuffer.updateFloat3('uSrCausticAxisX', c.axisX[0], c.axisX[1], c.axisX[2]);
+    uniformBuffer.updateFloat3('uSrCausticAxisY', c.axisY[0], c.axisY[1], c.axisY[2]);
+    uniformBuffer.updateFloat3('uSrCausticAxisZ', c.axisZ[0], c.axisZ[1], c.axisZ[2]);
+    uniformBuffer.updateFloat('uSrCausticWaveAmp', c.waveAmplitude);
+    uniformBuffer.updateFloat('uSrCausticWaveFreq', c.waveFrequency);
+    uniformBuffer.updateFloat('uSrCausticWaveSteep', c.waveSteepness);
 
     for (let i = 0; i < MAX_GPU_LIGHTS; i++) {
       const L = this._lights[i];

@@ -19,24 +19,27 @@ import { LocalizationService } from '../../../core/services/localization.service
 })
 export class SurfaceMaterialSectionComponent {
   readonly material = input.required<SurfaceMaterial>();
+  /** Entities this section is editing — survives selection races on native controls. */
+  readonly targetIds = input<readonly string[]>([]);
   readonly editor = inject(EditorFacade);
   readonly l10n = inject(LocalizationService);
   readonly finishPresets = SURFACE_FINISH_PRESETS;
 
-  onFinishPreset(value: string): void {
-    if (value === 'custom') {
-      this.editor.updateSurfaceMaterial({ preset: 'custom' });
+  private patchOpts(coalesce?: boolean): { coalesce?: boolean; entityIds?: readonly string[] } {
+    const ids = this.targetIds();
+    return {
+      coalesce,
+      ...(ids.length ? { entityIds: ids } : {}),
+    };
+  }
+
+  onFinishPreset(preset: SurfaceFinishPreset): void {
+    if (preset === this.material().preset) return;
+    if (preset === 'custom') {
+      this.editor.updateSurfaceMaterial({ preset: 'custom' }, this.patchOpts());
       return;
     }
-    if (
-      value === 'matte_black' ||
-      value === 'anodized_aluminum' ||
-      value === 'painted_plastic' ||
-      value === 'brushed_metal' ||
-      value === 'chrome'
-    ) {
-      this.editor.updateSurfaceMaterial(surfaceMaterialFromPreset(value));
-    }
+    this.editor.updateSurfaceMaterial(surfaceMaterialFromPreset(preset), this.patchOpts());
   }
 
   onSurfaceParam(
@@ -47,7 +50,7 @@ export class SurfaceMaterialSectionComponent {
     if (!Number.isFinite(n)) return;
     this.editor.updateSurfaceMaterial(
       { preset: 'custom', [key]: clampUnit(n) },
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -63,6 +66,8 @@ export class SurfaceMaterialSectionComponent {
         return this.l10n.t('finishBrushed');
       case 'chrome':
         return this.l10n.t('finishChrome');
+      case 'glass_clear':
+        return this.l10n.t('finishGlassClear');
       default:
         return this.l10n.t('finishCustom');
     }

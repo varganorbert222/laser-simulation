@@ -1,7 +1,7 @@
 import {
   collectComponentValues,
   fieldStateJson,
-  restoreWorldFromSerialized,
+  normalizeEditorSelection,
   selectionHasComponent,
   type Command,
   type ComponentMap,
@@ -10,6 +10,23 @@ import {
   type World,
 } from '@engine';
 import type { EngineHostService } from '../services/engine-host.service';
+
+/**
+ * Resolve entities to patch for a component.
+ * Prefer explicit ids (bound inspector targets); fall back to live EditorSelection
+ * so blur/teardown events still land on the entities the user was editing when the
+ * Angular selection signal has already moved on.
+ */
+export function resolvePatchTargetIds(
+  world: World,
+  component: ComponentName,
+  preferredIds?: readonly EntityId[] | null,
+): EntityId[] {
+  const prefer = (preferredIds ?? []).filter((id) => world.has(id, component));
+  if (prefer.length) return prefer;
+  const sel = normalizeEditorSelection(world.resources.EditorSelection);
+  return sel.entityIds.filter((id) => world.has(id, component));
+}
 
 /** Component values for a selection that all share `name`, or null if not. */
 function selectionComponentValues<K extends ComponentName>(
@@ -59,18 +76,30 @@ export type PatchSelectedComponentsOpts<K extends ComponentName> = {
     before: ComponentMap[K],
     after: ComponentMap[K],
   ) => Command;
+  /**
+   * Optional writer for coalesce / multi paths. Defaults to `world.set`.
+   * Use for components that should avoid structural epoch bumps (e.g. FluidVolume).
+   */
+  writeComponent?: (world: World, id: EntityId, value: ComponentMap[K]) => void;
   /** Runs after component writes (and inside single-id coalesce apply). */
   afterApply?: (world: World) => void;
   /**
    * How to record multi-id edits when not coalescing.
-   * - `execute` (default): `executeCommand` with restore snapshots
+   * - `execute` (default): `executeCommand` (applies `after` again — safe / idempotent)
    * - `applied`: `commitApplied` (world already mutated)
    */
   multiRecord?: 'execute' | 'applied';
 };
 
+type MultiEntry<K extends ComponentName> = {
+  entityId: EntityId;
+  before: ComponentMap[K];
+  after: ComponentMap[K];
+};
+
 /**
  * Patch a component on one or more selected entities with shared undo/coalesce wiring.
+ * Multi-entity undo restores only the patched component values (no full-world restore).
  */
 export function patchSelectedComponents<K extends ComponentName>(
   opts: PatchSelectedComponentsOpts<K>,
@@ -80,21 +109,27 @@ export function patchSelectedComponents<K extends ComponentName>(
 
   const world = engine.world();
   const multiLabel = opts.multiLabel ?? `${label} (${ids.length})`;
+  const write =
+    opts.writeComponent ??
+    ((w: World, entityId: EntityId, value: ComponentMap[K]) => {
+      w.set(entityId, component, structuredClone(value));
+    });
 
   if (ids.length === 1) {
     const id = ids[0]!;
     const before = world.get(id, component);
     if (!before) return;
     const after = merge(before);
+    if (JSON.stringify(before) === JSON.stringify(after)) return;
 
     if (opts.coalesce) {
       engine.coalesceSnapshot({
         key: opts.coalesceKey ?? `${component}:${id}`,
         label,
-        before,
+        before: structuredClone(before),
         after,
         apply: (v) => {
-          world.set(id, component, structuredClone(v));
+          write(world, id, v);
           opts.afterApply?.(world);
         },
       });
@@ -107,11 +142,11 @@ export function patchSelectedComponents<K extends ComponentName>(
       engine.executeCommand({
         label,
         execute: () => {
-          world.set(id, component, structuredClone(after));
+          write(world, id, after);
           opts.afterApply?.(world);
         },
         undo: () => {
-          world.set(id, component, structuredClone(before));
+          write(world, id, before);
           opts.afterApply?.(world);
         },
       });
@@ -120,30 +155,49 @@ export function patchSelectedComponents<K extends ComponentName>(
     return;
   }
 
-  const beforeSnap = world.cloneSerializable();
+  const entries: MultiEntry<K>[] = [];
   for (const id of ids) {
     const before = world.get(id, component);
     if (!before) continue;
-    world.set(id, component, merge(before));
+    const after = merge(before);
+    entries.push({
+      entityId: id,
+      before: structuredClone(before),
+      after: structuredClone(after),
+    });
+    write(world, id, after);
   }
   opts.afterApply?.(world);
-  const afterSnap = world.cloneSerializable();
+  if (!entries.length) return;
+
+  const applyEntries = (list: MultiEntry<K>[], which: 'before' | 'after') => {
+    for (const e of list) {
+      write(world, e.entityId, which === 'before' ? e.before : e.after);
+    }
+    opts.afterApply?.(world);
+  };
 
   if (opts.coalesce) {
     engine.coalesceSnapshot({
       key: opts.coalesceKey ?? `${component}:multi:${ids.join(',')}`,
       label: multiLabel,
-      before: beforeSnap,
-      after: afterSnap,
-      apply: (v) => restoreWorldFromSerialized(world, v),
+      before: entries.map((e) => e.before),
+      after: entries.map((e) => e.after),
+      apply: (values) => {
+        values.forEach((v, i) => {
+          const id = entries[i]?.entityId;
+          if (id) write(world, id, v);
+        });
+        opts.afterApply?.(world);
+      },
     });
     return;
   }
 
   const command: Command = {
     label: multiLabel,
-    execute: () => restoreWorldFromSerialized(world, afterSnap),
-    undo: () => restoreWorldFromSerialized(world, beforeSnap),
+    execute: () => applyEntries(entries, 'after'),
+    undo: () => applyEntries(entries, 'before'),
   };
   if (opts.multiRecord === 'applied') {
     engine.commitApplied(command);

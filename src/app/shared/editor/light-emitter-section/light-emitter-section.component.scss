@@ -44,6 +44,12 @@ label {
   }
 }
 
+label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+}
+
 .power-block {
   display: flex;
   flex-direction: column;

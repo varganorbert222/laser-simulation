@@ -22,11 +22,17 @@ import type { AtmosphereSettings } from '../physics/optics/atmosphere-settings';
 import { createDefaultAtmosphereSettings } from '../physics/optics/atmosphere-settings';
 import type { SceneSunBinding } from '../physics/optics/scene-sun';
 import { createDefaultSceneSunBinding } from '../physics/optics/scene-sun';
+import type { GravityEnvironment } from '../physics/fluid/gravity-environment';
+import { createDefaultGravityEnvironment } from '../physics/fluid/gravity-environment';
+import type { WindEnvironment } from '../physics/fluid/wind-environment';
+import { createDefaultWindEnvironment } from '../physics/fluid/wind-environment';
+import type { GlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
+import { createDefaultGlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
 import type { Quality } from '../render/quality';
 import { createQuality } from '../render/quality';
 import type { GatheredFrame } from '../render/pack';
 
-export const SAVE_SCHEMA_VERSION = 2;
+export const SAVE_SCHEMA_VERSION = 3;
 
 export interface WorldResources {
   ActiveScene: ActiveScene;
@@ -40,6 +46,12 @@ export interface WorldResources {
   EnvironmentLighting: EnvironmentLighting;
   /** Procedural sky + SPA site/time (optional). */
   Atmosphere: AtmosphereSettings;
+  /** Global gravity for fluid force pass. */
+  GravityEnvironment: GravityEnvironment;
+  /** Global wind for fluid force pass. */
+  WindEnvironment: WindEnvironment;
+  /** Screen-wide sun volumetrics (god-rays) independent of media volumes. */
+  GlobalSunVolumetrics: GlobalSunVolumetrics;
   /** Primary / suppressed sun emitters (refreshed on pack / load). */
   SceneSun: SceneSunBinding;
   /**
@@ -66,6 +78,9 @@ export interface SerializedWorld {
     DisplayVision: DisplayVision;
     EnvironmentLighting: EnvironmentLighting;
     Atmosphere?: AtmosphereSettings;
+    GravityEnvironment?: GravityEnvironment;
+    WindEnvironment?: WindEnvironment;
+    GlobalSunVolumetrics?: GlobalSunVolumetrics;
     SceneSun?: SceneSunBinding;
   };
   entities: SerializedEntity[];
@@ -86,6 +101,8 @@ function createStores(): StoreMap {
     LightEmitter: new Map(),
     MediaVolume: new Map(),
     SmokeEmitter: new Map(),
+    FogVolume: new Map(),
+    FluidVolume: new Map(),
     Selectable: new Map(),
     ViewportHidden: new Map(),
     EditorFlags: new Map(),
@@ -112,6 +129,10 @@ export class World {
       DisplayVision: resources?.DisplayVision ?? createDefaultDisplayVision(),
       EnvironmentLighting: resources?.EnvironmentLighting ?? createDefaultEnvironmentLighting(),
       Atmosphere: resources?.Atmosphere ?? createDefaultAtmosphereSettings(),
+      GravityEnvironment: resources?.GravityEnvironment ?? createDefaultGravityEnvironment(),
+      WindEnvironment: resources?.WindEnvironment ?? createDefaultWindEnvironment(),
+      GlobalSunVolumetrics:
+        resources?.GlobalSunVolumetrics ?? createDefaultGlobalSunVolumetrics(),
       SceneSun: resources?.SceneSun ?? createDefaultSceneSunBinding(),
       RenderFrame: resources?.RenderFrame ?? null,
       epoch: resources?.epoch ?? 0,
@@ -231,6 +252,9 @@ export class World {
         DisplayVision: structuredClone(this.resources.DisplayVision),
         EnvironmentLighting: structuredClone(this.resources.EnvironmentLighting),
         Atmosphere: structuredClone(this.resources.Atmosphere),
+        GravityEnvironment: structuredClone(this.resources.GravityEnvironment),
+        WindEnvironment: structuredClone(this.resources.WindEnvironment),
+        GlobalSunVolumetrics: structuredClone(this.resources.GlobalSunVolumetrics),
       },
       entities,
     };

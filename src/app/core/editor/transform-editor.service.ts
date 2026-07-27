@@ -9,6 +9,7 @@ import {
   setTransformCommand,
   setTransformsCommand,
   vec3ToEditable,
+  writeTransform,
   type GizmoMode,
   type GizmoSpace,
   type Transform,
@@ -43,6 +44,7 @@ export class TransformEditorService {
 
   readonly selectedTransform = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     const id = this.selection.selectedId();
     if (!id) return null;
     return this.engine.world().get(id, 'Transform') ?? null;
@@ -50,6 +52,7 @@ export class TransformEditorService {
 
   readonly selectedTransformView = computed((): TransformViewModel | null => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     const ids = this.selection.selectedIds();
     const world = this.engine.world();
     if (!ids.length || !selectionHasComponent(world, ids, 'Transform')) return null;
@@ -85,7 +88,6 @@ export class TransformEditorService {
   setGizmoMode(mode: GizmoMode): void {
     this.engine.mutate((world) => {
       world.resources.EditorTooling.gizmoMode = mode;
-      world.bump();
     });
     this.engine.getHost()?.setGizmoMode(mode);
   }
@@ -93,7 +95,6 @@ export class TransformEditorService {
   setGizmoSpace(space: GizmoSpace): void {
     this.engine.mutate((world) => {
       world.resources.EditorTooling.gizmoSpace = space;
-      world.bump();
     });
     this.engine.getHost()?.setGizmoSpace(space);
   }
@@ -123,15 +124,9 @@ export class TransformEditorService {
         this.engine.coalesceSnapshot({
           key: `Transform:${id}`,
           label: 'Transform',
-          before,
+          before: structuredClone(before),
           after,
-          apply: (t) => {
-            world.set(id, 'Transform', {
-              position: [...t.position] as Transform['position'],
-              rotation: [...t.rotation] as Transform['rotation'],
-              scale: [...t.scale] as Transform['scale'],
-            });
-          },
+          apply: (t) => writeTransform(world, id, t),
         });
         return;
       }
@@ -165,11 +160,7 @@ export class TransformEditorService {
           list.forEach((t, i) => {
             const id = entries[i]?.entityId;
             if (!id) return;
-            world.set(id, 'Transform', {
-              position: [...t.position] as Transform['position'],
-              rotation: [...t.rotation] as Transform['rotation'],
-              scale: [...t.scale] as Transform['scale'],
-            });
+            writeTransform(world, id, t);
           });
         },
       });

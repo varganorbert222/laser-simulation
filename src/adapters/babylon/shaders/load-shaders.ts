@@ -1,105 +1,405 @@
 /**
- * Babylon Effect.ShadersStore keys + volumetric uniform/sampler name lists.
+
+ * Babylon Effect.ShadersStore keys + volumetric / fog uniform lists.
+
  * Shader source bodies live in src/generated/shaders (build-time codegen).
+
  */
-import { VOLUMETRIC_LIGHT_SLOTS, VOLUMETRIC_MEDIA_SLOTS } from '@engine';
+
 import {
+
+  VOLUMETRIC_FLUID_SLOTS,
+
+  VOLUMETRIC_LIGHT_SLOTS,
+
+  VOLUMETRIC_MEDIA_SLOTS,
+
+} from '@engine';
+
+import {
+
+  FOG_ADVECT_FRAGMENT,
+
+  FOG_BOUNDARIES_FRAGMENT,
+
+  FOG_BUOYANCY_FRAGMENT,
+
+  FOG_DIFFUSE_FRAGMENT,
+
+  FOG_DIVERGENCE_FRAGMENT,
+
+  FOG_FORCE_FRAGMENT,
+
+  FOG_INIT_FRAGMENT,
+
+  FOG_INJECT_FRAGMENT,
+
+  FOG_JACOBI_FRAGMENT,
+
+  FOG_PROJECT_FRAGMENT,
+
+  FOG_VORTICITY_FRAGMENT,
+
+  FLUID_WATER_SURFACE_FRAGMENT,
+
   VOLUMETRIC_COMPOSE_FRAGMENT,
+
   VOLUMETRIC_FRAGMENT,
+
   VOLUMETRIC_LUMINANCE_FRAGMENT,
+
   VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT,
+
 } from '../../../generated/shaders';
 
+
+
 export {
+
   VOLUMETRIC_COMPOSE_FRAGMENT,
+
   VOLUMETRIC_FRAGMENT,
+
   VOLUMETRIC_LUMINANCE_FRAGMENT,
+
   VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT,
+
+  FOG_ADVECT_FRAGMENT,
+
+  FOG_BUOYANCY_FRAGMENT,
+
+  FOG_INJECT_FRAGMENT,
+
+  FOG_VORTICITY_FRAGMENT,
+
+  FOG_DIVERGENCE_FRAGMENT,
+
+  FOG_JACOBI_FRAGMENT,
+
+  FOG_PROJECT_FRAGMENT,
+
+  FOG_BOUNDARIES_FRAGMENT,
+
+  FOG_INIT_FRAGMENT,
+
+  FOG_DIFFUSE_FRAGMENT,
+
+  FOG_FORCE_FRAGMENT,
+
+  FLUID_WATER_SURFACE_FRAGMENT,
+
 };
 
+
+
 export const VOLUMETRIC_SHADER_KEY = 'volumetricFragmentShader';
+
 export const VOLUMETRIC_COMPOSE_SHADER_KEY = 'volumetricComposeFragmentShader';
 
+
+
 function lightUniformNames(slots: number): string[] {
+
   const names: string[] = ['uLightCount'];
+
   for (let i = 0; i < slots; i++) {
+
     names.push(
+
       `uLightOrigin${i}`,
+
       `uLightDir${i}`,
+
       `uLightColor${i}`,
+
       `uLightPower${i}`,
+
       `uLightScatter${i}`,
+
       `uLightMode${i}`,
+
       `uLightP0${i}`,
+
       `uLightP1${i}`,
+
       `uLightP2${i}`,
+
       `uLightP3${i}`,
+
       `uLightP4${i}`,
+
       `uLightP5${i}`,
+
       `uLightSpill${i}`,
+
     );
+
   }
+
   return names;
+
 }
+
+
 
 function mediaUniformNames(slots: number): string[] {
+
   const names: string[] = ['uMediaCount'];
+
   for (let i = 0; i < slots; i++) {
+
     names.push(
+
       `uMediaCenter${i}`,
+
       `uMediaHalfExt${i}`,
+
       `uMediaColor${i}`,
+
       `uMediaDensity${i}`,
+
       `uMediaFbmScale${i}`,
+
       `uMediaFbmTime${i}`,
+
       `uMediaNoiseLow${i}`,
+
       `uMediaNoiseHigh${i}`,
+
       `uMediaNoiseKind${i}`,
+
       `uMediaScatter${i}`,
+
       `uMediaScatterMie${i}`,
+
       `uMediaAbsorb${i}`,
+
       `uMediaSpectralExp${i}`,
+
       `uMediaMieG${i}`,
+
       `uMediaScatterModel${i}`,
+
       `uMediaTurbulence${i}`,
+
       `uMediaLayerKind${i}`,
+
       `uMediaInsulating${i}`,
+
       `uMediaEmission${i}`,
+
       `uMediaConeCos${i}`,
+
       `uMediaPlumeLen${i}`,
+
       `uMediaPlumeDir${i}`,
+
     );
+
   }
+
   return names;
+
 }
+
+
 
 function mediaNoiseSamplers(slots: number): string[] {
+
   const names: string[] = [];
+
   for (let i = 0; i < slots; i++) {
+
     names.push(`uMediaNoise2D${i}`, `uMediaNoise3D${i}`);
+
   }
+
   return names;
+
 }
 
+
+
+function fluidUniformNames(slots: number): string[] {
+
+  const names: string[] = ['uFluidCount'];
+
+  for (let i = 0; i < slots; i++) {
+
+    names.push(
+
+      `uFluidCenter${i}`,
+
+      `uFluidHalfExt${i}`,
+
+      `uFluidAxisX${i}`,
+
+      `uFluidAxisY${i}`,
+
+      `uFluidAxisZ${i}`,
+
+      `uFluidColor${i}`,
+
+      `uFluidDensity${i}`,
+
+      `uFluidScatter${i}`,
+
+      `uFluidAbsorb${i}`,
+
+      `uFluidKind${i}`,
+
+      `uFluidFillHeight${i}`,
+
+      `uFluidGridRes${i}`,
+
+      `uFluidTilesX${i}`,
+
+      `uFluidAtlasSize${i}`,
+
+    );
+
+  }
+
+  return names;
+
+}
+
+
+
+function fluidSamplers(slots: number): string[] {
+
+  const names: string[] = [];
+
+  for (let i = 0; i < slots; i++) {
+
+    names.push(`uFluidDensityAtlas${i}`);
+
+  }
+
+  return names;
+
+}
+
+
+
 export const VOLUMETRIC_UNIFORMS = [
+
   'uResolution',
+
   'uTime',
+
   'uInvViewProj',
+
   'uView',
+
   'uCameraPos',
+
   'uUseSceneDepth',
+
   'uStepSize',
+
   'uMaxSteps',
+
   'uDensityThreshold',
+
   'uTransmittanceCut',
+
   'uShadowQuality',
+
   'uShadowSteps',
+
+  'uFluidEnableRefraction',
+
+  'uFluidMaxSurfaceBounces',
+
+  'uWaterMediumOn',
+
+  'uWaterCenter',
+
+  'uWaterHalfExt',
+
+  'uWaterAxisX',
+
+  'uWaterAxisY',
+
+  'uWaterAxisZ',
+
+  'uWaterFill',
+
+  'uWaterIor',
+
+  'uWaterColor',
+
+  'uWaterDensity',
+
+  'uWaterScatter',
+
+  'uWaterAbsorb',
+
+  'uWaterGravity',
+
   'uEnvHemi',
+
   'uEnvSun',
+
   'uEnvSunDir',
+
   'uVolumeMultiScatter',
+
+  'uGlobalSunOn',
+
+  'uGlobalSunIntensity',
+
+  'uGlobalSunDensity',
+
+  'uGlobalSunScatter',
+
+  'uGlobalSunAbsorb',
+
+  'uGlobalSunMieG',
+
+  'uGlobalSunMieWeight',
+
+  'uGlobalSunShaftPower',
+
+  'uGlobalSunHemiFill',
+
+  'uGlobalSunMultiScatter',
+
+  'uGlobalSunMaxDist',
+
+  'uGlobalSunStepScale',
+
   ...lightUniformNames(VOLUMETRIC_LIGHT_SLOTS),
+
   ...mediaUniformNames(VOLUMETRIC_MEDIA_SLOTS),
+
+  ...fluidUniformNames(VOLUMETRIC_FLUID_SLOTS),
+
 ];
 
-export const VOLUMETRIC_SAMPLERS = ['uSceneDepth', ...mediaNoiseSamplers(VOLUMETRIC_MEDIA_SLOTS)];
+
+
+export const VOLUMETRIC_SAMPLERS = [
+
+  'uSceneDepth',
+
+  ...mediaNoiseSamplers(VOLUMETRIC_MEDIA_SLOTS),
+
+  ...fluidSamplers(VOLUMETRIC_FLUID_SLOTS),
+
+];
+
+
+
+/** Shared atlas layout uniforms for fog solver passes. */
+
+export const FOG_ATLAS_UNIFORMS = ['uGridRes', 'uTilesX', 'uTilesY', 'uAtlasSize'];
+
+
+
+/** @deprecated Use FOG_ATLAS_UNIFORMS. */
+
+export const FLUID_ATLAS_UNIFORMS = FOG_ATLAS_UNIFORMS;
+
+

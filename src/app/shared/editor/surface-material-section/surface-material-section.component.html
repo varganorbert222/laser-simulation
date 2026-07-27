@@ -1,19 +1,31 @@
 <section class="block">
   <h3>{{ l10n.t('surfaceMaterial') }}</h3>
 
-  <label [attr.title]="l10n.t('tipFixtureFinish')">
-    {{ l10n.t('fixtureFinish') }}
-    <select
-      [value]="material().preset"
-      [disabled]="!editor.isEditMode()"
-      (change)="onFinishPreset($any($event.target).value)"
-    >
+  <div class="finish-row" [attr.title]="l10n.t('tipFixtureFinish')">
+    <span>{{ l10n.t('fixtureFinish') }}</span>
+    <div class="finish-toggle" role="group" [attr.aria-label]="l10n.t('fixtureFinish')">
       @for (p of finishPresets; track p) {
-        <option [value]="p">{{ finishLabel(p) }}</option>
+        <button
+          type="button"
+          class="finish-btn"
+          [class.active]="material().preset === p"
+          [disabled]="!editor.isEditMode()"
+          (click)="onFinishPreset(p)"
+        >
+          {{ finishLabel(p) }}
+        </button>
       }
-      <option value="custom">{{ l10n.t('finishCustom') }}</option>
-    </select>
-  </label>
+      <button
+        type="button"
+        class="finish-btn"
+        [class.active]="material().preset === 'custom'"
+        [disabled]="!editor.isEditMode()"
+        (click)="onFinishPreset('custom')"
+      >
+        {{ l10n.t('finishCustom') }}
+      </button>
+    </div>
+  </div>
   <label [attr.title]="l10n.t('tipAlbedo')">
     {{ l10n.t('albedo') }}
     <input

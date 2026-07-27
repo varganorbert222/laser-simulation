@@ -378,6 +378,31 @@
     </label>
   }
 
+  <h4 class="subhead">{{ l10n.t('lensFlare') }}</h4>
+  <label class="check" [attr.title]="l10n.t('tipLensFlareEnabled')">
+    <input
+      type="checkbox"
+      [checked]="light().lensFlareEnabled"
+      [disabled]="!editor.isEditMode()"
+      (change)="onLensFlareEnabled($any($event.target).checked)"
+    />
+    {{ l10n.t('lensFlareEnabled') }}
+  </label>
+  <label [attr.title]="l10n.t('tipLensFlareIntensity')">
+    {{ l10n.t('lensFlareIntensity') }}
+    <input
+      type="range"
+      min="0"
+      max="4"
+      step="0.05"
+      [value]="light().lensFlareIntensity"
+      [disabled]="!editor.isEditMode() || !light().lensFlareEnabled"
+      (input)="onLensFlareIntensity($any($event.target).value)"
+    />
+    <span class="value">{{ light().lensFlareIntensity | number: '1.2-2' }}</span>
+  </label>
+  <p class="hint">{{ l10n.t('hintLensFlareLight') }}</p>
+
   <h4 class="subhead">{{ l10n.t('opticsSpill') }}</h4>
   <label [attr.title]="l10n.t('tipStrayPowerFraction')">
     {{ l10n.t('strayPowerFraction') }}

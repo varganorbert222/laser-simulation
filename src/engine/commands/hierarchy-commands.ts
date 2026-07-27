@@ -1,12 +1,13 @@
 import type { ComponentName, EntityId, UserAddableComponent } from '../ecs/components';
 import {
   defaultEnvironmentPiece,
+  defaultFluidVolume,
+  defaultFogVolume,
   defaultLightEmitter,
   defaultMediaVolume,
   defaultSmokeEmitter,
   defaultSunLightEmitter,
 } from '../ecs/components';
-import { defaultMediaVolumeForKind } from '../physics/optics/media-optical-presets';
 import { defaultSurfaceMaterial } from '../physics/optics/surface-material';
 import { refreshSceneSunBinding, wouldSuppressAdditionalSun } from '../physics/optics/scene-sun';
 import type { World } from '../ecs/world';
@@ -51,6 +52,12 @@ function addComponentToEntity(
       break;
     case 'MediaVolume':
       world.add(entityId, 'MediaVolume', defaultMediaVolume());
+      break;
+    case 'FogVolume':
+      world.add(entityId, 'FogVolume', defaultFogVolume());
+      break;
+    case 'FluidVolume':
+      world.add(entityId, 'FluidVolume', defaultFluidVolume());
       break;
     case 'EnvironmentPiece':
       world.add(entityId, 'EnvironmentPiece', defaultEnvironmentPiece());
@@ -132,7 +139,7 @@ export function createEmptyEntityCommand(
   });
 }
 
-/** Fog machine: SmokeEmitter + particulate MediaVolume (smoke preset). */
+/** Fog machine: FogVolume + SmokeEmitter (no MediaVolume). */
 export function createSmokeEmitterCommand(
   world: World,
   name: string,
@@ -140,9 +147,12 @@ export function createSmokeEmitterCommand(
 ): Command {
   return worldMutationCommand('Füstszóró', world, () => {
     const id = createSceneEntity(world, { name, parentId });
-    world.add(id, 'MediaVolume', {
-      ...defaultMediaVolumeForKind('smoke'),
-      halfExtents: vec3(2, 1.5, 4),
+    const fog = defaultFogVolume();
+    world.add(id, 'FogVolume', {
+      ...fog,
+      halfExtents: vec3(2, 2.5, 2),
+      boundaryMode: 'closed',
+      maxDensity: 1,
     });
     world.add(id, 'SmokeEmitter', defaultSmokeEmitter());
     applySelection(world, id);

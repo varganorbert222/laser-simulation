@@ -10,6 +10,8 @@ import {
   type LightEmitter,
   type LightMode,
   type MediaVolume,
+  type FluidVolume,
+  type FogVolume,
   type SmokeEmitter,
   type PresentationMode,
   type QualityLadder,
@@ -24,13 +26,20 @@ import {
   type AtmosphereSettings,
   type AtmosphereTimePresetId,
   type AtmosphereSeasonPresetId,
+  type GravityEnvironment,
+  type WindEnvironment,
+  type GlobalSunVolumetrics,
+  type GlobalSunLookPresetId,
   type ColorProfile,
   type TonemapMode,
+  type LensFlareGroupTune,
 } from '@engine';
 import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
 import { LightEditorService } from '../editor/light-editor.service';
 import { MediaEditorService } from '../editor/media-editor.service';
+import { FluidEditorService } from '../editor/fluid-editor.service';
+import { FogEditorService } from '../editor/fog-editor.service';
 import { SmokeEmitterEditorService } from '../editor/smoke-emitter-editor.service';
 import { SelectionService, type SelectOptions } from '../editor/selection.service';
 import { SessionService } from '../editor/session.service';
@@ -52,6 +61,8 @@ export class EditorFacade {
   private readonly hierarchy = inject(HierarchyEditorService);
   private readonly light = inject(LightEditorService);
   private readonly media = inject(MediaEditorService);
+  private readonly fluid = inject(FluidEditorService);
+  private readonly fog = inject(FogEditorService);
   private readonly smoke = inject(SmokeEmitterEditorService);
   private readonly surface = inject(SurfaceMaterialEditorService);
   private readonly transform = inject(TransformEditorService);
@@ -72,6 +83,10 @@ export class EditorFacade {
   readonly editorNotice = this.hierarchy.notice;
   readonly selectedMedia = this.media.selectedMedia;
   readonly selectedMediaMixed = this.media.selectedMediaMixed;
+  readonly selectedFluid = this.fluid.selectedFluid;
+  readonly selectedFluidMixed = this.fluid.selectedFluidMixed;
+  readonly selectedFog = this.fog.selectedFog;
+  readonly selectedFogMixed = this.fog.selectedFogMixed;
   readonly selectedSmoke = this.smoke.selectedSmoke;
   readonly selectedSmokeMixed = this.smoke.selectedSmokeMixed;
   readonly selectedSurfaceMaterial = this.surface.selectedSurfaceMaterial;
@@ -83,10 +98,14 @@ export class EditorFacade {
   readonly qualitySettings = this.session.qualitySettings;
   readonly antiAliasing = this.session.antiAliasing;
   readonly theatricalGlow = this.session.theatricalGlow;
+  readonly lensFlare = this.session.lensFlare;
   readonly tonemapMode = this.session.tonemapMode;
   readonly shadowQuality = this.session.shadowQuality;
   readonly ambientLevel = this.session.ambientLevel;
   readonly atmosphere = this.session.atmosphere;
+  readonly gravityEnvironment = this.session.gravityEnvironment;
+  readonly windEnvironment = this.session.windEnvironment;
+  readonly globalSunVolumetrics = this.session.globalSunVolumetrics;
   readonly responseCurve = this.session.responseCurve;
   readonly powerPresets = this.light.powerPresets;
   readonly sceneList = this.session.sceneList;
@@ -104,6 +123,7 @@ export class EditorFacade {
 
   readonly selectedName = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     const ids = this.selectedIds();
     if (!ids.length) return null;
     const names = ids.map((id) => this.engine.world().get(id, 'Name')?.value ?? id);
@@ -113,6 +133,7 @@ export class EditorFacade {
 
   readonly selectedNameMixed = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     const ids = this.selectedIds();
     if (ids.length <= 1) return false;
     const names = ids.map((id) => this.engine.world().get(id, 'Name')?.value ?? id);
@@ -121,6 +142,7 @@ export class EditorFacade {
 
   readonly selectedComponents = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     const ids = this.selectedIds();
     if (!ids.length) return [] as string[];
     return sharedUserComponents(this.engine.world(), ids);
@@ -252,19 +274,25 @@ export class EditorFacade {
     this.engine.commitApplied(cmd);
   }
 
-  updateLight(patch: Partial<LightEmitter>, opts?: { coalesce?: boolean }): void {
+  updateLight(
+    patch: Partial<LightEmitter>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
     this.light.updateLight(patch, opts);
   }
 
-  setLightMode(mode: LightMode): void {
-    this.light.setLightMode(mode);
+  setLightMode(mode: LightMode, opts?: { entityIds?: readonly string[] }): void {
+    this.light.setLightMode(mode, opts);
   }
 
   clearEditorNotice(): void {
     this.hierarchy.clearNotice();
   }
 
-  updateSurfaceMaterial(patch: Partial<SurfaceMaterial>, opts?: { coalesce?: boolean }): void {
+  updateSurfaceMaterial(
+    patch: Partial<SurfaceMaterial>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
     this.surface.updateSurfaceMaterial(patch, opts);
   }
 
@@ -284,11 +312,31 @@ export class EditorFacade {
     this.media.setMediaDensity(density);
   }
 
-  updateMedia(patch: Partial<MediaVolume>, opts?: { coalesce?: boolean }): void {
+  updateMedia(
+    patch: Partial<MediaVolume>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
     this.media.updateMedia(patch, opts);
   }
 
-  updateSmoke(patch: Partial<SmokeEmitter>, opts?: { coalesce?: boolean }): void {
+  updateFluid(
+    patch: Partial<FluidVolume>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
+    this.fluid.updateFluid(patch, opts);
+  }
+
+  updateFog(
+    patch: Partial<FogVolume>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
+    this.fog.updateFog(patch, opts);
+  }
+
+  updateSmoke(
+    patch: Partial<SmokeEmitter>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
     this.smoke.updateSmoke(patch, opts);
   }
 
@@ -309,6 +357,10 @@ export class EditorFacade {
 
   setVolumetricsPreset(preset: QualityLadder): void {
     this.session.setVolumetricsPreset(preset);
+  }
+
+  setFluidsPreset(preset: QualityLadder): void {
+    this.session.setFluidsPreset(preset);
   }
 
   setShadowPreset(preset: QualityLadder): void {
@@ -335,6 +387,18 @@ export class EditorFacade {
     this.session.setTheatricalGlow(enabled);
   }
 
+  setLensFlare(enabled: boolean): void {
+    this.session.setLensFlare(enabled);
+  }
+
+  patchLensFlareLights(partial: Partial<LensFlareGroupTune>): void {
+    this.session.patchLensFlareLights(partial);
+  }
+
+  patchLensFlareSun(partial: Partial<LensFlareGroupTune>): void {
+    this.session.patchLensFlareSun(partial);
+  }
+
   setTonemapMode(mode: TonemapMode): void {
     this.session.setTonemapMode(mode);
   }
@@ -349,6 +413,30 @@ export class EditorFacade {
 
   setAmbientLevel(ambientLevel: number): void {
     this.session.setAmbientLevel(ambientLevel);
+  }
+
+  patchGravityEnvironment(partial: Partial<GravityEnvironment>): void {
+    this.session.patchGravityEnvironment(partial);
+  }
+
+  patchWindEnvironment(partial: Partial<WindEnvironment>): void {
+    this.session.patchWindEnvironment(partial);
+  }
+
+  setGlobalSunVolumetricsEnabled(enabled: boolean): void {
+    this.session.setGlobalSunVolumetricsEnabled(enabled);
+  }
+
+  setGlobalSunLookPreset(preset: Exclude<GlobalSunLookPresetId, 'custom'>): void {
+    this.session.setGlobalSunLookPreset(preset);
+  }
+
+  setGlobalSunQualityPreset(preset: QualityLadder): void {
+    this.session.setGlobalSunQualityPreset(preset);
+  }
+
+  patchGlobalSunVolumetrics(partial: Partial<GlobalSunVolumetrics>): void {
+    this.session.patchGlobalSunVolumetrics(partial);
   }
 
   setAtmosphereEnabled(enabled: boolean): void {
@@ -438,6 +526,10 @@ export class EditorFacade {
 
   resetDemo(): void {
     this.session.resetDemo();
+  }
+
+  newEmptyScene(): void {
+    this.session.newEmptyScene();
   }
 
   screenshot(): void {

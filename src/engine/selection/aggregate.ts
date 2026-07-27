@@ -34,6 +34,8 @@ const ALL_COMPONENTS: readonly ComponentName[] = [
   'LightEmitter',
   'MediaVolume',
   'SmokeEmitter',
+  'FogVolume',
+  'FluidVolume',
   'Selectable',
   'ViewportHidden',
   'EditorFlags',

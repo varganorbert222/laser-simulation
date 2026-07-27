@@ -209,6 +209,14 @@
       <button type="button" [disabled]="sceneLoading()" (click)="saveAsNew()">
         {{ l10n.t('sceneSaveAs') }}
       </button>
+      <button
+        type="button"
+        [disabled]="sceneLoading()"
+        (click)="newEmptyScene()"
+        [attr.title]="l10n.t('tipSceneNewEmpty')"
+      >
+        {{ l10n.t('sceneNewEmpty') }}
+      </button>
       <button type="button" [disabled]="sceneLoading()" (click)="exportFile()">
         {{ l10n.t('sceneExport') }}
       </button>

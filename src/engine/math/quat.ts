@@ -50,6 +50,31 @@ export function mul(a: Quat, b: Quat): Quat {
   return o;
 }
 
+export function invert(q: Quat): Quat {
+  const o = out();
+  gquat.invert(o, asMut(q));
+  return o;
+}
+
+/**
+ * Angular velocity (rad/s) from consecutive orientations.
+ * Uses the shortest-arc delta quaternion.
+ */
+export function angularVelocity(prev: Quat, curr: Quat, dt: number): Vec3 {
+  if (dt < 1e-6) return [0, 0, 0];
+  const dq = mul(curr, invert(prev));
+  // Ensure shortest path
+  const q: MutableQuat =
+    dq[3] < 0 ? [-dq[0], -dq[1], -dq[2], -dq[3]] : [dq[0], dq[1], dq[2], dq[3]];
+  const w = Math.min(1, Math.max(-1, q[3]));
+  const angle = 2 * Math.acos(w);
+  if (angle < 1e-8) return [0, 0, 0];
+  const s = Math.sin(angle * 0.5);
+  if (Math.abs(s) < 1e-8) return [0, 0, 0];
+  const inv = angle / (s * dt);
+  return [q[0] * inv, q[1] * inv, q[2] * inv];
+}
+
 export function rotateVec(q: Quat, v: Vec3): Vec3 {
   const o: [number, number, number] = [0, 0, 0];
   gvec3.transformQuat(o, [v[0], v[1], v[2]], asMut(q));

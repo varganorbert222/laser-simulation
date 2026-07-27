@@ -1,5 +1,5 @@
 import { Injectable, computed, inject } from '@angular/core';
-import {
+import {
   normalizeEditorSelection,
   type SelectionMode,
 } from '@engine';
@@ -16,11 +16,13 @@ export class SelectionService {
 
   readonly selectedId = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return normalizeEditorSelection(this.engine.world().resources.EditorSelection).entityId;
   });
 
   readonly selectedIds = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return normalizeEditorSelection(this.engine.world().resources.EditorSelection).entityIds;
   });
 

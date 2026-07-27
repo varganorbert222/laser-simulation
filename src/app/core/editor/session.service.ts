@@ -10,6 +10,12 @@ import {
   normalizeDisplayVision,
   normalizeEnvironmentLighting,
   normalizeAtmosphereSettings,
+  normalizeGravityEnvironment,
+  normalizeWindEnvironment,
+  normalizeGlobalSunVolumetrics,
+  applyGlobalSunLookPreset,
+  applyGlobalSunQualityPreset,
+  createGlobalSunVolumetricsForQuality,
   atmosphereWithTimeOfDay,
   atmosphereWithTimePreset,
   atmosphereWithSeasonPreset,
@@ -19,13 +25,27 @@ import {
   normalizeColorProfile,
   clampOutputGamma,
   normalizeTonemapMode,
+  normalizeLensFlareGroupTune,
+  defaultLensFlareLightsTune,
+  defaultLensFlareSunTune,
   applyVolumetricsPreset,
   applyShadowPreset,
   applyPresentationPreset,
+  applyFluidsPreset,
   refreshQualityPresets,
+  clampFluidJacobiIterations,
+  clampFluidMaxSurfaceBounces,
+  clampFluidSurfaceSamples,
+  normalizeFluidAdvectionMode,
+  normalizeFluidGridResQuality,
+  normalizeFluidVorticityMode,
   type AtmosphereSeasonPresetId,
   type AtmosphereSettings,
   type AtmosphereTimePresetId,
+  type GravityEnvironment,
+  type WindEnvironment,
+  type GlobalSunVolumetrics,
+  type GlobalSunLookPresetId,
   type ColorProfile,
   type TonemapMode,
   type DisplayResponseCurve,
@@ -34,6 +54,7 @@ import {
   type QualityLadder,
   type QualityPresetSelection,
   type ShadowQuality,
+  type LensFlareGroupTune,
   type World,
 } from '@engine';
 import {
@@ -43,6 +64,7 @@ import {
   sanitizeSceneFilename,
   captureRenderPreferences,
   createDemoWorldWithPreferences,
+  createEmptyWorldWithPreferences,
   writeRenderPreferences,
 } from '@platform/persistence';
 import { EngineHostService } from '../services/engine-host.service';
@@ -86,6 +108,11 @@ export class SessionService {
     return this.engine.world().resources.Quality.theatricalGlow;
   });
 
+  readonly lensFlare = computed(() => {
+    this.engine.epoch();
+    return this.engine.world().resources.Quality.lensFlare;
+  });
+
   readonly tonemapMode = computed(() => {
     this.engine.epoch();
     return this.engine.world().resources.Quality.tonemapMode;
@@ -107,18 +134,20 @@ export class SessionService {
   setPresentation(mode: PresentationMode): void {
     this.engine.mutate((world) => {
       world.resources.PresentationMode = mode;
-      world.bump();
+
     });
     this.engine.getHost()?.applyPresentationMode();
   }
 
-  /** Global graphics preset — aligns volumetrics, shadow, presentation, and skybox. */
+  /** Global graphics preset — aligns volumetrics, shadow, presentation, skybox, and global sun. */
   setQuality(preset: QualityLadder): void {
     this.engine.mutate((world) => {
       const prev = world.resources.Quality;
       world.resources.Quality = createQuality(preset, {
         colorProfile: prev.colorProfile,
         outputGamma: prev.outputGamma,
+        lensFlareLights: prev.lensFlareLights,
+        lensFlareSun: prev.lensFlareSun,
       });
       world.resources.Atmosphere = createAtmosphereSettingsForQuality(
         preset,
@@ -127,7 +156,11 @@ export class SessionService {
           skyboxHdrColors: prev.colorProfile === 'hdr',
         },
       );
-      world.bump();
+      world.resources.GlobalSunVolumetrics = createGlobalSunVolumetricsForQuality(
+        preset,
+        world.resources.GlobalSunVolumetrics,
+      );
+
     });
     this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
@@ -140,7 +173,19 @@ export class SessionService {
         preset,
         world.resources.Atmosphere.qualityPreset,
       );
-      world.bump();
+
+    });
+    this.persistRenderPreferences();
+    this.engine.getHost()?.applyQualitySettings();
+  }
+
+  setFluidsPreset(preset: QualityLadder): void {
+    this.engine.mutate((world) => {
+      world.resources.Quality = applyFluidsPreset(
+        world.resources.Quality,
+        preset,
+        world.resources.Atmosphere.qualityPreset,
+      );
     });
     this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
@@ -153,7 +198,7 @@ export class SessionService {
         preset,
         world.resources.Atmosphere.qualityPreset,
       );
-      world.bump();
+
     });
     this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
@@ -166,7 +211,7 @@ export class SessionService {
         preset,
         world.resources.Atmosphere.qualityPreset,
       );
-      world.bump();
+
     });
     this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
@@ -204,6 +249,44 @@ export class SessionService {
       if (partial.tonemapMode !== undefined) {
         next.tonemapMode = normalizeTonemapMode(partial.tonemapMode);
       }
+      if (partial.lensFlareLights !== undefined) {
+        next.lensFlareLights = normalizeLensFlareGroupTune(
+          partial.lensFlareLights,
+          cur.lensFlareLights ?? defaultLensFlareLightsTune(),
+        );
+      }
+      if (partial.lensFlareSun !== undefined) {
+        next.lensFlareSun = normalizeLensFlareGroupTune(
+          partial.lensFlareSun,
+          cur.lensFlareSun ?? defaultLensFlareSunTune(),
+        );
+      }
+      if (partial.fluidGridRes !== undefined) {
+        next.fluidGridRes = normalizeFluidGridResQuality(partial.fluidGridRes);
+      }
+      if (typeof partial.fluidJacobiIterations === 'number') {
+        next.fluidJacobiIterations = clampFluidJacobiIterations(partial.fluidJacobiIterations);
+      }
+      if (partial.fluidAdvectionMode !== undefined) {
+        next.fluidAdvectionMode = normalizeFluidAdvectionMode(partial.fluidAdvectionMode);
+      }
+      if (partial.fluidVorticityMode !== undefined) {
+        next.fluidVorticityMode = normalizeFluidVorticityMode(partial.fluidVorticityMode);
+      }
+      if (typeof partial.fluidDissipation === 'number') {
+        next.fluidDissipation = clampRange(partial.fluidDissipation, 0, 1);
+      }
+      if (typeof partial.fluidEnableRefraction === 'boolean') {
+        next.fluidEnableRefraction = partial.fluidEnableRefraction;
+      }
+      if (typeof partial.fluidMaxSurfaceBounces === 'number') {
+        next.fluidMaxSurfaceBounces = clampFluidMaxSurfaceBounces(
+          partial.fluidMaxSurfaceBounces,
+        );
+      }
+      if (typeof partial.fluidSurfaceSamples === 'number') {
+        next.fluidSurfaceSamples = clampFluidSurfaceSamples(partial.fluidSurfaceSamples);
+      }
       world.resources.Quality = this.withSkyRefresh(next);
       // Sky HDR emission follows display profile (Unity Camera.allowHDR semantics).
       if (partial.colorProfile !== undefined) {
@@ -212,7 +295,7 @@ export class SessionService {
           skyboxHdrColors: next.colorProfile === 'hdr',
         };
       }
-      world.bump();
+
     });
     this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
@@ -228,6 +311,24 @@ export class SessionService {
 
   setTheatricalGlow(enabled: boolean): void {
     this.patchQuality({ theatricalGlow: enabled });
+  }
+
+  setLensFlare(enabled: boolean): void {
+    this.patchQuality({ lensFlare: enabled });
+  }
+
+  patchLensFlareLights(partial: Partial<LensFlareGroupTune>): void {
+    const cur = this.engine.world().resources.Quality.lensFlareLights;
+    this.patchQuality({
+      lensFlareLights: { ...cur, ...partial },
+    });
+  }
+
+  patchLensFlareSun(partial: Partial<LensFlareGroupTune>): void {
+    const cur = this.engine.world().resources.Quality.lensFlareSun;
+    this.patchQuality({
+      lensFlareSun: { ...cur, ...partial },
+    });
   }
 
   setTonemapMode(mode: TonemapMode): void {
@@ -268,8 +369,76 @@ export class SessionService {
         ...world.resources.EnvironmentLighting,
         ambientLevel,
       });
-      world.bump();
+
     });
+  }
+
+  readonly gravityEnvironment = computed(() => {
+    this.engine.epoch();
+    return this.engine.world().resources.GravityEnvironment;
+  });
+
+  readonly windEnvironment = computed(() => {
+    this.engine.epoch();
+    return this.engine.world().resources.WindEnvironment;
+  });
+
+  readonly globalSunVolumetrics = computed(() => {
+    this.engine.epoch();
+    return this.engine.world().resources.GlobalSunVolumetrics;
+  });
+
+  patchGravityEnvironment(partial: Partial<GravityEnvironment>): void {
+    this.engine.mutate((world) => {
+      world.resources.GravityEnvironment = normalizeGravityEnvironment({
+        ...world.resources.GravityEnvironment,
+        ...partial,
+      });
+    });
+  }
+
+  patchWindEnvironment(partial: Partial<WindEnvironment>): void {
+    this.engine.mutate((world) => {
+      world.resources.WindEnvironment = normalizeWindEnvironment({
+        ...world.resources.WindEnvironment,
+        ...partial,
+      });
+    });
+  }
+
+  setGlobalSunVolumetricsEnabled(enabled: boolean): void {
+    this.patchGlobalSunVolumetrics({ enabled });
+  }
+
+  setGlobalSunLookPreset(preset: Exclude<GlobalSunLookPresetId, 'custom'>): void {
+    this.engine.mutate((world) => {
+      world.resources.GlobalSunVolumetrics = applyGlobalSunLookPreset(
+        world.resources.GlobalSunVolumetrics,
+        preset,
+      );
+    });
+    this.persistRenderPreferences();
+  }
+
+  setGlobalSunQualityPreset(preset: QualityLadder): void {
+    this.engine.mutate((world) => {
+      world.resources.GlobalSunVolumetrics = applyGlobalSunQualityPreset(
+        world.resources.GlobalSunVolumetrics,
+        preset,
+      );
+    });
+    this.persistRenderPreferences();
+    this.engine.getHost()?.applyQualitySettings();
+  }
+
+  patchGlobalSunVolumetrics(partial: Partial<GlobalSunVolumetrics>): void {
+    this.engine.mutate((world) => {
+      world.resources.GlobalSunVolumetrics = normalizeGlobalSunVolumetrics({
+        ...world.resources.GlobalSunVolumetrics,
+        ...partial,
+      });
+    });
+    this.persistRenderPreferences();
   }
 
   readonly atmosphere = computed(() => {
@@ -287,7 +456,7 @@ export class SessionService {
       if (enabled) {
         syncPrimarySunFromAtmosphere(world);
       }
-      world.bump();
+
     });
     this.persistRenderPreferences();
   }
@@ -305,7 +474,7 @@ export class SessionService {
       if (world.resources.Atmosphere.enabled) {
         syncPrimarySunFromAtmosphere(world);
       }
-      world.bump();
+
     });
     this.persistRenderPreferences();
   }
@@ -321,7 +490,7 @@ export class SessionService {
         world.resources.Atmosphere.qualityPreset,
       );
       this.syncSunIfAtmosphere(world);
-      world.bump();
+
     });
     this.persistRenderPreferences();
     this.engine.getHost()?.applyQualitySettings();
@@ -335,7 +504,7 @@ export class SessionService {
         hourOfDay,
       );
       this.syncSunIfAtmosphere(world);
-      world.bump();
+
     });
     this.persistRenderPreferences();
   }
@@ -347,7 +516,7 @@ export class SessionService {
         id,
       );
       this.syncSunIfAtmosphere(world);
-      world.bump();
+
     });
     this.persistRenderPreferences();
   }
@@ -359,7 +528,7 @@ export class SessionService {
         id,
       );
       this.syncSunIfAtmosphere(world);
-      world.bump();
+
     });
     this.persistRenderPreferences();
   }
@@ -375,7 +544,7 @@ export class SessionService {
         Date.now(),
       );
       this.syncSunIfAtmosphere(world);
-      world.bump();
+
     });
     this.persistRenderPreferences();
   }
@@ -392,7 +561,7 @@ export class SessionService {
         ...world.resources.DisplayVision,
         responseCurve: normalizeDisplayResponseCurve(curve),
       });
-      world.bump();
+
     });
   }
 
@@ -418,7 +587,7 @@ export class SessionService {
     const wasActive = this.scenes.activeId() === id;
     this.scenes.delete(id);
     if (wasActive) {
-      this.engine.replaceWorld(createDemoWorldWithPreferences());
+      this.engine.replaceWorld(createEmptyWorldWithPreferences());
     }
   }
 
@@ -427,7 +596,6 @@ export class SessionService {
     if (this.scenes.activeId() === id) {
       this.engine.mutate((world) => {
         world.resources.ActiveScene = { sceneId: id, label: label.trim() || label };
-        world.bump();
       });
     }
   }
@@ -455,6 +623,12 @@ export class SessionService {
   resetDemo(): void {
     this.scenes.clearActive();
     this.engine.replaceWorld(createDemoWorldWithPreferences());
+  }
+
+  /** Load a fresh empty scene (floor + sun); clears library active id. */
+  newEmptyScene(): void {
+    this.scenes.clearActive();
+    this.engine.replaceWorld(createEmptyWorldWithPreferences());
   }
 
   screenshot(): void {

@@ -2,15 +2,20 @@ import { fromEulerYXZ } from '../math/quat';
 import { vec3 } from '../math/vec3';
 import { World } from '../ecs/world';
 import { createSceneEntity } from '../hierarchy/entity-factory';
-import { defaultLightEmitter, defaultSunLightEmitter } from '../ecs/components';
+import { defaultFogVolume, defaultFluidVolume, defaultLightEmitter, defaultSmokeEmitter, defaultSunLightEmitter } from '../ecs/components';
 import { defaultMediaVolumeForKind } from '../physics/optics/media-optical-presets';
-import { defaultGroundSurfaceMaterial } from '../physics/optics/surface-material';
+import {
+  defaultGroundSurfaceMaterial,
+  defaultSurfaceMaterial,
+  surfaceMaterialFromPreset,
+} from '../physics/optics/surface-material';
 import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
 import { createQuality } from '../render/quality';
 
-export function createDemoWorld(): World {
+/** Minimal starter scene: scene root, floor, and one sun. */
+export function createEmptyWorld(): World {
   const world = new World({
-    ActiveScene: { sceneId: 'room', label: 'Szoba labor' },
+    ActiveScene: { sceneId: 'empty', label: 'Üres jelenet' },
     Quality: createQuality('high'),
     PresentationMode: 'edit',
     EditorTooling: { gizmoMode: 'position', gizmoSpace: 'world' },
@@ -32,6 +37,37 @@ export function createDemoWorld(): World {
   world.add(ground, 'EnvironmentPiece', { kind: 'ground' });
   world.add(ground, 'SurfaceMaterial', defaultGroundSurfaceMaterial());
 
+  const sun = createSceneEntity(world, {
+    id: 'sun_1',
+    name: 'Sun',
+    parentId: root,
+  });
+  world.set(sun, 'Transform', {
+    position: vec3(0, 8, 0),
+    // Aim roughly along educational env sun (−0.4, −1, −0.3).
+    rotation: fromEulerYXZ(0.35, -0.55, 0),
+    scale: vec3(1, 1, 1),
+  });
+  world.add(sun, 'LightEmitter', defaultSunLightEmitter());
+
+  refreshSceneSunBinding(world);
+
+  world.resources.EditorSelection = { entityId: sun, entityIds: [sun] };
+  const sel = world.get(sun, 'Selectable');
+  if (sel) sel.selected = true;
+
+  return world;
+}
+
+export function createDemoWorld(): World {
+  const world = createEmptyWorld();
+  world.resources.ActiveScene = { sceneId: 'room', label: 'Szoba labor' };
+
+  const root = 'scene_root';
+  const sun = 'sun_1';
+  const sunSel = world.get(sun, 'Selectable');
+  if (sunSel) sunSel.selected = false;
+
   const fog = createSceneEntity(world, {
     id: 'fog_main',
     name: 'Köd térfogat',
@@ -47,18 +83,46 @@ export function createDemoWorld(): World {
     halfExtents: vec3(6, 3, 6),
   });
 
-  const sun = createSceneEntity(world, {
-    id: 'sun_1',
-    name: 'Sun',
+  const fluidSmoke = createSceneEntity(world, {
+    id: 'fog_smoke_1',
+    name: 'Füstgép',
     parentId: root,
   });
-  world.set(sun, 'Transform', {
-    position: vec3(0, 8, 0),
-    // Aim roughly along educational env sun (−0.4, −1, −0.3).
-    rotation: fromEulerYXZ(0.35, -0.55, 0),
+  world.set(fluidSmoke, 'Transform', {
+    position: vec3(2.2, 0.2, 1.5),
+    rotation: fromEulerYXZ(-Math.PI / 2, 0, 0),
     scale: vec3(1, 1, 1),
   });
-  world.add(sun, 'LightEmitter', defaultSunLightEmitter());
+  world.add(fluidSmoke, 'FogVolume', {
+    ...defaultFogVolume(),
+    halfExtents: vec3(1.2, 2.2, 1.2),
+    maxDensity: 1,
+    boundaryMode: 'closed',
+  });
+  world.add(fluidSmoke, 'SmokeEmitter', defaultSmokeEmitter());
+
+  const aquarium = createSceneEntity(world, {
+    id: 'aquarium_1',
+    name: 'Akvárium',
+    parentId: root,
+  });
+  world.set(aquarium, 'Transform', {
+    position: vec3(-2.0, 0.95, 1.8),
+    rotation: fromEulerYXZ(0, 0, 0),
+    scale: vec3(1, 1, 1),
+  });
+  world.add(aquarium, 'FluidVolume', {
+    ...defaultFluidVolume(),
+    halfExtents: vec3(1.1, 0.85, 0.7),
+    fillFraction: 0.72,
+    presetId: 'aquarium',
+    wallMode: 'glass',
+  });
+  // Glass shell shares WorldXform with the fluid OBB (optics follow entity rotation).
+  world.add(aquarium, 'EnvironmentPiece', { kind: 'prop' });
+  world.add(aquarium, 'SurfaceMaterial', {
+    ...surfaceMaterialFromPreset('glass_clear'),
+  });
 
   const laser = createSceneEntity(world, {
     id: 'laser_1',

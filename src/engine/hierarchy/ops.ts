@@ -21,7 +21,7 @@ function siblingsOf(world: World, parentId: EntityId | null): EntityId[] {
 
 function reindex(world: World, parentId: EntityId | null): void {
   siblingsOf(world, parentId).forEach((id, index) => {
-    world.set(id, 'SiblingOrder', { index });
+    world.setQuiet(id, 'SiblingOrder', { index });
   });
 }
 
@@ -49,7 +49,8 @@ export function applyHierarchyReorder(
   if (wouldCreateCycle(world, sourceId, newParent)) return false;
 
   const oldParent = world.get(sourceId, 'Parent')?.entityId ?? null;
-  world.set(sourceId, 'Parent', { entityId: newParent });
+  // Parent/order are hierarchy + WorldXform only — no mesh topology change.
+  world.setQuiet(sourceId, 'Parent', { entityId: newParent });
 
   const siblings = siblingsOf(world, newParent).filter((id) => id !== sourceId);
   let insertAt = siblings.length;
@@ -65,12 +66,11 @@ export function applyHierarchyReorder(
   }
 
   siblings.splice(insertAt, 0, sourceId);
-  siblings.forEach((id, index) => world.set(id, 'SiblingOrder', { index }));
+  siblings.forEach((id, index) => world.setQuiet(id, 'SiblingOrder', { index }));
 
   if (oldParent !== newParent) {
     reindex(world, oldParent);
   }
-  world.bump();
   return true;
 }
 

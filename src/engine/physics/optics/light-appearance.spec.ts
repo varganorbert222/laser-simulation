@@ -44,4 +44,17 @@ describe('light appearance (HDR lamps)', () => {
     const app = resolveEmitterAppearance(sun);
     expect(app.chroma[0]).toBeGreaterThan(0);
   });
+
+  it('defaults enable screen-space lens flare', () => {
+    const laser = defaultLightEmitter();
+    const sun = defaultLightEmitterForMode('sun');
+    expect(laser.lensFlareEnabled).toBe(true);
+    expect(sun.lensFlareEnabled).toBe(true);
+    const n = normalizeLightEmitter({
+      wavelengthNm: 532,
+      powerW: 1,
+    } as never);
+    expect(n.lensFlareEnabled).toBe(true);
+    expect(n.lensFlareIntensity).toBe(1);
+  });
 });

@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { applySelection, snapshotSelection } from '../commands/selection';
+import { EditHistory } from '../commands/edit-history';
+import { setFluidVolumeCommand } from '../commands/light-media-commands';
+import { defaultFluidVolume } from '../ecs/components/fluid';
 import { createDemoWorld } from '../scene/demo-world';
 import { createSceneEntity } from '../hierarchy/entity-factory';
 import { deleteEntitiesCommand, duplicateEntitiesCommand } from '../commands/hierarchy-commands';
@@ -14,8 +17,10 @@ describe('multi selection', () => {
     const a = createSceneEntity(world, { name: 'A', parentId: 'scene_root' });
     const b = createSceneEntity(world, { name: 'B', parentId: 'scene_root' });
     const c = createSceneEntity(world, { name: 'C', parentId: 'scene_root' });
+    const epochBefore = world.resources.epoch;
 
     applySelection(world, a);
+    expect(world.resources.epoch).toBe(epochBefore);
     expect(world.resources.EditorSelection).toEqual({ entityId: a, entityIds: [a] });
 
     applySelection(world, b, { mode: 'toggle' });
@@ -95,6 +100,8 @@ describe('multi selection', () => {
     const shared = sharedComponents(world, ['laser_1']);
     expect(shared).toContain('LightEmitter');
     expect(shared).toContain('Transform');
+    expect(sharedComponents(world, ['fog_smoke_1'])).toContain('FogVolume');
+    expect(sharedComponents(world, ['aquarium_1'])).toContain('FluidVolume');
   });
 
   it('snapshotSelection round-trip', () => {
@@ -105,5 +112,32 @@ describe('multi selection', () => {
     applySelection(world, null);
     applySelection(world, snap);
     expect(world.resources.EditorSelection.entityIds).toContain(a);
+  });
+
+  it('FluidVolume fillFraction survives selection change and history flush', () => {
+    const world = createDemoWorld();
+    const id = 'aquarium_1';
+    const history = new EditHistory();
+    const before = structuredClone(world.get(id, 'FluidVolume')!);
+    expect(before.fillFraction).toBeGreaterThan(0);
+    const epochBefore = world.resources.epoch;
+
+    const after = {
+      ...defaultFluidVolume(),
+      halfExtents: [...before.halfExtents] as typeof before.halfExtents,
+      enabled: before.enabled,
+      fillFraction: 0.55,
+    };
+    history.run(setFluidVolumeCommand(world, id, before, after));
+    expect(world.get(id, 'FluidVolume')!.fillFraction).toBeCloseTo(0.55);
+    // Param-only write must not bump structural epoch (no full mesh rebuild).
+    expect(world.resources.epoch).toBe(epochBefore);
+
+    history.flushPending();
+    applySelection(world, 'laser_1');
+    expect(world.get(id, 'FluidVolume')!.fillFraction).toBeCloseTo(0.55);
+
+    applySelection(world, id);
+    expect(world.get(id, 'FluidVolume')!.fillFraction).toBeCloseTo(0.55);
   });
 });

@@ -1,9 +1,15 @@
 import { Injectable, computed, inject } from '@angular/core';
-import { setMediaVolumeCommand, type MediaVolume } from '@engine';
+import {
+  setMediaVolumeCommand,
+  writeMediaVolume,
+  type EntityId,
+  type MediaVolume,
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
 import {
   patchSelectedComponents,
+  resolvePatchTargetIds,
   selectionComponentMixed,
   selectionComponentPrimary,
 } from './patch-component';
@@ -15,6 +21,7 @@ export class MediaEditorService {
 
   readonly selectedMedia = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return selectionComponentPrimary(
       this.engine.world(),
       this.selection.selectedIds(),
@@ -24,6 +31,7 @@ export class MediaEditorService {
 
   readonly selectedMediaMixed = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return selectionComponentMixed(
       this.engine.world(),
       this.selection.selectedIds(),
@@ -35,9 +43,15 @@ export class MediaEditorService {
     this.updateMedia({ density }, { coalesce: true });
   }
 
-  updateMedia(patch: Partial<MediaVolume>, opts?: { coalesce?: boolean }): void {
-    const ids = this.selection.selectedIds().filter((id) =>
-      this.engine.world().has(id, 'MediaVolume'),
+  updateMedia(
+    patch: Partial<MediaVolume>,
+    opts?: { coalesce?: boolean; entityIds?: readonly EntityId[] },
+  ): void {
+    const world = this.engine.world();
+    const ids = resolvePatchTargetIds(
+      world,
+      'MediaVolume',
+      opts?.entityIds ?? this.selection.selectedIds(),
     );
     patchSelectedComponents({
       engine: this.engine,
@@ -45,6 +59,7 @@ export class MediaEditorService {
       component: 'MediaVolume',
       label: 'Közeg',
       coalesce: opts?.coalesce,
+      writeComponent: writeMediaVolume,
       merge: (before) => ({
         ...structuredClone(before),
         ...patch,

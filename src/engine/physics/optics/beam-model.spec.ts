@@ -5,10 +5,10 @@ import { defaultOpticsSpill } from './optics-spill';
 import { defaultLaserParams } from './modes';
 import {
   beamModelFromEmitter,
-  beamModelToGpuParams,
+  beamModelToGpuParams,
   evalRadianceField,
   surfaceBrdfWeights,
-  unpackLaserProfilePack,
+  unpackLaserProfilePack,
   type BeamModel,
 } from './beam-model';
 import { defaultSurfaceMaterial } from './surface-material';
@@ -23,6 +23,12 @@ function emitter(partial: Partial<LightEmitter> & Pick<LightEmitter, 'params'>):
     bloomGain: 1,
     apertureCoupling: 0.5,
     spill: defaultOpticsSpill(),
+    lensFlareEnabled: true,
+    lensFlareIntensity: 1,
+    colorRgb: [1, 1, 1],
+    intensityLm: 1000,
+    useColorTemperature: false,
+    colorTemperatureK: 6500,
     ...partial,
   };
 }

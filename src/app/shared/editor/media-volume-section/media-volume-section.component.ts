@@ -45,6 +45,7 @@ import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
 })
 export class MediaVolumeSectionComponent {
   readonly media = input.required<MediaVolume>();
+  readonly targetIds = input<readonly string[]>([]);
   readonly editor = inject(EditorFacade);
   readonly l10n = inject(LocalizationService);
   readonly noiseLibrary = inject(NoiseVolumeService);
@@ -57,6 +58,14 @@ export class MediaVolumeSectionComponent {
   readonly rhMax = RELATIVE_HUMIDITY_MAX;
   readonly tempMin = TEMPERATURE_C_MIN;
   readonly tempMax = TEMPERATURE_C_MAX;
+
+  private patchOpts(coalesce?: boolean): { coalesce?: boolean; entityIds?: readonly string[] } {
+    const ids = this.targetIds();
+    return {
+      coalesce,
+      ...(ids.length ? { entityIds: ids } : {}),
+    };
+  }
 
   halfExtentsVec(): Vec3Editable {
     const [x, y, z] = this.media().halfExtents;
@@ -141,26 +150,28 @@ export class MediaVolumeSectionComponent {
     if (isClimatePreset(this.activePreset())) {
       this.editor.updateMedia(
         opticalFieldsFromClimate(this.activePreset(), m.relativeHumidity, m.temperatureC, d),
-        { coalesce: true },
+        this.patchOpts(true),
       );
       return;
     }
-    this.editor.setMediaDensity(d);
+    this.editor.updateMedia({ density: d }, this.patchOpts(true));
   }
 
   onMediaLayer(value: string): void {
     if (!isMediaLayer(value)) return;
+    if (value === this.media().layer) return;
     const preset = defaultPresetForLayer(value);
-    this.editor.updateMedia(opticalFieldsForMediaKind(preset));
+    this.editor.updateMedia(opticalFieldsForMediaKind(preset), this.patchOpts());
   }
 
   onMediaPreset(value: string): void {
     if (!isMediaPresetId(value)) return;
-    this.editor.updateMedia(opticalFieldsForMediaKind(value));
+    if (value === this.activePreset()) return;
+    this.editor.updateMedia(opticalFieldsForMediaKind(value), this.patchOpts());
   }
 
   onMediaColor(rgb: [number, number, number]): void {
-    this.editor.updateMedia({ color: rgb }, { coalesce: true });
+    this.editor.updateMedia({ color: rgb }, this.patchOpts(true));
   }
 
   onHalfExtents(v: Vec3Editable): void {
@@ -169,13 +180,15 @@ export class MediaVolumeSectionComponent {
       Math.max(0.05, v.y),
       Math.max(0.05, v.z),
     ];
-    this.editor.updateMedia({ halfExtents }, { coalesce: true });
+    this.editor.updateMedia({ halfExtents }, this.patchOpts(true));
   }
 
   onScatterModel(value: string): void {
     if (value !== 'tyndall' && value !== 'rayleigh') return;
+    if (value === this.media().scatterModel) return;
     this.editor.updateMedia(
       opticalFieldsForScatterModel(value, this.activePreset()),
+      this.patchOpts(),
     );
   }
 
@@ -185,7 +198,7 @@ export class MediaVolumeSectionComponent {
     const rh = clampRelativeHumidity(Number(value));
     this.editor.updateMedia(
       opticalFieldsFromClimate(this.activePreset(), rh, m.temperatureC, m.density),
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -195,7 +208,7 @@ export class MediaVolumeSectionComponent {
     const temperatureC = clampTemperatureC(Number(value));
     this.editor.updateMedia(
       opticalFieldsFromClimate(this.activePreset(), m.relativeHumidity, temperatureC, m.density),
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -210,7 +223,7 @@ export class MediaVolumeSectionComponent {
         particleSizeNm,
         mieAnisotropy: defaultMieAnisotropy(model, particleSizeNm),
       },
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -218,7 +231,7 @@ export class MediaVolumeSectionComponent {
     if (this.isRayleigh() || this.isClimateAir()) return;
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.editor.updateMedia({ mieAnisotropy: clampMieAnisotropy(n) }, { coalesce: true });
+    this.editor.updateMedia({ mieAnisotropy: clampMieAnisotropy(n) }, this.patchOpts(true));
   }
 
   scatterModelLabel(model: ScatterModel): string {
@@ -229,7 +242,8 @@ export class MediaVolumeSectionComponent {
 
   onNoiseAsset(raw: string): void {
     const noiseAssetId = raw.trim() ? raw.trim() : null;
-    this.editor.updateMedia({ noiseAssetId });
+    if (noiseAssetId === this.media().noiseAssetId) return;
+    this.editor.updateMedia({ noiseAssetId }, this.patchOpts());
   }
 
   onMediaNumber(
@@ -245,6 +259,6 @@ export class MediaVolumeSectionComponent {
     if (this.isClimateAir() && (key === 'scatter' || key === 'absorption')) return;
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.editor.updateMedia({ [key]: n }, { coalesce: true });
+    this.editor.updateMedia({ [key]: n }, this.patchOpts(true));
   }
 }

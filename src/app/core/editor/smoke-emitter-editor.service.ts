@@ -1,9 +1,15 @@
 import { Injectable, computed, inject } from '@angular/core';
-import { setSmokeEmitterCommand, type SmokeEmitter } from '@engine';
+import {
+  setSmokeEmitterCommand,
+  writeSmokeEmitter,
+  type EntityId,
+  type SmokeEmitter,
+} from '@engine';
 import { EngineHostService } from '../services/engine-host.service';
 import { SelectionService } from './selection.service';
 import {
   patchSelectedComponents,
+  resolvePatchTargetIds,
   selectionComponentMixed,
   selectionComponentPrimary,
 } from './patch-component';
@@ -15,6 +21,7 @@ export class SmokeEmitterEditorService {
 
   readonly selectedSmoke = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return selectionComponentPrimary(
       this.engine.world(),
       this.selection.selectedIds(),
@@ -24,6 +31,7 @@ export class SmokeEmitterEditorService {
 
   readonly selectedSmokeMixed = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return selectionComponentMixed(
       this.engine.world(),
       this.selection.selectedIds(),
@@ -31,9 +39,15 @@ export class SmokeEmitterEditorService {
     );
   });
 
-  updateSmoke(patch: Partial<SmokeEmitter>, opts?: { coalesce?: boolean }): void {
-    const ids = this.selection.selectedIds().filter((id) =>
-      this.engine.world().has(id, 'SmokeEmitter'),
+  updateSmoke(
+    patch: Partial<SmokeEmitter>,
+    opts?: { coalesce?: boolean; entityIds?: readonly EntityId[] },
+  ): void {
+    const world = this.engine.world();
+    const ids = resolvePatchTargetIds(
+      world,
+      'SmokeEmitter',
+      opts?.entityIds ?? this.selection.selectedIds(),
     );
     patchSelectedComponents({
       engine: this.engine,
@@ -43,6 +57,7 @@ export class SmokeEmitterEditorService {
       multiLabel: 'Füstszóró',
       // Multi-edit historically never coalesced; keep that behavior.
       coalesce: ids.length === 1 ? opts?.coalesce : false,
+      writeComponent: writeSmokeEmitter,
       merge: (before) => ({
         ...structuredClone(before),
         ...patch,

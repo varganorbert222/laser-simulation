@@ -58,9 +58,10 @@ export class StudioRuntime {
    * Advance ECS schedule, then sync + render via presenter (present outside schedule).
    *
    * Order matters for volumetric/camera sync:
-   * 1. syncViewCamera — live Babylon pose → ECS Camera before gather
+   * 1. syncViewCamera — camera.update() + pose → ECS before gather
    * 2. schedule (worldTransform + gather) — cam-relative pack matches this frame
-   * 3. presenter.sync / render — meshes + depth + volumetric + scene
+   * 3. presenter.sync / render — depth + fluid + volumetric + scene.render(false)
+   *    (no second camera.update, so volumes stay locked to the packed pose)
    */
   tick(dt: number): void {
     const atmo = this.world.resources.Atmosphere;

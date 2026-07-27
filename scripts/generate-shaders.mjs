@@ -22,8 +22,13 @@ function readSlots() {
   const text = fs.readFileSync(slotsPath, 'utf8');
   const lights = text.match(/export const MAX_GPU_LIGHTS\s*=\s*(\d+)/);
   const media = text.match(/export const MAX_GPU_MEDIA\s*=\s*(\d+)/);
+  const fluids = text.match(/export const MAX_GPU_FLUIDS\s*=\s*(\d+)/);
   if (!lights || !media) throw new Error('Could not parse MAX_GPU_LIGHTS / MAX_GPU_MEDIA from slots.ts');
-  return { lights: Number(lights[1]), media: Number(media[1]) };
+  return {
+    lights: Number(lights[1]),
+    media: Number(media[1]),
+    fluids: fluids ? Number(fluids[1]) : 2,
+  };
 }
 
 function beamSlotUniformDecls(slots, prefix, { scatter = false } = {}) {
@@ -218,6 +223,93 @@ function mediaIntersectUnion(slots) {
   return blocks.join('\n');
 }
 
+function fluidUniformDecls(slots) {
+  const lines = [];
+  for (let i = 0; i < slots; i++) {
+    lines.push(
+      `uniform vec3 uFluidCenter${i}; uniform vec3 uFluidHalfExt${i}; uniform vec3 uFluidColor${i};`,
+      `uniform vec3 uFluidAxisX${i}; uniform vec3 uFluidAxisY${i}; uniform vec3 uFluidAxisZ${i};`,
+      `uniform float uFluidDensity${i}; uniform float uFluidScatter${i}; uniform float uFluidAbsorb${i};`,
+      `uniform float uFluidKind${i}; uniform float uFluidFillHeight${i};`,
+      `uniform float uFluidGridRes${i}; uniform float uFluidTilesX${i}; uniform vec2 uFluidAtlasSize${i};`,
+      `uniform sampler2D uFluidDensityAtlas${i};`,
+    );
+  }
+  return lines.join('\n');
+}
+
+/** Sample density from 2D slice-atlas (CPU twin: engine/physics/fluid/atlas.ts). */
+function fluidSampleFns(slots) {
+  const lines = [];
+  for (let i = 0; i < slots; i++) {
+    lines.push(`float sampleFluidDensity${i}(vec3 local01) {
+  float n = max(uFluidGridRes${i}, 1.0);
+  vec3 ijk = clamp(local01, vec3(0.0), vec3(1.0)) * (n - 1.0);
+  float iz = floor(ijk.z + 0.5);
+  float tileX = mod(iz, uFluidTilesX${i});
+  float tileY = floor(iz / uFluidTilesX${i});
+  float px = tileX * n + ijk.x + 0.5;
+  float py = tileY * n + ijk.y + 0.5;
+  vec2 uv = vec2(px / uFluidAtlasSize${i}.x, py / uFluidAtlasSize${i}.y);
+  return texture(uFluidDensityAtlas${i}, uv).r;
+}`);
+  }
+  return lines.join('\n');
+}
+
+function fluidSampleAccum(slots) {
+  const blocks = [];
+  for (let i = 0; i < slots; i++) {
+    // Fog/smoke slots: density atlas only. Analytical water uses dedicated medium uniforms.
+    blocks.push(`  if (uFluidCount > ${i}.5) {
+    vec3 dFcam${i} = pCam - uFluidCenter${i};
+    vec3 localF${i} = vec3(
+      dot(dFcam${i}, uFluidAxisX${i}),
+      dot(dFcam${i}, uFluidAxisY${i}),
+      dot(dFcam${i}, uFluidAxisZ${i})
+    );
+    if (!any(greaterThan(abs(localF${i}), uFluidHalfExt${i}))) {
+      vec3 uvw${i} = localF${i} / max(uFluidHalfExt${i} * 2.0, vec3(1e-4)) + 0.5;
+      float fieldF${i} = sampleFluidDensity${i}(uvw${i});
+      float dF${i} = max(fieldF${i}, 0.0) * uFluidDensity${i};
+      if (dF${i} > 1e-8) {
+        dens += dF${i};
+        float ssF${i} = max(uFluidScatter${i}, 0.0) * dF${i};
+        float saF${i} = max(uFluidAbsorb${i}, 0.0) * dF${i};
+        sigmaSR += ssF${i};
+        sigmaA += saF${i};
+        float wTintF${i} = ssF${i} + saF${i} * 0.25;
+        tintAccum += uFluidColor${i} * wTintF${i};
+        tintWeight += wTintF${i};
+      }
+    }
+  }`);
+  }
+  return blocks.join('\n');
+}
+
+function fluidIntersectUnion(slots) {
+  const blocks = [];
+  for (let i = 0; i < slots; i++) {
+    blocks.push(`  if (uFluidCount > ${i}.5) {
+    vec3 roL${i} = vec3(
+      dot(ro - uFluidCenter${i}, uFluidAxisX${i}),
+      dot(ro - uFluidCenter${i}, uFluidAxisY${i}),
+      dot(ro - uFluidCenter${i}, uFluidAxisZ${i})
+    );
+    vec3 rdL${i} = vec3(
+      dot(rd, uFluidAxisX${i}),
+      dot(rd, uFluidAxisY${i}),
+      dot(rd, uFluidAxisZ${i})
+    );
+    if (intersectBox(roL${i}, rdL${i}, vec3(0.0), uFluidHalfExt${i}, te, tx)) {
+      anyHit = true; tEnter = min(tEnter, te); tExit = max(tExit, tx);
+    }
+  }`);
+  }
+  return blocks.join('\n');
+}
+
 function mediaExtinctionFastAccum(slots) {
   const pass1 = [];
   const pass2 = [];
@@ -349,6 +441,19 @@ function surfaceLightUniforms(slots) {
     'uniform float uSrMetalness;',
     'uniform float uSrRoughness;',
     'uniform float uSrAbsorption;',
+    'uniform float uSrCausticStrength;',
+    'uniform float uSrCausticFill;',
+    'uniform float uSrCausticTime;',
+    'uniform vec3 uSrCausticSunDir;',
+    'uniform vec3 uSrCausticSunRgb;',
+    'uniform vec3 uSrCausticCenter;',
+    'uniform vec3 uSrCausticHalfExt;',
+    'uniform vec3 uSrCausticAxisX;',
+    'uniform vec3 uSrCausticAxisY;',
+    'uniform vec3 uSrCausticAxisZ;',
+    'uniform float uSrCausticWaveAmp;',
+    'uniform float uSrCausticWaveFreq;',
+    'uniform float uSrCausticWaveSteep;',
     beamSlotUniformDecls(slots, 'uSr'),
   ].join('\n');
 }
@@ -419,8 +524,8 @@ function readSrc(rel) {
 }
 
 function main() {
-  const { lights, media } = readSlots();
-  console.log(`generate-shaders: MAX_GPU_LIGHTS=${lights} MAX_GPU_MEDIA=${media}`);
+  const { lights, media, fluids } = readSlots();
+  console.log(`generate-shaders: MAX_GPU_LIGHTS=${lights} MAX_GPU_MEDIA=${media} MAX_GPU_FLUIDS=${fluids}`);
 
   // --- Contract modules (resolved includes) ---
   const residual = resolveIncludes(readSrc('contract/residual_field.glsl'), path.join(srcDir, 'contract/residual_field.glsl'));
@@ -442,6 +547,10 @@ function main() {
     MEDIA_EXTINCTION: mediaExtinctionFastAccum(media),
     MEDIA_SAMPLE_ACCUM: mediaSampleAccum(media),
     MEDIA_INTERSECT: mediaIntersectUnion(media),
+    FLUID_UNIFORMS: fluidUniformDecls(fluids),
+    FLUID_SAMPLE_FNS: fluidSampleFns(fluids),
+    FLUID_SAMPLE_ACCUM: fluidSampleAccum(fluids),
+    FLUID_INTERSECT: fluidIntersectUnion(fluids),
     LIGHT_EVAL_MARCH: lightEvalInMarch(lights),
   });
   const raymarch = resolveIncludes(rayTpl, rayTplPath);
@@ -461,6 +570,32 @@ function main() {
     path.join(srcDir, 'volumetric/luminance_reduce.glsl'),
   );
   writeOut('volumetric_luminance_reduce', lumReduce, 'VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT');
+
+  // --- Fog / smoke solver passes ---
+  const fogPasses = [
+    ['fog_advect', 'fog/advect.glsl', 'FOG_ADVECT_FRAGMENT'],
+    ['fog_buoyancy', 'fog/buoyancy.glsl', 'FOG_BUOYANCY_FRAGMENT'],
+    ['fog_inject', 'fog/inject.glsl', 'FOG_INJECT_FRAGMENT'],
+    ['fog_vorticity', 'fog/vorticity.glsl', 'FOG_VORTICITY_FRAGMENT'],
+    ['fog_divergence', 'fog/divergence.glsl', 'FOG_DIVERGENCE_FRAGMENT'],
+    ['fog_jacobi', 'fog/jacobi.glsl', 'FOG_JACOBI_FRAGMENT'],
+    ['fog_project', 'fog/project.glsl', 'FOG_PROJECT_FRAGMENT'],
+    ['fog_boundaries', 'fog/boundaries.glsl', 'FOG_BOUNDARIES_FRAGMENT'],
+    ['fog_init', 'fog/init.glsl', 'FOG_INIT_FRAGMENT'],
+    ['fog_diffuse', 'fog/diffuse.glsl', 'FOG_DIFFUSE_FRAGMENT'],
+    ['fog_force', 'fog/force.glsl', 'FOG_FORCE_FRAGMENT'],
+  ];
+  for (const [base, rel, exportName] of fogPasses) {
+    const resolved = resolveIncludes(readSrc(rel), path.join(srcDir, rel));
+    writeOut(base, resolved, exportName);
+  }
+
+  // --- Analytical water surface post-process ---
+  {
+    const rel = 'fluid/water_surface.glsl';
+    const resolved = resolveIncludes(readSrc(rel), path.join(srcDir, rel));
+    writeOut('fluid_water_surface', resolved, 'FLUID_WATER_SURFACE_FRAGMENT');
+  }
 
   // --- Surface plugin ---
   const surfDefsPath = path.join(srcDir, 'surface/radiance_plugin_definitions.tpl.glsl');
@@ -533,6 +668,18 @@ export { VOLUMETRIC_FRAGMENT } from './volumetric_raymarch';
 export { VOLUMETRIC_COMPOSE_FRAGMENT } from './volumetric_compose';
 export { VOLUMETRIC_LUMINANCE_FRAGMENT } from './volumetric_luminance';
 export { VOLUMETRIC_LUMINANCE_REDUCE_FRAGMENT } from './volumetric_luminance_reduce';
+export { FOG_ADVECT_FRAGMENT } from './fog_advect';
+export { FOG_BUOYANCY_FRAGMENT } from './fog_buoyancy';
+export { FOG_INJECT_FRAGMENT } from './fog_inject';
+export { FOG_VORTICITY_FRAGMENT } from './fog_vorticity';
+export { FOG_DIVERGENCE_FRAGMENT } from './fog_divergence';
+export { FOG_JACOBI_FRAGMENT } from './fog_jacobi';
+export { FOG_PROJECT_FRAGMENT } from './fog_project';
+export { FOG_BOUNDARIES_FRAGMENT } from './fog_boundaries';
+export { FOG_INIT_FRAGMENT } from './fog_init';
+export { FOG_DIFFUSE_FRAGMENT } from './fog_diffuse';
+export { FOG_FORCE_FRAGMENT } from './fog_force';
+export { FLUID_WATER_SURFACE_FRAGMENT } from './fluid_water_surface';
 export { SURFACE_RADIANCE_DEFINITIONS } from './surface_radiance_definitions';
 export { SURFACE_RADIANCE_BEFORE_FRAGCOLOR } from './surface_radiance_before_fragcolor';
 export { SURFACE_RADIANCE_UNIFORMS } from './surface_radiance_uniforms';

@@ -26,7 +26,8 @@ function writeSelection(world: World, next: EditorSelection): void {
     entityIds: [...next.entityIds],
   };
   syncSelectableFlags(world, new Set(next.entityIds));
-  world.bump();
+  // Do not bump structural epoch — SceneMeshSync treats bump as a full mesh rebuild.
+  // Host UI refreshes via EngineHostService.selectionRevision instead.
 }
 
 /** Snapshot current selection (for undo). */

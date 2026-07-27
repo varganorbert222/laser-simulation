@@ -21,6 +21,7 @@ import { LocalizationService } from '../../../core/services/localization.service
 })
 export class SmokeEmitterSectionComponent {
   readonly smoke = input.required<SmokeEmitter>();
+  readonly targetIds = input<readonly string[]>([]);
   readonly editor = inject(EditorFacade);
   readonly l10n = inject(LocalizationService);
 
@@ -31,25 +32,33 @@ export class SmokeEmitterSectionComponent {
   readonly lengthMin = SMOKE_PLUME_LENGTH_M_MIN;
   readonly lengthMax = SMOKE_PLUME_LENGTH_M_MAX;
 
+  private patchOpts(coalesce?: boolean): { coalesce?: boolean; entityIds?: readonly string[] } {
+    const ids = this.targetIds();
+    return {
+      coalesce,
+      ...(ids.length ? { entityIds: ids } : {}),
+    };
+  }
+
   onEnabled(checked: boolean): void {
-    this.editor.updateSmoke({ enabled: checked });
+    this.editor.updateSmoke({ enabled: checked }, this.patchOpts());
   }
 
   onEmission(value: string): void {
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.editor.updateSmoke({ emissionRate: n }, { coalesce: true });
+    this.editor.updateSmoke({ emissionRate: n }, this.patchOpts(true));
   }
 
   onCone(value: string): void {
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.editor.updateSmoke({ coneAngleDeg: n }, { coalesce: true });
+    this.editor.updateSmoke({ coneAngleDeg: n }, this.patchOpts(true));
   }
 
   onPlumeLength(value: string): void {
     const n = Number(value);
     if (!Number.isFinite(n)) return;
-    this.editor.updateSmoke({ plumeLengthM: n }, { coalesce: true });
+    this.editor.updateSmoke({ plumeLengthM: n }, this.patchOpts(true));
   }
 }

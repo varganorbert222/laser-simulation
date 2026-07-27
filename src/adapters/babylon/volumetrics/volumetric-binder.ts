@@ -9,6 +9,7 @@ import {
   RenderTargetTexture,
   Vector2,
   Vector3,
+  Viewport,
   type BaseTexture,
   type Camera,
   type Engine,
@@ -19,12 +20,15 @@ import '@babylonjs/core/Engines/Extensions/engine.readTexture.js';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import {
   AUTO_EXPOSURE_KEY,
+  LENS_FLARE_SLOTS,
   MANUAL_HDR_EXPOSURE,
+  VOLUMETRIC_FLUID_SLOTS,
   VOLUMETRIC_LIGHT_SLOTS,
   VOLUMETRIC_MEDIA_SLOTS,
   clampRenderScale,
   exposureFromAvgLuminance,
   gatherRenderPack,
+  lensFlareFacingWeight,
   manualComposeExposure,
   smoothExposure,
   type BakedNoiseVolume,
@@ -42,6 +46,8 @@ import {
   VOLUMETRIC_UNIFORMS,
 } from '../shaders/load-shaders';
 import { NoiseTextureCache } from './noise-volume-texture';
+import type { FogBinder } from '../fog/fog-binder';
+import type { FluidBinder } from '../fluids/fluid-binder';
 
 Effect.ShadersStore[VOLUMETRIC_SHADER_KEY] = VOLUMETRIC_FRAGMENT;
 Effect.ShadersStore[VOLUMETRIC_COMPOSE_SHADER_KEY] = VOLUMETRIC_COMPOSE_FRAGMENT;
@@ -101,6 +107,8 @@ export class VolumetricBinder {
   private smoothedExposure = MANUAL_HDR_EXPOSURE;
   private readingLuminance = false;
   private _meterSceneTex: BaseTexture | null = null;
+  private _fluids: FogBinder | FluidBinder | null = null;
+  private readonly _fluidDummy: RenderTargetTexture;
 
   constructor(
     private readonly engine: Engine,
@@ -125,6 +133,21 @@ export class VolumetricBinder {
       Constants.TEXTURE_NEAREST_SAMPLINGMODE,
       Constants.TEXTURETYPE_UNSIGNED_BYTE,
     );
+
+    this._fluidDummy = new RenderTargetTexture(
+      'fluidDensityDummy',
+      { width: 1, height: 1 },
+      scene,
+      false,
+      true,
+      Constants.TEXTURETYPE_UNSIGNED_BYTE,
+      false,
+      Constants.TEXTURE_NEAREST_SAMPLINGMODE,
+      false,
+      false,
+    );
+    this._fluidDummy.renderList = [];
+    this._fluidDummy.clearColor = new Color4(0, 0, 0, 0);
 
     // Prefer half-float so HDR laser/sky energy survives until compose tonemap.
     const volType = this.pickVolumetricTextureType();
@@ -225,11 +248,41 @@ export class VolumetricBinder {
     });
 
     // Native compose only — keeps the camera PP chain (and scene RT) at full resolution.
+    const flareUniformNames: string[] = [
+      'uLensFlareEnabled',
+      'uFlareCount',
+      'uUseSceneDepthFlare',
+      'uFlareLightsGhosts',
+      'uFlareLightsStreaks',
+      'uFlareLightsHalo',
+      'uFlareLightsChromatic',
+      'uFlareLightsDirt',
+      'uFlareSunGhosts',
+      'uFlareSunStreaks',
+      'uFlareSunHalo',
+      'uFlareSunChromatic',
+      'uFlareSunDirt',
+    ];
+    for (let i = 0; i < LENS_FLARE_SLOTS; i++) {
+      flareUniformNames.push(
+        `uFlareScreen${i}`,
+        `uFlareColor${i}`,
+        `uFlareIntensity${i}`,
+        `uFlareDirectional${i}`,
+      );
+    }
     this.compose = new PostProcess(
       'volumetricCompose',
       'volumetricCompose',
-      ['uTonemapMode', 'uColorProfile', 'uOutputGamma', 'uAutoExposure', 'uAerialEnabled'],
-      ['volumetricTexture', 'uAerialPerspectiveLUT'],
+      [
+        'uTonemapMode',
+        'uColorProfile',
+        'uOutputGamma',
+        'uAutoExposure',
+        'uAerialEnabled',
+        ...flareUniformNames,
+      ],
+      ['volumetricTexture', 'uAerialPerspectiveLUT', 'uSceneDepthFlare'],
       1.0,
       camera,
       Constants.TEXTURE_BILINEAR_SAMPLINGMODE,
@@ -263,6 +316,8 @@ export class VolumetricBinder {
       const aerialOn = this._aerialLut && this._world?.resources.Atmosphere?.enabled ? 1 : 0;
       fx.setFloat('uAerialEnabled', aerialOn);
       fx.setTexture('uAerialPerspectiveLUT', this._aerialLut ?? this._aerialDummy);
+
+      this.applyLensFlareUniforms(fx);
     };
 
     this.lastRenderScale = scale;
@@ -275,6 +330,10 @@ export class VolumetricBinder {
     this._camera = camera;
   }
 
+  bindFluids(fluids: FogBinder | FluidBinder | null): void {
+    this._fluids = fluids;
+  }
+
   /** Scene depth (camera-space Z) for solid occlusion — typically from DepthRenderer. */
   setSceneDepthTexture(texture: BaseTexture | null): void {
     this._sceneDepth = texture;
@@ -283,6 +342,106 @@ export class VolumetricBinder {
   /** Bind Atmosphere aerial perspective volume for compose haze (null disables). */
   setAerialPerspectiveLut(texture: BaseTexture | null): void {
     this._aerialLut = texture;
+  }
+
+  /**
+   * Project gathered flare sources to screen UV + camera-space depth and bind
+   * compose uniforms (pre-tonemap HDR optical flare).
+   */
+  private applyLensFlareUniforms(fx: EffectLike): void {
+    const clearSlot = (i: number) => {
+      fx.setVector3(`uFlareScreen${i}`, Vector3.Zero());
+      fx.setVector3(`uFlareColor${i}`, Vector3.Zero());
+      fx.setFloat(`uFlareIntensity${i}`, 0);
+      fx.setFloat(`uFlareDirectional${i}`, 0);
+    };
+
+    const q = this._world?.resources.Quality;
+    const pack = this._world?.resources.RenderFrame ?? this.lastPack;
+    if (!this._camera || !pack || q?.lensFlare === false) {
+      fx.setFloat('uLensFlareEnabled', 0);
+      fx.setFloat('uFlareCount', 0);
+      fx.setFloat('uUseSceneDepthFlare', 0);
+      for (let i = 0; i < LENS_FLARE_SLOTS; i++) clearSlot(i);
+      return;
+    }
+
+    fx.setFloat('uLensFlareEnabled', 1);
+    fx.setFloat('uUseSceneDepthFlare', this._sceneDepth ? 1 : 0);
+    if (this._sceneDepth) {
+      fx.setTexture('uSceneDepthFlare', this._sceneDepth);
+    }
+
+    const lightsTune = q?.lensFlareLights;
+    const sunTune = q?.lensFlareSun;
+    fx.setFloat('uFlareLightsGhosts', lightsTune?.ghosts ?? 1);
+    fx.setFloat('uFlareLightsStreaks', lightsTune?.streaks ?? 1);
+    fx.setFloat('uFlareLightsHalo', lightsTune?.halo ?? 1);
+    fx.setFloat('uFlareLightsChromatic', lightsTune?.chromatic ?? 1);
+    fx.setFloat('uFlareLightsDirt', lightsTune?.dirt ?? 1);
+    fx.setFloat('uFlareSunGhosts', sunTune?.ghosts ?? 1);
+    fx.setFloat('uFlareSunStreaks', sunTune?.streaks ?? 1);
+    fx.setFloat('uFlareSunHalo', sunTune?.halo ?? 1);
+    fx.setFloat('uFlareSunChromatic', sunTune?.chromatic ?? 1);
+    fx.setFloat('uFlareSunDirt', sunTune?.dirt ?? 1);
+
+    const cam = this._camera;
+    const scene = cam.getScene();
+    const engine = scene.getEngine();
+    const w = engine.getRenderWidth();
+    const h = engine.getRenderHeight();
+    const transform = cam.getTransformationMatrix();
+    const view = cam.getViewMatrix();
+    const viewport = new Viewport(0, 0, w, h);
+    const identity = Matrix.Identity();
+
+    let count = 0;
+    const flares = pack.lensFlares ?? [];
+    for (let i = 0; i < flares.length && count < LENS_FLARE_SLOTS; i++) {
+      const f = flares[i]!;
+      const world = new Vector3(
+        cam.position.x + f.originCam[0],
+        cam.position.y + f.originCam[1],
+        cam.position.z + f.originCam[2],
+      );
+      const viewPos = Vector3.TransformCoordinates(world, view);
+      // Babylon LH: +Z forward. Behind-camera points still Project onto the screen
+      // (false flare when facing away from the sun) — cull all sources, including sun.
+      if (viewPos.z < 0.05) continue;
+
+      // Radiation-axis gate: directional emitters only flare when shining toward the camera.
+      // Omni / point: isotropic — keep all view directions.
+      let intensity = f.intensity;
+      if ((f.omni ?? 0) < 0.5) {
+        const facing = lensFlareFacingWeight(
+          f.directionCam ?? ([0, 0, 1] as const),
+          [world.x, world.y, world.z],
+          [cam.position.x, cam.position.y, cam.position.z],
+          false,
+        );
+        intensity *= facing;
+        if (intensity < 1e-5) continue;
+      }
+
+      const projected = Vector3.Project(world, identity, transform, viewport);
+      const uvx = projected.x / Math.max(w, 1);
+      // Vector3.Project: Y=0 at top of viewport; Babylon post-process vUV: Y=0 at bottom.
+      const uvy = 1 - projected.y / Math.max(h, 1);
+      if (!Number.isFinite(uvx) || !Number.isFinite(uvy)) continue;
+      const depth = Math.max(viewPos.z, f.directional > 0.5 ? 1e4 : 0);
+
+      fx.setVector3(`uFlareScreen${count}`, new Vector3(uvx, uvy, depth));
+      fx.setVector3(
+        `uFlareColor${count}`,
+        new Vector3(f.colorRgb[0], f.colorRgb[1], f.colorRgb[2]),
+      );
+      fx.setFloat(`uFlareIntensity${count}`, intensity);
+      fx.setFloat(`uFlareDirectional${count}`, f.directional);
+      count++;
+    }
+
+    for (let i = count; i < LENS_FLARE_SLOTS; i++) clearSlot(i);
+    fx.setFloat('uFlareCount', count);
   }
 
   /** Sync baked noise library assets onto the GPU (2D / 3D). */
@@ -351,6 +510,7 @@ export class VolumetricBinder {
     this.luminanceAvg.dispose();
     this.noiseTextures.dispose();
     this._aerialDummy.dispose();
+    this._fluidDummy.dispose();
   }
 
   /**
@@ -467,11 +627,73 @@ export class VolumetricBinder {
     effect.setFloat('uTransmittanceCut', pack.quality.transmittanceCut);
     effect.setFloat('uShadowQuality', pack.quality.shadowQuality);
     effect.setFloat('uShadowSteps', pack.quality.shadowSteps);
+    effect.setFloat('uFluidEnableRefraction', pack.quality.fluidEnableRefraction);
+    effect.setFloat('uFluidMaxSurfaceBounces', pack.quality.fluidMaxSurfaceBounces);
+
+    const water = pack.waters[0];
+    const camPos = this._camera.position;
+    if (water) {
+      effect.setFloat('uWaterMediumOn', 1);
+      effect.setVector3(
+        'uWaterCenter',
+        new Vector3(
+          water.centerWorld[0] - camPos.x,
+          water.centerWorld[1] - camPos.y,
+          water.centerWorld[2] - camPos.z,
+        ),
+      );
+      effect.setVector3('uWaterHalfExt', new Vector3(...water.halfExtents));
+      effect.setVector3('uWaterAxisX', new Vector3(...water.axisX));
+      effect.setVector3('uWaterAxisY', new Vector3(...water.axisY));
+      effect.setVector3('uWaterAxisZ', new Vector3(...water.axisZ));
+      effect.setFloat('uWaterFill', water.fillFraction);
+      effect.setFloat('uWaterIor', water.ior);
+      effect.setVector3('uWaterColor', new Vector3(...water.colorRgb));
+      effect.setFloat('uWaterDensity', water.opticalDensity);
+      effect.setFloat('uWaterScatter', water.scatter);
+      effect.setFloat('uWaterAbsorb', water.absorption);
+      const g = pack.forces?.gravity ?? ([0, -9.81, 0] as const);
+      const gLen = Math.hypot(g[0], g[1], g[2]);
+      effect.setVector3(
+        'uWaterGravity',
+        gLen > 1e-6
+          ? new Vector3(g[0] / gLen, g[1] / gLen, g[2] / gLen)
+          : new Vector3(0, -1, 0),
+      );
+    } else {
+      effect.setFloat('uWaterMediumOn', 0);
+      effect.setVector3('uWaterCenter', Vector3.Zero());
+      effect.setVector3('uWaterHalfExt', Vector3.Zero());
+      effect.setVector3('uWaterAxisX', new Vector3(1, 0, 0));
+      effect.setVector3('uWaterAxisY', new Vector3(0, 1, 0));
+      effect.setVector3('uWaterAxisZ', new Vector3(0, 0, 1));
+      effect.setFloat('uWaterFill', 0);
+      effect.setFloat('uWaterIor', 1.333);
+      effect.setVector3('uWaterColor', new Vector3(0.15, 0.45, 0.7));
+      effect.setFloat('uWaterDensity', 0);
+      effect.setFloat('uWaterScatter', 0);
+      effect.setFloat('uWaterAbsorb', 0);
+      effect.setVector3('uWaterGravity', new Vector3(0, -1, 0));
+    }
 
     effect.setVector3('uEnvHemi', new Vector3(...pack.env.hemiRgb));
     effect.setVector3('uEnvSun', new Vector3(...pack.env.sunRgb));
     effect.setVector3('uEnvSunDir', new Vector3(...pack.env.sunDirCam));
     effect.setFloat('uVolumeMultiScatter', pack.env.multiScatter);
+
+    const gs = pack.globalSun;
+    effect.setFloat('uGlobalSunOn', gs.enabled);
+    effect.setFloat('uGlobalSunIntensity', gs.intensity);
+    effect.setFloat('uGlobalSunDensity', gs.density);
+    effect.setFloat('uGlobalSunScatter', gs.scatter);
+    effect.setFloat('uGlobalSunAbsorb', gs.absorption);
+    effect.setFloat('uGlobalSunMieG', gs.mieG);
+    effect.setFloat('uGlobalSunMieWeight', gs.mieWeight);
+    effect.setFloat('uGlobalSunShaftPower', gs.shaftPower);
+    effect.setFloat('uGlobalSunHemiFill', gs.hemiFill);
+    effect.setFloat('uGlobalSunMultiScatter', gs.multiScatter);
+    effect.setFloat('uGlobalSunMaxDist', gs.maxDistance);
+    effect.setFloat('uGlobalSunStepScale', gs.stepScale);
 
     for (let i = 0; i < VOLUMETRIC_LIGHT_SLOTS; i++) {
       this.setLightUniforms(effect, pack, i);
@@ -482,6 +704,62 @@ export class VolumetricBinder {
       this.setMediaUniforms(effect, pack, i);
     }
     effect.setFloat('uMediaCount', Math.min(pack.media.length, VOLUMETRIC_MEDIA_SLOTS));
+
+    for (let i = 0; i < VOLUMETRIC_FLUID_SLOTS; i++) {
+      this.setFluidUniforms(effect, pack, i);
+    }
+    // Fog density slots only — analytical water uses uWater* medium uniforms.
+    const fogSlots = pack.fogs ?? pack.fluids ?? [];
+    effect.setFloat('uFluidCount', Math.min(fogSlots.length, VOLUMETRIC_FLUID_SLOTS));
+  }
+
+  private setFluidUniforms(effect: EffectLike, pack: GatheredFrame, index: number): void {
+    // Prefer pack.fogs; fall back to deprecated pack.fluids shim.
+    const F = pack.fogs?.[index] ?? pack.fluids?.[index];
+    const s = String(index);
+    const atlas = this._fluids?.densityAtlases[index] ?? this._fluidDummy;
+    effect.setTexture(`uFluidDensityAtlas${s}`, atlas);
+    if (!F) {
+      effect.setVector3(`uFluidCenter${s}`, Vector3.Zero());
+      effect.setVector3(`uFluidHalfExt${s}`, Vector3.Zero());
+      effect.setVector3(`uFluidAxisX${s}`, new Vector3(1, 0, 0));
+      effect.setVector3(`uFluidAxisY${s}`, new Vector3(0, 1, 0));
+      effect.setVector3(`uFluidAxisZ${s}`, new Vector3(0, 0, 1));
+      effect.setVector3(`uFluidColor${s}`, new Vector3(1, 1, 1));
+      effect.setFloat(`uFluidDensity${s}`, 0);
+      effect.setFloat(`uFluidScatter${s}`, 0);
+      effect.setFloat(`uFluidAbsorb${s}`, 0);
+      effect.setFloat(`uFluidKind${s}`, 0);
+      effect.setFloat(`uFluidFillHeight${s}`, 0.65);
+      effect.setFloat(`uFluidGridRes${s}`, 32);
+      effect.setFloat(`uFluidTilesX${s}`, 6);
+      effect.setVector2(`uFluidAtlasSize${s}`, new Vector2(192, 192));
+      return;
+    }
+    // Live cam-relative center (matches ray matrices; avoids gather/camera desync).
+    const cam = this._camera?.position;
+    if (cam) {
+      effect.setVector3(
+        `uFluidCenter${s}`,
+        new Vector3(F.centerWorld[0] - cam.x, F.centerWorld[1] - cam.y, F.centerWorld[2] - cam.z),
+      );
+    } else {
+      effect.setVector3(`uFluidCenter${s}`, new Vector3(...F.centerCam));
+    }
+    effect.setVector3(`uFluidHalfExt${s}`, new Vector3(...F.halfExtents));
+    effect.setVector3(`uFluidAxisX${s}`, new Vector3(...F.axisX));
+    effect.setVector3(`uFluidAxisY${s}`, new Vector3(...F.axisY));
+    effect.setVector3(`uFluidAxisZ${s}`, new Vector3(...F.axisZ));
+    effect.setVector3(`uFluidColor${s}`, new Vector3(...F.colorRgb));
+    effect.setFloat(`uFluidDensity${s}`, F.opticalDensity);
+    effect.setFloat(`uFluidScatter${s}`, F.scatter);
+    effect.setFloat(`uFluidAbsorb${s}`, F.absorption);
+    // Always fog density (kind=0). Analytical water uses uWater* medium uniforms.
+    effect.setFloat(`uFluidKind${s}`, 0);
+    effect.setFloat(`uFluidFillHeight${s}`, 0.65);
+    effect.setFloat(`uFluidGridRes${s}`, F.gridRes);
+    effect.setFloat(`uFluidTilesX${s}`, F.tilesX);
+    effect.setVector2(`uFluidAtlasSize${s}`, new Vector2(F.atlasWidth, F.atlasHeight));
   }
 
   private setLightUniforms(effect: EffectLike, pack: GatheredFrame, index: number): void {

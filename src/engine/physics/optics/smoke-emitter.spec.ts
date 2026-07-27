@@ -8,6 +8,7 @@ import { createSceneEntity } from '../../hierarchy/entity-factory';
 import { defaultMediaVolumeForKind } from './media-optical-presets';
 import { identity as matIdentity } from '../../math/mat4';
 import { worldTransformSystem } from '../../ecs/systems/world-transform';
+import { GPU_FLUID_KIND_SMOKE } from '../../render/pack';
 
 describe('SmokeEmitter pack / normalize', () => {
   it('normalizeSmokeEmitter fills defaults', () => {
@@ -29,7 +30,7 @@ describe('SmokeEmitter pack / normalize', () => {
     expect(pack.media[0]!.emissionRate).toBe(1);
   });
 
-  it('SmokeEmitter packs emission and coneCos', () => {
+  it('createSmokeEmitter uses FluidVolume(smoke)+SmokeEmitter (no MediaVolume)', () => {
     const world = new World();
     const root = createSceneEntity(world, {
       name: 'root',
@@ -37,14 +38,15 @@ describe('SmokeEmitter pack / normalize', () => {
       locked: true,
       isSceneRoot: true,
     });
-    // Command constructor already applies the mutation.
     createSmokeEmitterCommand(world, 'Füstszóró', root);
     worldTransformSystem(world);
     const pack = gatherRenderPack(world);
-    const m = pack.media.find((x) => x.coneCos > 0);
-    expect(m).toBeTruthy();
-    expect(m!.emissionRate).toBe(defaultSmokeEmitter().emissionRate);
-    expect(m!.coneCos).toBeCloseTo(coneCosFromHalfAngleDeg(25), 5);
-    expect(m!.plumeLengthM).toBe(4);
+    expect(pack.media.some((m) => m.coneCos > 0)).toBe(false);
+    const f = pack.fluids.find((x) => x.kind === GPU_FLUID_KIND_SMOKE);
+    expect(f).toBeTruthy();
+    expect(f!.emissionRate).toBeGreaterThan(0);
+    expect(f!.coneCos).toBeCloseTo(coneCosFromHalfAngleDeg(25), 5);
+    expect(f!.plumeLengthM).toBe(defaultSmokeEmitter().plumeLengthM);
+    expect(f!.maxDensity).toBeGreaterThan(0);
   });
 });

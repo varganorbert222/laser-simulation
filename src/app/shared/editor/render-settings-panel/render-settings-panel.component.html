@@ -111,6 +111,319 @@
     </div>
   </details>
 
+  <details class="section" open>
+    <summary>{{ l10n.t('renderGlobalSunVolumetrics') }}</summary>
+    <div class="section-body">
+      <p class="hint">{{ l10n.t('hintRenderGlobalSunVolumetrics') }}</p>
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.globalSunVolumetrics().enabled"
+          (change)="editor.setGlobalSunVolumetricsEnabled($any($event.target).checked)"
+        />
+        {{ l10n.t('globalSunVolumetricsEnabled') }}
+      </label>
+
+      <p class="subhead">{{ l10n.t('globalSunLookPresets') }}</p>
+      <div class="preset-row">
+        @for (id of globalSunLooks; track id) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="editor.globalSunVolumetrics().lookPreset === id"
+            [disabled]="!editor.globalSunVolumetrics().enabled"
+            (click)="setGlobalSunLook(id)"
+          >
+            {{ globalSunLookLabel(id) }}
+          </button>
+        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.globalSunVolumetrics().lookPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.globalSunVolumetrics().lookPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
+      </div>
+
+      <p class="subhead">{{ l10n.t('globalSunQualityPresets') }}</p>
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.globalSunVolumetrics().qualityPreset, p)"
+            [disabled]="!editor.globalSunVolumetrics().enabled"
+            (click)="setGlobalSunQuality(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.globalSunVolumetrics().qualityPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.globalSunVolumetrics().qualityPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
+      </div>
+
+      <label>
+        {{ l10n.t('globalSunIntensity') }}
+        <input
+          type="number"
+          min="0"
+          max="4"
+          step="0.05"
+          [value]="editor.globalSunVolumetrics().intensity"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('intensity', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunDensity') }}
+        <input
+          type="number"
+          min="0"
+          max="0.2"
+          step="0.001"
+          [value]="editor.globalSunVolumetrics().density"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('density', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunScatter') }}
+        <input
+          type="number"
+          min="0"
+          max="2"
+          step="0.01"
+          [value]="editor.globalSunVolumetrics().scatter"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('scatter', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunAbsorption') }}
+        <input
+          type="number"
+          min="0"
+          max="2"
+          step="0.01"
+          [value]="editor.globalSunVolumetrics().absorption"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('absorption', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunMieG') }}
+        <input
+          type="number"
+          min="-0.95"
+          max="0.95"
+          step="0.01"
+          [value]="editor.globalSunVolumetrics().mieG"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('mieG', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunMieWeight') }}
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="editor.globalSunVolumetrics().mieWeight"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('mieWeight', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunShaftPower') }}
+        <input
+          type="number"
+          min="1"
+          max="16"
+          step="0.5"
+          [value]="editor.globalSunVolumetrics().shaftPower"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('shaftPower', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunHemiFill') }}
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="editor.globalSunVolumetrics().hemiFill"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('hemiFill', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunMultiScatter') }}
+        <input
+          type="number"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="editor.globalSunVolumetrics().multiScatter"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('multiScatter', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunMaxDistance') }}
+        <input
+          type="number"
+          min="8"
+          max="512"
+          step="4"
+          [value]="editor.globalSunVolumetrics().maxDistance"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('maxDistance', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('globalSunStepScale') }}
+        <input
+          type="number"
+          min="0.25"
+          max="4"
+          step="0.05"
+          [value]="editor.globalSunVolumetrics().stepScale"
+          [disabled]="!editor.globalSunVolumetrics().enabled"
+          (change)="onGlobalSunNumber('stepScale', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('renderFluids') }}</summary>
+    <div class="section-body">
+      <p class="hint">{{ l10n.t('hintRenderFluids') }}</p>
+      <div class="preset-row">
+        @for (p of ladder; track p) {
+          <button
+            type="button"
+            class="preset-btn"
+            [class.active]="isActive(editor.qualitySettings().fluidsPreset, p)"
+            (click)="setFluids(p)"
+          >
+            {{ p }}
+          </button>
+        }
+        <button
+          type="button"
+          class="preset-btn preset-custom"
+          [class.active]="editor.qualitySettings().fluidsPreset === 'custom'"
+          disabled
+          [attr.title]="l10n.t(customHintKey())"
+          [attr.aria-pressed]="editor.qualitySettings().fluidsPreset === 'custom'"
+        >
+          {{ presetLabel('custom') }}
+        </button>
+      </div>
+      <label>
+        {{ l10n.t('fluidGridRes') }}
+        <select
+          [value]="editor.qualitySettings().fluidGridRes"
+          (change)="onNumber('fluidGridRes', $any($event.target).value)"
+        >
+          <option [value]="32">32³</option>
+          <option [value]="48">48³</option>
+          <option [value]="64">64³</option>
+          <option [value]="96">96³</option>
+        </select>
+      </label>
+      <label>
+        {{ l10n.t('fluidJacobiIterations') }}
+        <input
+          type="number"
+          min="4"
+          max="64"
+          step="1"
+          [value]="editor.qualitySettings().fluidJacobiIterations"
+          (change)="onNumber('fluidJacobiIterations', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('fluidAdvectionMode') }}
+        <select
+          [value]="editor.qualitySettings().fluidAdvectionMode"
+          (change)="onFluidAdvection($any($event.target).value)"
+        >
+          <option value="semiLagrangian">{{ l10n.t('fluidAdvectionSemi') }}</option>
+          <option value="macCormack">{{ l10n.t('fluidAdvectionMacCormack') }}</option>
+          <option value="bfecc">{{ l10n.t('fluidAdvectionBfecc') }}</option>
+        </select>
+      </label>
+      <label>
+        {{ l10n.t('fluidVorticityMode') }}
+        <select
+          [value]="editor.qualitySettings().fluidVorticityMode"
+          (change)="onFluidVorticity($any($event.target).value)"
+        >
+          <option value="off">{{ l10n.t('fluidVorticityOff') }}</option>
+          <option value="medium">{{ l10n.t('fluidVorticityMedium') }}</option>
+          <option value="high">{{ l10n.t('fluidVorticityHigh') }}</option>
+        </select>
+      </label>
+      <label>
+        {{ l10n.t('fluidDissipationQuality') }}
+        <input
+          type="number"
+          min="0"
+          max="0.1"
+          step="0.001"
+          [value]="editor.qualitySettings().fluidDissipation"
+          (change)="onNumber('fluidDissipation', $any($event.target).value)"
+        />
+      </label>
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.qualitySettings().fluidEnableRefraction"
+          (change)="onBool('fluidEnableRefraction', $any($event.target).checked)"
+        />
+        {{ l10n.t('fluidEnableRefraction') }}
+      </label>
+      <label>
+        {{ l10n.t('fluidMaxSurfaceBounces') }}
+        <input
+          type="number"
+          min="0"
+          max="3"
+          step="1"
+          [value]="editor.qualitySettings().fluidMaxSurfaceBounces"
+          (change)="onNumber('fluidMaxSurfaceBounces', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('fluidSurfaceSamples') }}
+        <input
+          type="number"
+          min="1"
+          max="16"
+          step="1"
+          [value]="editor.qualitySettings().fluidSurfaceSamples"
+          (change)="onNumber('fluidSurfaceSamples', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </details>
+
   <details class="section">
     <summary>{{ l10n.t('renderShadow') }}</summary>
     <div class="section-body">
@@ -148,6 +461,102 @@
           <option value="medium">{{ l10n.t('shadowQualityMedium') }}</option>
           <option value="high">{{ l10n.t('shadowQualityHigh') }}</option>
         </select>
+      </label>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('renderFluidForces') }}</summary>
+    <div class="section-body">
+      <p class="hint">{{ l10n.t('hintRenderFluidForces') }}</p>
+
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.gravityEnvironment().enabled"
+          (change)="editor.patchGravityEnvironment({ enabled: $any($event.target).checked })"
+        />
+        {{ l10n.t('gravityEnabled') }}
+      </label>
+      <label>
+        {{ l10n.t('gravityStrength') }}
+        <input
+          type="range"
+          min="0"
+          max="12"
+          step="0.1"
+          [value]="editor.gravityEnvironment().strength"
+          (input)="editor.patchGravityEnvironment({ strength: +$any($event.target).value })"
+        />
+        <span class="val">{{ editor.gravityEnvironment().strength | number: '1.0-1' }}</span>
+      </label>
+      <app-vec3-field
+        [label]="l10n.t('gravityDirection')"
+        [value]="gravityDirVec()"
+        (valueChange)="onGravityDir($event)"
+      />
+
+      <label class="check">
+        <input
+          type="checkbox"
+          [checked]="editor.windEnvironment().enabled"
+          (change)="editor.patchWindEnvironment({ enabled: $any($event.target).checked })"
+        />
+        {{ l10n.t('windEnabled') }}
+      </label>
+      <label>
+        {{ l10n.t('windStrength') }}
+        <input
+          type="range"
+          min="0"
+          max="8"
+          step="0.05"
+          [value]="editor.windEnvironment().strength"
+          [disabled]="!editor.windEnvironment().enabled"
+          (input)="editor.patchWindEnvironment({ strength: +$any($event.target).value })"
+        />
+        <span class="val">{{ editor.windEnvironment().strength | number: '1.0-2' }}</span>
+      </label>
+      <app-vec3-field
+        [label]="l10n.t('windDirection')"
+        [value]="windDirVec()"
+        (valueChange)="onWindDir($event)"
+      />
+      <label>
+        {{ l10n.t('windGustAmount') }}
+        <input
+          type="range"
+          min="0"
+          max="1.5"
+          step="0.05"
+          [value]="editor.windEnvironment().gustAmount"
+          [disabled]="!editor.windEnvironment().enabled"
+          (input)="editor.patchWindEnvironment({ gustAmount: +$any($event.target).value })"
+        />
+      </label>
+      <label>
+        {{ l10n.t('windNoiseScale') }}
+        <input
+          type="range"
+          min="0.05"
+          max="2"
+          step="0.05"
+          [value]="editor.windEnvironment().noiseScale"
+          [disabled]="!editor.windEnvironment().enabled || editor.windEnvironment().gustAmount < 1e-3"
+          (input)="editor.patchWindEnvironment({ noiseScale: +$any($event.target).value })"
+        />
+      </label>
+      <label>
+        {{ l10n.t('windNoiseTimeScale') }}
+        <input
+          type="range"
+          min="0"
+          max="3"
+          step="0.05"
+          [value]="editor.windEnvironment().noiseTimeScale"
+          [disabled]="!editor.windEnvironment().enabled || editor.windEnvironment().gustAmount < 1e-3"
+          (input)="editor.patchWindEnvironment({ noiseTimeScale: +$any($event.target).value })"
+        />
       </label>
     </div>
   </details>

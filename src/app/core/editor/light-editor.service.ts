@@ -14,6 +14,7 @@ import {
   setLightEmitterCommand,
   wavelengthToRgb,
   wouldSuppressAdditionalSun,
+  writeLightEmitter,
   type LightEmitter,
   type LightMode,
 } from '@engine';
@@ -23,6 +24,7 @@ import { HierarchyEditorService } from './hierarchy-editor.service';
 import { LocalizationService } from '../services/localization.service';
 import {
   patchSelectedComponents,
+  resolvePatchTargetIds,
   selectionComponentMixed,
   selectionComponentPrimary,
 } from './patch-component';
@@ -40,6 +42,7 @@ export class LightEditorService {
   /** Display light when all selected have LightEmitter (primary values if mixed). */
   readonly selectedLight = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return selectionComponentPrimary(
       this.engine.world(),
       this.selection.selectedIds(),
@@ -50,6 +53,7 @@ export class LightEditorService {
   /** True when all selected have LightEmitter but values differ (section disabled). */
   readonly selectedLightMixed = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     return selectionComponentMixed(
       this.engine.world(),
       this.selection.selectedIds(),
@@ -60,6 +64,7 @@ export class LightEditorService {
   /** Selected entity is an extra sun (not rendered as key light). */
   readonly selectedSunSuppressed = computed(() => {
     this.engine.epoch();
+    this.engine.selectionRevision();
     const id = this.selection.selectedId();
     if (!id) return false;
     return isSuppressedSunEntity(this.engine.world(), id);
@@ -91,9 +96,15 @@ export class LightEditorService {
     });
   });
 
-  updateLight(patch: Partial<LightEmitter>, opts?: { coalesce?: boolean }): void {
-    const ids = this.selection.selectedIds().filter((id) =>
-      this.engine.world().has(id, 'LightEmitter'),
+  updateLight(
+    patch: Partial<LightEmitter>,
+    opts?: { coalesce?: boolean; entityIds?: readonly string[] },
+  ): void {
+    const world = this.engine.world();
+    const ids = resolvePatchTargetIds(
+      world,
+      'LightEmitter',
+      opts?.entityIds ?? this.selection.selectedIds(),
     );
     patchSelectedComponents({
       engine: this.engine,
@@ -102,18 +113,21 @@ export class LightEditorService {
       label: 'Fény paraméterek',
       multiLabel: `Fény (${ids.length})`,
       coalesce: opts?.coalesce,
+      writeComponent: writeLightEmitter,
       merge: (before) => mergeLight(before, patch),
       singleCommand: setLightEmitterCommand,
       afterApply: refreshSceneSunBinding,
     });
   }
 
-  setLightMode(mode: LightMode): void {
-    const ids = this.selection.selectedIds().filter((id) =>
-      this.engine.world().has(id, 'LightEmitter'),
+  setLightMode(mode: LightMode, opts?: { entityIds?: readonly string[] }): void {
+    const world = this.engine.world();
+    const ids = resolvePatchTargetIds(
+      world,
+      'LightEmitter',
+      opts?.entityIds ?? this.selection.selectedIds(),
     );
     if (!ids.length) return;
-    const world = this.engine.world();
     let warn = false;
     if (mode === 'sun') {
       for (const id of ids) {
@@ -122,6 +136,8 @@ export class LightEditorService {
     }
 
     const primary = world.get(ids[0]!, 'LightEmitter');
+    if (primary?.params.mode === mode) return;
+
     const patch: Partial<LightEmitter> = { params: defaultModeParams(mode) };
     if (primary && isSpectralLightMode(primary.params.mode) && !isSpectralLightMode(mode)) {
       const hdr = defaultHdrAppearance(mode);
@@ -144,7 +160,7 @@ export class LightEditorService {
       }
     }
 
-    this.updateLight(patch);
+    this.updateLight(patch, { entityIds: ids });
     refreshSceneSunBinding(world);
     if (warn) {
       this.hierarchy.showNotice(this.l10n.t('warnSecondSun'));

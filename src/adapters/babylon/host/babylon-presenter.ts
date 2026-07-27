@@ -37,6 +37,7 @@ import {
   type Transform,
   type World,
   type BakedNoiseVolume,
+  gatherRenderPack,
 } from '@engine';
 import {
   BlenderCameraControls,
@@ -53,6 +54,8 @@ import { SceneMeshSync } from '../mesh/scene-mesh-sync';
 import { bindViewportPicking } from '../picking/viewport-picking';
 import { StudioPipeline } from '../postfx/studio-pipeline';
 import { VolumetricBinder } from '../volumetrics/volumetric-binder';
+import { FogBinder } from '../fog/fog-binder';
+import { WaterOpticsBinder } from '../fluids/water-optics-binder';
 
 /** Approximate shader warmup progress (WebGL has no native % for parallel compile). */
 export interface ShaderCompileStatus {
@@ -88,6 +91,8 @@ export class BabylonPresenter implements FramePresenter {
   private readonly lights: SurfaceLightSync;
   private readonly pipeline: StudioPipeline;
   private readonly volumetrics: VolumetricBinder;
+  private readonly fluids: FogBinder;
+  private readonly waters: WaterOpticsBinder;
   private readonly atmosphereBaker: AtmosphereLutBaker;
   private readonly atmosphereNight: AtmosphereNightTextures;
   private readonly atmosphereSkybox: AtmosphereSkybox;
@@ -100,6 +105,7 @@ export class BabylonPresenter implements FramePresenter {
   private world: World;
   private disposed = false;
   private renderLoopStarted = false;
+  private lastDt = 1 / 60;
   private pickingDispose: (() => void) | null = null;
   private canvasResizeObserver: ResizeObserver | null = null;
   private readonly onContextMenu = (e: Event) => e.preventDefault();
@@ -180,6 +186,9 @@ export class BabylonPresenter implements FramePresenter {
       this.world.resources.Quality.renderScale,
     );
     this.volumetrics.bindWorld(this.world, this.camera);
+    this.fluids = new FogBinder(this.scene);
+    this.waters = new WaterOpticsBinder(this.scene);
+    this.volumetrics.bindFluids(this.fluids);
     this.atmosphereBaker = new AtmosphereLutBaker(this.engine, this.scene);
     this.atmosphereNight = new AtmosphereNightTextures(this.scene);
     this.atmosphereSkybox = new AtmosphereSkybox(
@@ -196,19 +205,33 @@ export class BabylonPresenter implements FramePresenter {
     this.meshes.setReflectionHook((mat, sm) => {
       if (!sm) {
         mat.reflectionTexture = null;
+        mat.refractionTexture = null;
+        if (mat.reflectionFresnelParameters) mat.reflectionFresnelParameters.isEnabled = false;
+        if (mat.refractionFresnelParameters) mat.refractionFresnelParameters.isEnabled = false;
         return;
       }
       if (this.world.resources.Atmosphere?.enabled) {
         this.atmosphereEnv.applyToMaterial(mat, sm.metalness, sm.roughness);
-        return;
+      } else {
+        const env = this.staticSkybox.environmentTexture;
+        if (env) {
+          mat.reflectionTexture = env;
+          const base = this.world.resources.Atmosphere?.reflectionLevel ?? 0.85;
+          mat.reflectionTexture.level = sm.transmission > 0.35 ? Math.max(base, 1.05) : base;
+        } else {
+          mat.reflectionTexture = null;
+        }
       }
-      const env = this.staticSkybox.environmentTexture;
-      if (env) {
-        mat.reflectionTexture = env;
-        mat.reflectionTexture.level = this.world.resources.Atmosphere?.reflectionLevel ?? 0.85;
-        return;
+      // Glass: pair refraction with the same env cubemap + Fresnel edges.
+      if (sm.transmission > 0.35 && mat.reflectionTexture) {
+        mat.refractionTexture = mat.reflectionTexture;
+        if (mat.refractionTexture) {
+          mat.refractionTexture.level = Math.max(mat.reflectionTexture.level ?? 0.85, 0.95);
+        }
+      } else {
+        mat.refractionTexture = null;
+        if (mat.refractionFresnelParameters) mat.refractionFresnelParameters.isEnabled = false;
       }
-      mat.reflectionTexture = null;
     });
     // Camera-space Z depth — opaque surfaces stop volumetric beams; transparent (transmission) skip depth write.
     // Driven manually before the volumetric pass (not via scene custom RTs) so occlusion
@@ -223,7 +246,27 @@ export class BabylonPresenter implements FramePresenter {
     this.depthRenderer.forceDepthWriteTransparentMeshes = false;
     this.depthRenderer.enabled = false;
     this.volumetrics.setSceneDepthTexture(this.depthRenderer.getDepthMap());
+    // Fog atlases; analytical water PP sits right after volumetric compose; StudioPipeline bloom/FXAA attaches after.
+    this.fluids.attach(
+      this.world,
+      this.camera,
+      this.depthRenderer.getDepthMap(),
+      this.volumetrics.compose,
+    );
+    this.waters.attach(
+      this.world,
+      this.camera,
+      this.depthRenderer.getDepthMap(),
+      this.volumetrics.compose,
+    );
     this.pipeline = new StudioPipeline(this.scene, this.camera);
+    // DRP may reshuffle the chain — re-insert water after compose.
+    this.waters.attach(
+      this.world,
+      this.camera,
+      this.depthRenderer.getDepthMap(),
+      this.volumetrics.compose,
+    );
 
     this.pickingDispose = bindViewportPicking(
       this.scene,
@@ -255,9 +298,11 @@ export class BabylonPresenter implements FramePresenter {
     this.engine.runRenderLoop(() => {
       if (this.disposed) return;
       const dt = this.engine.getDeltaTime() / 1000;
+      this.lastDt = dt > 0 && Number.isFinite(dt) ? Math.min(dt, 0.05) : 1 / 60;
       if (this.options.onTick) {
         this.options.onTick(dt);
       } else {
+        this.syncViewCamera(this.world);
         this.sync(this.world);
         this.render();
       }
@@ -360,16 +405,17 @@ export class BabylonPresenter implements FramePresenter {
   /** Live view camera → ECS before gather (see StudioRuntime.tick). */
   syncViewCamera(world: World): void {
     this.world = world;
-    this.syncCameraToResource();
+    this.syncCameraToResource(true);
   }
 
   sync(world: World): void {
     this.world = world;
-    this.syncCameraToResource();
+    // Pose already applied in syncViewCamera; only refresh ArcRotate position cache.
+    this.syncCameraToResource(false);
     this.syncAtmosphere(world);
     this.syncEnvironmentLighting(world);
     this.meshes.sync();
-    this.lights.sync(world);
+    this.lights.sync(world, world.resources.RenderFrame);
     this.pipeline.syncBloomFromLights(world);
     this.volumetrics.bindWorld(world, this.camera);
     this.volumetrics.applyRenderScale(world.resources.Quality.renderScale);
@@ -383,6 +429,7 @@ export class BabylonPresenter implements FramePresenter {
       this.atmosphereEnv.clear();
       this.staticSkybox.sync(atmo?.skyboxAssetId ?? null);
       this.meshes.reapplyReflections();
+      this.waters.setEnvTexture(null);
       this.volumetrics.setAerialPerspectiveLut(null);
       return;
     }
@@ -421,6 +468,8 @@ export class BabylonPresenter implements FramePresenter {
     );
     this.atmosphereEnv.sync(atmo.model, spa.lightDirWorld, skyOpts);
     this.meshes.reapplyReflections();
+    // Water PP uses equirect sampler2D + procedural sky; cube IBL stays on StandardMaterials.
+    this.waters.setEnvTexture(null);
     this.volumetrics.setAerialPerspectiveLut(
       this.atmosphereBaker.aerialPerspectiveLut,
     );
@@ -507,8 +556,18 @@ export class BabylonPresenter implements FramePresenter {
   render(): void {
     // Force-refresh depth for this camera before raymarch (auto gather is disabled).
     this.depthRenderer.getDepthMap().render(true);
+    const pack = this.world.resources.RenderFrame ?? gatherRenderPack(this.world);
+    try {
+      this.fluids.step(pack, this.lastDt);
+      this.waters.step(pack, this.lastDt);
+    } catch (err) {
+      console.warn('[BabylonPresenter] fluid step failed', err);
+    }
+    this.lights.sync(this.world, pack);
     this.volumetrics.renderPass();
-    this.scene.render();
+    // Camera already finalized in syncViewCamera before gather. Skipping a second
+    // update() keeps solids / water PP / packed centerCam on the same pose.
+    this.scene.render(false);
   }
 
   get lastPack() {
@@ -586,13 +645,23 @@ export class BabylonPresenter implements FramePresenter {
     this.staticSkybox.dispose();
     this.atmosphereNight.dispose();
     this.atmosphereBaker.dispose();
+    this.fluids.dispose();
+    this.waters.dispose();
     this.volumetrics.dispose();
     this.scene.disableDepthRenderer(this.camera);
     this.scene.dispose();
     this.engine.dispose();
   }
 
-  private syncCameraToResource(): void {
+  /**
+   * @param applyInputs When true, run camera.update() (pointer/inertia) before reading pose.
+   *   Only do this once per frame, before gather — never again before scene.render(false).
+   */
+  private syncCameraToResource(applyInputs: boolean): void {
+    if (applyInputs) {
+      this.camera.update();
+    }
+    this.camera.getViewMatrix();
     const pos = this.camera.position;
     const target = this.camera.getTarget();
     this.world.resources.Camera.position = [pos.x, pos.y, pos.z];

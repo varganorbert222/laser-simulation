@@ -36,12 +36,21 @@ import { HdrColorFieldComponent } from '../hdr-color-field/hdr-color-field.compo
 })
 export class LightEmitterSectionComponent {
   readonly light = input.required<LightEmitter>();
+  readonly targetIds = input<readonly string[]>([]);
   readonly editor = inject(EditorFacade);
   readonly l10n = inject(LocalizationService);
   readonly powerUnits = POWER_UNITS;
   readonly lightModes = ALL_LIGHT_MODES;
   readonly powerUnit = signal<PowerUnit>('W');
   private lastSelectionId: string | null = null;
+
+  private patchOpts(coalesce?: boolean): { coalesce?: boolean; entityIds?: readonly string[] } {
+    const ids = this.targetIds();
+    return {
+      coalesce,
+      ...(ids.length ? { entityIds: ids } : {}),
+    };
+  }
 
   constructor() {
     effect(() => {
@@ -77,7 +86,9 @@ export class LightEmitterSectionComponent {
 
   onMode(raw: string): void {
     if (!this.lightModes.includes(raw as LightMode)) return;
-    this.editor.setLightMode(raw as LightMode);
+    if (raw === this.light().params.mode) return;
+    const ids = this.targetIds();
+    this.editor.setLightMode(raw as LightMode, ids.length ? { entityIds: ids } : undefined);
   }
 
   onWavelength(nm: number): void {
@@ -85,7 +96,7 @@ export class LightEmitterSectionComponent {
   }
 
   onHdrAppearance(patch: Partial<LightHdrAppearance>): void {
-    this.editor.updateLight(patch, { coalesce: true });
+    this.editor.updateLight(patch, this.patchOpts(true));
   }
 
   intensitySliderT(): number {
@@ -142,7 +153,7 @@ export class LightEmitterSectionComponent {
     if (!Number.isFinite(v)) return;
     this.editor.updateLight(
       { spill: { strayPowerFraction: clampSpill01(v) } },
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -215,7 +226,7 @@ export class LightEmitterSectionComponent {
     const laser = normalizeLaserParams({ ...light.params.laser, [key]: n });
     this.editor.updateLight(
       { params: { mode: 'laser', laser } },
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -246,7 +257,7 @@ export class LightEmitterSectionComponent {
         ? defaults.spot
         : { innerConeDeg: 8, outerConeDeg: 18, apertureSharpness: 4 };
     const spot = { ...spotBase, ...light.params.spot, [key]: n };
-    this.editor.updateLight({ params: { mode, spot } }, { coalesce: true });
+    this.editor.updateLight({ params: { mode, spot } }, this.patchOpts(true));
   }
 
   omniSoftRadius(): number {
@@ -266,7 +277,7 @@ export class LightEmitterSectionComponent {
     if (!Number.isFinite(n)) return;
     this.editor.updateLight(
       { params: { mode: 'omni_lamp', omni: { ...light.params.omni, [key]: n } } },
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -292,7 +303,7 @@ export class LightEmitterSectionComponent {
           parallel: { ...light.params.parallel, [key]: n },
         },
       },
-      { coalesce: true },
+      this.patchOpts(true),
     );
   }
 
@@ -313,8 +324,18 @@ export class LightEmitterSectionComponent {
           sun: normalizeSunParams({ ...light.params.sun, angularDiameterDeg: n }),
         },
       },
-      { coalesce: true },
+      this.patchOpts(true),
     );
+  }
+
+  onLensFlareEnabled(checked: boolean): void {
+    this.editor.updateLight({ lensFlareEnabled: checked }, this.patchOpts());
+  }
+
+  onLensFlareIntensity(value: string): void {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    this.editor.updateLight({ lensFlareIntensity: n }, this.patchOpts(true));
   }
 
   formatPower(w: number): string {

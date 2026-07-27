@@ -20,6 +20,13 @@ describe('surface material', () => {
     expect(chrome.roughness).toBeCloseTo(0.12);
     expect('housingCoupling' in chrome).toBe(false);
   });
+
+  it('glass_clear is dielectric with high transmission', () => {
+    const glass = surfaceMaterialFromPreset('glass_clear');
+    expect(glass.transmission).toBeGreaterThan(0.8);
+    expect(glass.metalness).toBeLessThan(0.1);
+    expect(glass.roughness).toBeLessThan(0.15);
+  });
 });
 
 describe('housing glow / bloom', () => {

@@ -58,6 +58,13 @@ export interface LightEmitter {
    * Core × (1 − f); wide residual lobe gets fraction f.
    */
   spill: OpticsSpillParams;
+  /**
+   * Screen-space lens flare (camera optical model: ghosts / streaks / halo).
+   * Gated globally by Quality.lensFlare; per-light opt-in.
+   */
+  lensFlareEnabled: boolean;
+  /** Flare strength multiplier (0–8). Default 1. */
+  lensFlareIntensity: number;
 }
 
 export function defaultLightEmitter(): LightEmitter {
@@ -76,6 +83,8 @@ export function defaultLightEmitter(): LightEmitter {
     bloomGain: 1,
     apertureCoupling: 0.4,
     spill: defaultOpticsSpill(),
+    lensFlareEnabled: true,
+    lensFlareIntensity: 1,
   };
 }
 
@@ -95,6 +104,8 @@ export function defaultSunLightEmitter(): LightEmitter {
     bloomGain: 0.4,
     apertureCoupling: 1,
     spill: defaultOpticsSpill(),
+    lensFlareEnabled: true,
+    lensFlareIntensity: 1.25,
   };
 }
 
@@ -205,6 +216,12 @@ export function normalizeLightEmitter(
     apertureCoupling,
     spill: normalizeOpticsSpill(
       raw.spill as Partial<OpticsSpillParams> | null | undefined,
+    ),
+    lensFlareEnabled:
+      typeof raw.lensFlareEnabled === 'boolean' ? raw.lensFlareEnabled : d.lensFlareEnabled,
+    lensFlareIntensity: clampGain(
+      typeof raw.lensFlareIntensity === 'number' ? raw.lensFlareIntensity : d.lensFlareIntensity,
+      d.lensFlareIntensity,
     ),
   };
 }

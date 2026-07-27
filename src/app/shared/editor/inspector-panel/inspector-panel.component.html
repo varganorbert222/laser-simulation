@@ -44,7 +44,7 @@
       @for (c of editor.selectedComponents(); track c) {
         <li>
           <span>{{ c }}</span>
-          @if (c === 'LightEmitter' || c === 'MediaVolume' || c === 'SmokeEmitter' || c === 'EnvironmentPiece' || c === 'FixtureRef' || c === 'SurfaceMaterial') {
+          @if (c === 'LightEmitter' || c === 'MediaVolume' || c === 'FogVolume' || c === 'FluidVolume' || c === 'SmokeEmitter' || c === 'EnvironmentPiece' || c === 'FixtureRef' || c === 'SurfaceMaterial') {
             <button
               type="button"
               class="tiny"
@@ -75,7 +75,7 @@
       <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedLightMixed()">
-      <app-light-emitter-section [light]="light" />
+      <app-light-emitter-section [light]="light" [targetIds]="editor.selectedIds()" />
     </fieldset>
   }
 
@@ -84,7 +84,7 @@
       <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedSurfaceMaterialMixed()">
-      <app-surface-material-section [material]="material" />
+      <app-surface-material-section [material]="material" [targetIds]="editor.selectedIds()" />
     </fieldset>
   }
 
@@ -93,7 +93,7 @@
       <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedSmokeMixed()">
-      <app-smoke-emitter-section [smoke]="smoke" />
+      <app-smoke-emitter-section [smoke]="smoke" [targetIds]="editor.selectedIds()" />
     </fieldset>
   }
 
@@ -102,7 +102,25 @@
       <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
     }
     <fieldset class="merge-section" [disabled]="editor.selectedMediaMixed()">
-      <app-media-volume-section [media]="media" />
+      <app-media-volume-section [media]="media" [targetIds]="editor.selectedIds()" />
+    </fieldset>
+  }
+
+  @if (editor.selectedFog(); as fog) {
+    @if (editor.selectedFogMixed()) {
+      <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
+    }
+    <fieldset class="merge-section" [disabled]="editor.selectedFogMixed()">
+      <app-fog-volume-section [fog]="fog" [targetIds]="editor.selectedIds()" />
+    </fieldset>
+  }
+
+  @if (editor.selectedFluid(); as fluid) {
+    @if (editor.selectedFluidMixed()) {
+      <p class="mixed-hint">{{ l10n.t('mixedComponentDisabled') }}</p>
+    }
+    <fieldset class="merge-section" [disabled]="editor.selectedFluidMixed()">
+      <app-fluid-volume-section [fluid]="fluid" [targetIds]="editor.selectedIds()" />
     </fieldset>
   }
 } @else {

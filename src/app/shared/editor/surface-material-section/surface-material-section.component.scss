@@ -27,6 +27,45 @@ label {
   }
 }
 
+.finish-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ls-muted);
+
+  &[title] {
+    cursor: help;
+  }
+}
+
+.finish-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.finish-btn {
+  font: inherit;
+  font-size: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  color: var(--ls-text);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--ls-border);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.finish-btn.active {
+  border-color: var(--ls-accent, #6af);
+  background: rgba(80, 140, 220, 0.25);
+}
+
+.finish-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .value {
   font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
@@ -43,8 +82,4 @@ label {
 
 input[type='range'] {
   width: 100%;
-}
-
-select {
-  max-width: 100%;
 }

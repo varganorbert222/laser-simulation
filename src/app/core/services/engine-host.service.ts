@@ -40,6 +40,11 @@ export class EngineHostService {
    * civil clock without a full world epoch / mesh rebuild.
    */
   readonly atmosphereRevision = signal(0);
+  /**
+   * Bumped when EditorSelection changes without a structural world.bump().
+   * Selection must not bump epoch — mesh sync treats that as a full rebuild.
+   */
+  readonly selectionRevision = signal(0);
   /** True while the Babylon host warms up / waits for shader compile before the render loop. */
   readonly shadersCompiling = signal(false);
   readonly shaderCompileReady = signal(0);
@@ -140,7 +145,7 @@ export class EngineHostService {
       rangeOrder: opts?.rangeOrder,
     });
     this.presenter?.applyPresentationMode();
-    this.tickEpoch();
+    this.bumpSelectionRevision();
   }
 
   selectMany(ids: string[], primary?: string | null): void {
@@ -154,7 +159,7 @@ export class EngineHostService {
       applySelection(w, { entityId: prim, entityIds: unique });
     }
     this.presenter?.applyPresentationMode();
-    this.tickEpoch();
+    this.bumpSelectionRevision();
   }
 
   runCommand(command: Command | null): void {
@@ -204,7 +209,15 @@ export class EngineHostService {
   }
 
   tickEpoch(): void {
-    this.epoch.set(this.world().resources.epoch);
+    // Always bump the UI revision. Quiet writers leave world.resources.epoch unchanged;
+    // syncing the Angular signal *to* that value can oscillate (51→50→51) and skip
+    // Object.is-equal sets. A monotonic UI counter keeps inspector bindings honest.
+    this.epoch.update((n) => n + 1);
+    this.syncHistorySignals();
+  }
+
+  bumpSelectionRevision(): void {
+    this.selectionRevision.update((n) => n + 1);
     this.syncHistorySignals();
   }
 

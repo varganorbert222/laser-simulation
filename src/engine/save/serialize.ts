@@ -1,5 +1,7 @@
 import type {
   ComponentMap,
+  FluidVolume,
+  FogVolume,
   LightEmitter,
   MediaVolume,
   SmokeEmitter,
@@ -7,6 +9,9 @@ import type {
 import {
   SERIALIZABLE_COMPONENTS,
   defaultTransform,
+  fogVolumeFromLegacyFluid,
+  normalizeFluidVolume,
+  normalizeFogVolume,
   normalizeLightEmitter,
   normalizeMediaVolume,
   normalizeSmokeEmitter,
@@ -36,6 +41,21 @@ import {
   createDefaultAtmosphereSettings,
   normalizeAtmosphereSettings,
 } from '../physics/optics/atmosphere-settings';
+import type { GravityEnvironment } from '../physics/fluid/gravity-environment';
+import {
+  createDefaultGravityEnvironment,
+  normalizeGravityEnvironment,
+} from '../physics/fluid/gravity-environment';
+import type { WindEnvironment } from '../physics/fluid/wind-environment';
+import {
+  createDefaultWindEnvironment,
+  normalizeWindEnvironment,
+} from '../physics/fluid/wind-environment';
+import type { GlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
+import {
+  createDefaultGlobalSunVolumetrics,
+  normalizeGlobalSunVolumetrics,
+} from '../physics/optics/global-sun-volumetrics';
 import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
 import {
   normalizeQualityResource,
@@ -78,6 +98,22 @@ function normalizeEntityComponents(
       next.SmokeEmitter as Partial<SmokeEmitter> & Record<string, unknown>,
     );
   }
+  // Schema v2→v3: FluidVolume(kind=smoke) → FogVolume; water → SPH FluidVolume.
+  const legacyFluid = next.FluidVolume as
+    | (Partial<FluidVolume> & Record<string, unknown>)
+    | undefined;
+  if (legacyFluid && (legacyFluid as { kind?: string }).kind === 'smoke') {
+    const fog = fogVolumeFromLegacyFluid(legacyFluid as Record<string, unknown>);
+    if (fog) next.FogVolume = fog;
+    delete next.FluidVolume;
+  } else if (legacyFluid) {
+    next.FluidVolume = normalizeFluidVolume(legacyFluid);
+  }
+  if (next.FogVolume) {
+    next.FogVolume = normalizeFogVolume(
+      next.FogVolume as Partial<FogVolume> & Record<string, unknown>,
+    );
+  }
   return next;
 }
 
@@ -91,6 +127,13 @@ export function migrateSave(data: SerializedWorld): SerializedWorld {
   const rawEnv = (data.resources as { EnvironmentLighting?: Partial<EnvironmentLighting> })
     .EnvironmentLighting;
   const rawAtmo = (data.resources as { Atmosphere?: Partial<AtmosphereSettings> }).Atmosphere;
+  const rawGrav = (
+    data.resources as { GravityEnvironment?: Partial<GravityEnvironment> }
+  ).GravityEnvironment;
+  const rawWind = (data.resources as { WindEnvironment?: Partial<WindEnvironment> }).WindEnvironment;
+  const rawGlobalSun = (
+    data.resources as { GlobalSunVolumetrics?: Partial<GlobalSunVolumetrics> }
+  ).GlobalSunVolumetrics;
 
   return {
     ...data,
@@ -104,6 +147,9 @@ export function migrateSave(data: SerializedWorld): SerializedWorld {
       DisplayVision: normalizeDisplayVision(rawVision),
       EnvironmentLighting: normalizeEnvironmentLighting(rawEnv),
       Atmosphere: normalizeAtmosphereSettings(rawAtmo),
+      GravityEnvironment: normalizeGravityEnvironment(rawGrav),
+      WindEnvironment: normalizeWindEnvironment(rawWind),
+      GlobalSunVolumetrics: normalizeGlobalSunVolumetrics(rawGlobalSun),
     },
     entities: data.entities.map((e) => ({
       ...e,
@@ -139,6 +185,15 @@ export function restoreWorldFromSerialized(world: World, data: SerializedWorld):
   );
   world.resources.Atmosphere = structuredClone(
     migrated.resources.Atmosphere ?? createDefaultAtmosphereSettings(),
+  );
+  world.resources.GravityEnvironment = structuredClone(
+    migrated.resources.GravityEnvironment ?? createDefaultGravityEnvironment(),
+  );
+  world.resources.WindEnvironment = structuredClone(
+    migrated.resources.WindEnvironment ?? createDefaultWindEnvironment(),
+  );
+  world.resources.GlobalSunVolumetrics = structuredClone(
+    migrated.resources.GlobalSunVolumetrics ?? createDefaultGlobalSunVolumetrics(),
   );
 
   for (const entity of migrated.entities) {
@@ -183,6 +238,11 @@ export function deserializeWorld(json: string): World {
     DisplayVision: data.resources.DisplayVision,
     EnvironmentLighting: data.resources.EnvironmentLighting,
     Atmosphere: data.resources.Atmosphere ?? createDefaultAtmosphereSettings(),
+    GravityEnvironment:
+      data.resources.GravityEnvironment ?? createDefaultGravityEnvironment(),
+    WindEnvironment: data.resources.WindEnvironment ?? createDefaultWindEnvironment(),
+    GlobalSunVolumetrics:
+      data.resources.GlobalSunVolumetrics ?? createDefaultGlobalSunVolumetrics(),
   });
   restoreWorldFromSerialized(world, data);
   return world;

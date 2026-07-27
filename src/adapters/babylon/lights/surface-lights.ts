@@ -8,11 +8,13 @@ import {
   resolveEmitterAppearance,
   resolveVisionBrightnessOpts,
   surfaceBrdfWeights,
+  type GatheredFrame,
   type SurfaceMaterial,
   type World,
 } from '@engine';
 import {
   getOrCreateSurfaceRadiancePlugin,
+  type SurfaceRadianceCaustic,
   type SurfaceRadianceGpuLight,
   type SurfaceRadiancePlugin,
 } from '../materials/surface-radiance-plugin';
@@ -34,6 +36,21 @@ const SURFACE_OPTICS_DISPLAY_GAIN = 1800;
 export class SurfaceLightSync {
   private readonly plugins = new Set<SurfaceRadiancePlugin>();
   private lastPack: SurfaceRadianceGpuLight[] = [];
+  private lastCaustic: SurfaceRadianceCaustic = {
+    strength: 0,
+    fillHeight: 0.65,
+    timeS: 0,
+    sunDir: [0, -1, 0],
+    sunRgb: [0, 0, 0],
+    center: [0, 0, 0],
+    halfExtents: [0, 0, 0],
+    axisX: [1, 0, 0],
+    axisY: [0, 1, 0],
+    axisZ: [0, 0, 1],
+    waveAmplitude: 0,
+    waveFrequency: 1,
+    waveSteepness: 0,
+  };
 
   constructor(_scene: Scene) {}
 
@@ -48,6 +65,7 @@ export class SurfaceLightSync {
       plugin.setMaterialPbr(0.35, 0.05, 0.55, 0.45);
     }
     plugin.setLights(this.lastPack);
+    plugin.setCaustic(this.lastCaustic);
   }
 
   updateMaterialOptics(mat: StandardMaterial, sm: SurfaceMaterial): void {
@@ -57,7 +75,7 @@ export class SurfaceLightSync {
     this.applyBrdf(plugin, sm);
   }
 
-  sync(world: World): void {
+  sync(world: World, frame?: GatheredFrame | null): void {
     const pack: SurfaceRadianceGpuLight[] = [];
     let bound = 0;
 
@@ -98,8 +116,49 @@ export class SurfaceLightSync {
     }
 
     this.lastPack = pack;
+
+    const water = frame?.waters[0];
+    const sunGain = 90;
+    const caustic: SurfaceRadianceCaustic = water
+      ? {
+          strength: Math.max(0.35, water.causticStrength),
+          fillHeight: water.fillFraction,
+          timeS: frame?.timeS ?? 0,
+          sunDir: [...(frame?.env.sunDirCam ?? [0, -1, 0])] as [number, number, number],
+          sunRgb: [
+            Math.max(0.08, (frame?.env.sunRgb[0] ?? 0) * sunGain),
+            Math.max(0.07, (frame?.env.sunRgb[1] ?? 0) * sunGain),
+            Math.max(0.05, (frame?.env.sunRgb[2] ?? 0) * sunGain),
+          ],
+          center: [...water.centerWorld] as [number, number, number],
+          halfExtents: [...water.halfExtents] as [number, number, number],
+          axisX: [...water.axisX] as [number, number, number],
+          axisY: [...water.axisY] as [number, number, number],
+          axisZ: [...water.axisZ] as [number, number, number],
+          waveAmplitude: water.waveAmplitude,
+          waveFrequency: water.waveFrequency,
+          waveSteepness: water.waveSteepness,
+        }
+      : {
+          strength: 0,
+          fillHeight: 0.65,
+          timeS: 0,
+          sunDir: [0, -1, 0],
+          sunRgb: [0, 0, 0],
+          center: [0, 0, 0],
+          halfExtents: [0, 0, 0],
+          axisX: [1, 0, 0],
+          axisY: [0, 1, 0],
+          axisZ: [0, 0, 1],
+          waveAmplitude: 0,
+          waveFrequency: 1,
+          waveSteepness: 0,
+        };
+    this.lastCaustic = caustic;
+
     for (const plugin of this.plugins) {
       plugin.setLights(pack);
+      plugin.setCaustic(caustic);
     }
   }
 

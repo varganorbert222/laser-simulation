@@ -1,5 +1,4 @@
-/* Volumetric Light Studio */
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600&display=swap');
+/* Volumetric Light Studio — fonts load via <link> in index.html (avoids build-time Google fetch). */
 
 :root {
   --ls-text: #e8ecef;

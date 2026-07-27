@@ -1,14 +1,16 @@
 /**
- * Browser-persisted last-used Quality + Atmosphere settings.
+ * Browser-persisted last-used Quality + Atmosphere + GlobalSunVolumetrics settings.
  * Named Low→Ultra packs stay static in code; this only remembers the live
  * values the user last had (including Custom tweaks).
  */
 
 import {
   normalizeAtmosphereSettings,
+  normalizeGlobalSunVolumetrics,
   normalizeQualityResource,
   refreshQualityPresets,
   type AtmosphereSettings,
+  type GlobalSunVolumetrics,
   type Quality,
   type World,
 } from '@engine';
@@ -27,6 +29,7 @@ export interface RenderPreferences {
   version: typeof RENDER_PREFERENCES_VERSION;
   quality: Quality;
   atmosphere: AtmosphereSettings;
+  globalSunVolumetrics?: GlobalSunVolumetrics;
 }
 
 function browserStorage(): PreferencesStorage | null {
@@ -71,10 +74,12 @@ export function normalizeRenderPreferences(raw: unknown): RenderPreferences | nu
     ...obj.atmosphere,
     skyboxHdrColors: quality.colorProfile === 'hdr',
   });
+  const globalSunVolumetrics = normalizeGlobalSunVolumetrics(obj.globalSunVolumetrics);
   return {
     version: RENDER_PREFERENCES_VERSION,
     quality: refreshQualityPresets(quality, atmosphere.qualityPreset),
     atmosphere,
+    globalSunVolumetrics,
   };
 }
 
@@ -109,6 +114,7 @@ export function captureRenderPreferences(world: World): RenderPreferences {
     version: RENDER_PREFERENCES_VERSION,
     quality: world.resources.Quality,
     atmosphere: world.resources.Atmosphere,
+    globalSunVolumetrics: world.resources.GlobalSunVolumetrics,
   };
 }
 
@@ -125,6 +131,11 @@ export function applyRenderPreferences(
   });
   world.resources.Quality = refreshQualityPresets(quality, atmosphere.qualityPreset);
   world.resources.Atmosphere = atmosphere;
+  if (prefs.globalSunVolumetrics) {
+    world.resources.GlobalSunVolumetrics = normalizeGlobalSunVolumetrics(
+      prefs.globalSunVolumetrics,
+    );
+  }
   world.bump();
   return world;
 }

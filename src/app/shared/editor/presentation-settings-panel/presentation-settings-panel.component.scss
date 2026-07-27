@@ -7,3 +7,30 @@
   width: 100%;
   box-sizing: border-box;
 }
+
+h4.subhead {
+  margin: 0.55rem 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ls-text, #e8e2d6);
+  opacity: 0.92;
+}
+
+label.flare-slider {
+  display: grid;
+  grid-template-columns: minmax(4.5rem, 6.5rem) 1fr minmax(2.5rem, 3rem);
+  align-items: center;
+  gap: 0.4rem;
+}
+
+label.flare-slider input[type='range'] {
+  width: 100%;
+  accent-color: #c4a35a;
+}
+
+.value {
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--ls-text, #e8e2d6);
+  text-align: right;
+}

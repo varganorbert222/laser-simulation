@@ -15,6 +15,8 @@ uniform float uAutoExposure;
 uniform float uAerialEnabled;
 uniform sampler3D uAerialPerspectiveLUT;
 
+// @include postfx/lens_flare.glsl
+
 float acesFilmCurve(float x) {
   float a = 2.51;
   float b = 0.03;
@@ -95,6 +97,9 @@ void main(void) {
 
   // Linear HDR composite (scene + volumetric contribution), then eye / display exposure.
   vec3 combined = (scene + vol) * max(uAutoExposure, 1e-6);
+
+  // Screen-space optical lens flare (ghosts / streaks / halo) — additive HDR, pre-tonemap.
+  combined += applyScreenSpaceLensFlare(vUV) * max(uAutoExposure, 1e-6);
 
   // Tonemap once for the full frame (ACES / Reinhard / Hable).
   vec3 mapped = applyTonemap(combined);

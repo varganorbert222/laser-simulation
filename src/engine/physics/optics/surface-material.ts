@@ -11,6 +11,7 @@ export type SurfaceFinishPreset =
   | 'painted_plastic'
   | 'brushed_metal'
   | 'chrome'
+  | 'glass_clear'
   | 'custom';
 
 export const SURFACE_FINISH_PRESETS: readonly Exclude<SurfaceFinishPreset, 'custom'>[] = [
@@ -19,6 +20,7 @@ export const SURFACE_FINISH_PRESETS: readonly Exclude<SurfaceFinishPreset, 'cust
   'painted_plastic',
   'brushed_metal',
   'chrome',
+  'glass_clear',
 ] as const;
 
 export interface SurfaceMaterial {
@@ -50,6 +52,8 @@ const PRESET_TABLE: Record<
   painted_plastic: { albedo: 0.22, metalness: 0.0, roughness: 0.7, transmission: 0 },
   brushed_metal: { albedo: 0.35, metalness: 0.9, roughness: 0.55, transmission: 0 },
   chrome: { albedo: 0.55, metalness: 1.0, roughness: 0.12, transmission: 0 },
+  /** Clear architectural / aquarium glass — low roughness, dielectric, high transmission. */
+  glass_clear: { albedo: 0.62, metalness: 0.02, roughness: 0.06, transmission: 0.88 },
 };
 
 /** Default aperture coupling when migrating old housingCoupling presets. */
@@ -59,6 +63,7 @@ const PRESET_APERTURE_COUPLING: Record<Exclude<SurfaceFinishPreset, 'custom'>, n
   painted_plastic: 0.45,
   brushed_metal: 0.38,
   chrome: 0.55,
+  glass_clear: 0.92,
 };
 
 export function surfaceMaterialFromPreset(
@@ -89,6 +94,7 @@ export function isSurfaceFinishPreset(value: unknown): value is SurfaceFinishPre
     value === 'painted_plastic' ||
     value === 'brushed_metal' ||
     value === 'chrome' ||
+    value === 'glass_clear' ||
     value === 'custom'
   );
 }

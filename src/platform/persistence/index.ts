@@ -8,6 +8,7 @@ export {
 export {
   SCENE_LIBRARY_STORAGE_KEY,
   createDemoWorldWithPreferences,
+  createEmptyWorldWithPreferences,
   createEmptySceneLibrary,
   createMemorySceneStorage,
   defaultSceneStorage,
