@@ -2,7 +2,7 @@
  * Thin-lens / beam-shaping transforms for Gaussian lasers (plausible, not full ABCD).
  */
 
-import { clamp01 } from '../../math/clamp';
+import { clamp01 } from '../../../math/clamp';
 import { beamRadiusAt, clampM2, rayleighRange } from './laser';
 import type { LaserParams } from './modes';
 

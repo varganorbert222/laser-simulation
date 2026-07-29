@@ -10,9 +10,9 @@
  * remain visible at room/yard scale (molecular Rayleigh alone is too weak).
  */
 
-import type { Vec3 } from '../../math/vec3';
-import { clampRange } from '../../math/clamp';
-import { clampMieAnisotropy, defaultMieAnisotropy } from './scatter-model';
+import type { Vec3 } from '../../../math/vec3';
+import { clampRange } from '../../../math/clamp';
+import { clampMieAnisotropy, defaultMieAnisotropy } from '../media/scatter-model';
 
 /** Media stack layer. */
 export type MediaLayer = 'outdoor' | 'interior' | 'particulate';

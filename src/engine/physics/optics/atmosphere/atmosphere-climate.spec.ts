@@ -14,8 +14,8 @@ import {
   mediaOpticalDefaults,
   opticalFieldsForMediaKind,
   opticalFieldsFromClimate,
-} from './media-optical-presets';
-import { normalizeMediaVolume } from '../../ecs/components';
+} from '../media/media-optical-presets';
+import { normalizeMediaVolume } from '../../../ecs/components';
 
 describe('atmosphere climate', () => {
   it('Mie factor follows RH^1.3', () => {

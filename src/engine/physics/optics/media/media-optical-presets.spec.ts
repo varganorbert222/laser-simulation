@@ -11,7 +11,7 @@ import {
   scatterModelForMediaKind,
 } from './media-optical-presets';
 import { defaultMieAnisotropy, defaultParticleSizeNm } from './scatter-model';
-import { normalizeMediaVolume } from '../../ecs/components';
+import { normalizeMediaVolume } from '../../../ecs/components';
 
 describe('media optical presets (physical)', () => {
   it('uses m⁻¹-scale coefficients (not theatrical 0–1 knobs)', () => {

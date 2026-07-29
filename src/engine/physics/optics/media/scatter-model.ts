@@ -8,7 +8,7 @@
  * with V(λ) on the CPU display pack and S×phase in the march.
  */
 
-import { clamp01, clampRange } from '../../math/clamp';
+import { clamp01, clampRange } from '../../../math/clamp';
 
 export type ScatterModel = 'tyndall' | 'rayleigh';
 

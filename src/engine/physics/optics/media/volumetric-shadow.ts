@@ -4,12 +4,12 @@
  * (density × plume × height falloff — no FBM, same as GPU shadow path).
  */
 
-import type { Vec3 } from '../../math/vec3';
-import { add, length, normalize, scale, sub } from '../../math/vec3';
-import { clampRange } from '../../math/clamp';
-import { smoothstep } from '../../math/smoothstep';
-import type { ShadowQuality } from '../../render/quality';
-import { shadowStepsForQuality } from '../../render/quality';
+import type { Vec3 } from '../../../math/vec3';
+import { add, length, normalize, scale, sub } from '../../../math/vec3';
+import { clampRange } from '../../../math/clamp';
+import { smoothstep } from '../../../math/smoothstep';
+import type { ShadowQuality } from '../../../render/quality';
+import { shadowStepsForQuality } from '../../../render/quality';
 import { plumeEnvelope } from './smoke-plume';
 
 export interface ShadowMediaVolume {

@@ -2,7 +2,7 @@
  * Global gravity for GPU fluid force pass (world-space unit direction × strength).
  * Smoke buoyancy remains a separate temperature-driven force along “up”.
  */
-import { clampRange, clampUnit } from '../../math/clamp';
+import { clampRange } from '../../math/clamp';
 import { length, normalize, type Vec3, vec3 } from '../../math/vec3';
 
 export interface GravityEnvironment {
@@ -53,8 +53,4 @@ export function resolveGravityAccel(env: GravityEnvironment): Vec3 {
   if (!env.enabled || env.strength <= 1e-8) return vec3(0, 0, 0);
   const d = length(env.direction) < 1e-8 ? vec3(0, -1, 0) : normalize(env.direction);
   return [d[0] * env.strength, d[1] * env.strength, d[2] * env.strength];
-}
-
-export function clampGravityCoupling(v: number, fallback = 1): number {
-  return clampUnit(v, fallback);
 }

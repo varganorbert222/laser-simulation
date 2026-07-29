@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { hexToRgb, rgbToHex } from './color';
+import { hexToRgb, rgbToHex } from '../display/color';
 import {
   deriveFromWavelengthNm,
   rayleighScatterWeight,
   rgbToWavelengthNm,
   wavelengthToRgb,
-} from './wavelength';
+} from '../display/wavelength';
 import { beamRadiusAt, divergenceMrad, rayleighRange } from './laser';
-import { buildScienceReadout } from './science-readout';
+import { buildScienceReadout } from '../scene/science-readout';
 
 describe('wavelength optics', () => {
   it('derives frequency and energy from λ', () => {

@@ -210,39 +210,46 @@ export function renameSceneInLibrary(
   };
 }
 
-export function loadWorldFromLibrary(library: SceneLibrary, id: string): World | null {
+export function loadWorldFromLibrary(
+  library: SceneLibrary,
+  id: string,
+  storage: SceneStorage = defaultSceneStorage(),
+): World | null {
   const entry = library.scenes[id];
   if (!entry) return null;
   try {
     const world = documentToWorld(entry.document);
     world.resources.ActiveScene = { sceneId: id, label: entry.label };
-    return world;
+    // Global graphics prefs overlay scene document (Quality / sky look / GlobalSun).
+    return applyRenderPreferences(world, readRenderPreferences(storage), {
+      preserveSceneTimeOfDay: true,
+    });
   } catch {
     return null;
   }
 }
 
-/** Demo world with last-used Quality + Atmosphere from browser prefs (if any). */
+/** Demo world with last-used global graphics from browser prefs (if any). */
 export function createDemoWorldWithPreferences(
   storage: SceneStorage = defaultSceneStorage(),
 ): World {
   return applyRenderPreferences(createDemoWorld(), readRenderPreferences(storage));
 }
 
-/** Empty starter (floor + sun) with last-used Quality + Atmosphere from browser prefs. */
+/** Empty starter (floor + sun) with last-used global graphics from browser prefs. */
 export function createEmptyWorldWithPreferences(
   storage: SceneStorage = defaultSceneStorage(),
 ): World {
   return applyRenderPreferences(createEmptyWorld(), readRenderPreferences(storage));
 }
 
-/** Startup world: last active scene, or demo if none / corrupt. */
+/** Startup world: last active scene (with global prefs), or demo if none / corrupt. */
 export function resolveStartupWorld(
   storage: SceneStorage = defaultSceneStorage(),
 ): { world: World; library: SceneLibrary } {
   const library = readSceneLibrary(storage);
   if (library.activeId) {
-    const world = loadWorldFromLibrary(library, library.activeId);
+    const world = loadWorldFromLibrary(library, library.activeId, storage);
     if (world) return { world, library };
   }
   return { world: createDemoWorldWithPreferences(storage), library };

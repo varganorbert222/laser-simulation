@@ -61,3 +61,49 @@ label.row {
 input[type='range'] {
   width: 100%;
 }
+
+.section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+
+.section summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ls-text, #e8e2d4);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.section summary::-webkit-details-marker {
+  display: none;
+}
+
+.section summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  transition: transform 0.12s ease;
+}
+
+.section[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0 0.65rem 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.5rem;
+}

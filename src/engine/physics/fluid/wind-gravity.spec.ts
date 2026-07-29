@@ -104,9 +104,8 @@ describe('fluid force pack fields', () => {
     expect(pack.forces.gravity[1]).toBeCloseTo(-3);
     expect(pack.forces.wind[0]).toBeCloseTo(1.5);
     expect(pack.fogs[0]?.windCoupling).toBeCloseTo(0.4);
-    expect(pack.fluids[0]?.windCoupling).toBeCloseTo(0.4);
-    expect(pack.fluids[0]?.inertiaCoupling).toBeCloseTo(0.7);
-    expect(pack.fluids[0]?.centerWorld).toBeTruthy();
+    expect(pack.fogs[0]?.inertiaCoupling).toBeCloseTo(0.7);
+    expect(pack.fogs[0]?.centerWorld).toBeTruthy();
   });
 
   it('round-trips Wind/Gravity through serialize', () => {

@@ -4,9 +4,9 @@
  * - Lambert diffuse + GGX Cook–Torrance specular
  */
 
-import { clamp01 } from '../../math/clamp';
+import { clamp01 } from '../../../math/clamp';
 import { evaluateMicrofacetBrdf } from './microfacet-brdf';
-import { gaussianTem00Profile } from './laser';
+import { gaussianTem00Profile } from '../beam/laser';
 
 /**
  * Separate diffuse (view-independent) and specular (view-dependent) spot terms.

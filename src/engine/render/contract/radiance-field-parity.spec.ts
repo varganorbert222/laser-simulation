@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { radianceFieldGlslFunctions } from '../../render/contract';
+import { radianceFieldGlslFunctions } from './index';
 import { VOLUMETRIC_FRAGMENT } from '../../../generated/shaders/volumetric_raymarch';
 
 describe('radiance-field GLSL parity', () => {

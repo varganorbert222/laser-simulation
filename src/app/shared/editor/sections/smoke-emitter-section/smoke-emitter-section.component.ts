@@ -9,8 +9,8 @@ import {
   SMOKE_PLUME_LENGTH_M_MIN,
   type SmokeEmitter,
 } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { LocalizationService } from '../../../core/services/localization.service';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 @Component({
   selector: 'app-smoke-emitter-section',

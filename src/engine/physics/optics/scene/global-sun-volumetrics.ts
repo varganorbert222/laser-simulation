@@ -2,9 +2,9 @@
  * Screen-wide sun volumetrics (god-rays / air scatter) independent of MediaVolume AABBs.
  * Look presets = optical style; quality presets = march cost / fidelity (Low→Ultra).
  */
-import { clampRange, clampUnit } from '../../math/clamp';
-import type { QualityLadder, QualityPresetSelection } from '../../render/quality';
-import { QUALITY_LADDER_ORDER, isQualityLadder } from '../../render/quality';
+import { clampRange, clampUnit } from '../../../math/clamp';
+import type { QualityLadder, QualityPresetSelection } from '../../../render/quality';
+import { QUALITY_LADDER_ORDER, isQualityLadder } from '../../../render/quality';
 
 /** Named optical looks (parameter packs). */
 export type GlobalSunLookPresetId =

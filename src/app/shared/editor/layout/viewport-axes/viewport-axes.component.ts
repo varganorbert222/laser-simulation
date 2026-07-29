@@ -4,7 +4,7 @@ import {
   hitTestViewportAxis,
   type CameraPose,
 } from '@engine';
-import { EngineHostService } from '../../../core/services/engine-host.service';
+import { EngineHostService } from '../../../../core/services/engine-host.service';
 
 const DRAG_THRESHOLD_PX = 3;
 

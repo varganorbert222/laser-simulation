@@ -1,52 +1,64 @@
 <section class="block">
   <h3>{{ l10n.t('smokeEmitter') }}</h3>
   <p class="hint">{{ l10n.t('hintSmokeEmitter') }}</p>
-  <label class="check" [attr.title]="l10n.t('tipSmokeEnabled')">
-    <input
-      type="checkbox"
-      [checked]="smoke().enabled"
-      [disabled]="!editor.isEditMode()"
-      (change)="onEnabled($any($event.target).checked)"
-    />
-    {{ l10n.t('smokeEnabled') }}
-  </label>
-  <label [attr.title]="l10n.t('tipSmokeEmission')">
-    {{ l10n.t('smokeEmission') }}
-    <input
-      type="range"
-      [min]="emissionMin"
-      [max]="emissionMax"
-      step="0.05"
-      [value]="smoke().emissionRate"
-      [disabled]="!editor.isEditMode() || !smoke().enabled"
-      (input)="onEmission($any($event.target).value)"
-    />
-    <span class="value">{{ smoke().emissionRate | number: '1.2-2' }}</span>
-  </label>
-  <label [attr.title]="l10n.t('tipSmokeCone')">
-    {{ l10n.t('smokeCone') }}
-    <input
-      type="range"
-      [min]="coneMin"
-      [max]="coneMax"
-      step="1"
-      [value]="smoke().coneAngleDeg"
-      [disabled]="!editor.isEditMode() || !smoke().enabled"
-      (input)="onCone($any($event.target).value)"
-    />
-    <span class="value">{{ smoke().coneAngleDeg | number: '1.0-0' }}°</span>
-  </label>
-  <label [attr.title]="l10n.t('tipSmokePlumeLength')">
-    {{ l10n.t('smokePlumeLength') }}
-    <input
-      type="range"
-      [min]="lengthMin"
-      [max]="lengthMax"
-      step="0.1"
-      [value]="smoke().plumeLengthM"
-      [disabled]="!editor.isEditMode() || !smoke().enabled"
-      (input)="onPlumeLength($any($event.target).value)"
-    />
-    <span class="value">{{ smoke().plumeLengthM | number: '1.1-1' }} m</span>
-  </label>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('smokeEmission') }}</summary>
+    <div class="section-body">
+      <label class="check" [attr.title]="l10n.t('tipSmokeEnabled')">
+        <input
+          type="checkbox"
+          [checked]="smoke().enabled"
+          [disabled]="!editor.isEditMode()"
+          (change)="onEnabled($any($event.target).checked)"
+        />
+        {{ l10n.t('smokeEnabled') }}
+      </label>
+      <label [attr.title]="l10n.t('tipSmokeEmission')">
+        {{ l10n.t('smokeEmission') }}
+        <input
+          type="range"
+          [min]="emissionMin"
+          [max]="emissionMax"
+          step="0.05"
+          [value]="smoke().emissionRate"
+          [disabled]="!editor.isEditMode() || !smoke().enabled"
+          (input)="onEmission($any($event.target).value)"
+        />
+        <span class="value">{{ smoke().emissionRate | number: '1.2-2' }}</span>
+      </label>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('smokeCone') }}</summary>
+    <div class="section-body">
+      <label [attr.title]="l10n.t('tipSmokeCone')">
+        {{ l10n.t('smokeCone') }}
+        <input
+          type="range"
+          [min]="coneMin"
+          [max]="coneMax"
+          step="1"
+          [value]="smoke().coneAngleDeg"
+          [disabled]="!editor.isEditMode() || !smoke().enabled"
+          (input)="onCone($any($event.target).value)"
+        />
+        <span class="value">{{ smoke().coneAngleDeg | number: '1.0-0' }}°</span>
+      </label>
+      <label [attr.title]="l10n.t('tipSmokePlumeLength')">
+        {{ l10n.t('smokePlumeLength') }}
+        <input
+          type="range"
+          [min]="lengthMin"
+          [max]="lengthMax"
+          step="0.1"
+          [value]="smoke().plumeLengthM"
+          [disabled]="!editor.isEditMode() || !smoke().enabled"
+          (input)="onPlumeLength($any($event.target).value)"
+        />
+        <span class="value">{{ smoke().plumeLengthM | number: '1.1-1' }} m</span>
+      </label>
+    </div>
+  </details>
 </section>

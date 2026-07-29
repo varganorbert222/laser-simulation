@@ -1,15 +1,15 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { USER_ADDABLE_COMPONENTS, type UserAddableComponent } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { LocalizationService } from '../../../core/services/localization.service';
-import { TransformInspectorComponent } from '../transform-inspector/transform-inspector.component';
-import { LightEmitterSectionComponent } from '../light-emitter-section/light-emitter-section.component';
-import { MediaVolumeSectionComponent } from '../media-volume-section/media-volume-section.component';
-import { FluidVolumeSectionComponent } from '../fluid-volume-section/fluid-volume-section.component';
-import { FogVolumeSectionComponent } from '../fog-volume-section/fog-volume-section.component';
-import { SmokeEmitterSectionComponent } from '../smoke-emitter-section/smoke-emitter-section.component';
-import { SurfaceMaterialSectionComponent } from '../surface-material-section/surface-material-section.component';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { TransformInspectorComponent } from '../../sections/transform-inspector/transform-inspector.component';
+import { LightEmitterSectionComponent } from '../../sections/light-emitter-section/light-emitter-section.component';
+import { MediaVolumeSectionComponent } from '../../sections/media-volume-section/media-volume-section.component';
+import { FluidVolumeSectionComponent } from '../../sections/fluid-volume-section/fluid-volume-section.component';
+import { FogVolumeSectionComponent } from '../../sections/fog-volume-section/fog-volume-section.component';
+import { SmokeEmitterSectionComponent } from '../../sections/smoke-emitter-section/smoke-emitter-section.component';
+import { SurfaceMaterialSectionComponent } from '../../sections/surface-material-section/surface-material-section.component';
 
 @Component({
   selector: 'app-inspector-panel',

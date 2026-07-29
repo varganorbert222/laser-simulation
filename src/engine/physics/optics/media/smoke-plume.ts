@@ -3,10 +3,10 @@
  * When coneCos < 0 the envelope is disabled (uniform AABB fill).
  */
 
-import { clampRange } from '../../math/clamp';
-import { smoothstep } from '../../math/smoothstep';
-import type { Vec3 } from '../../math/vec3';
-import { dot, length } from '../../math/vec3';
+import { clampRange } from '../../../math/clamp';
+import { smoothstep } from '../../../math/smoothstep';
+import type { Vec3 } from '../../../math/vec3';
+import { dot, length } from '../../../math/vec3';
 
 export const SMOKE_EMISSION_RATE_MIN = 0;
 export const SMOKE_EMISSION_RATE_MAX = 3;

@@ -11,7 +11,7 @@ uniform float uDt;
 uniform float uDissipation;
 uniform float uAdvectionMode;
 
-/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fluid/atlas.ts */
+/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fog/atlas.ts */
 
 uniform float uGridRes;
 uniform float uTilesX;

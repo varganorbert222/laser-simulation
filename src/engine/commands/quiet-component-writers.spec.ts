@@ -12,7 +12,7 @@ import { defaultFogVolume } from '../ecs/components/fog';
 import { defaultLightEmitter } from '../ecs/components/light';
 import { defaultMediaVolume } from '../ecs/components/media';
 import { defaultSmokeEmitter } from '../ecs/components/smoke';
-import { defaultSurfaceMaterial } from '../physics/optics/surface-material';
+import { defaultSurfaceMaterial } from '../physics/optics/surface/surface-material';
 import { createDemoWorld } from '../scene/demo-world';
 import { applyHierarchyReorder } from '../hierarchy/ops';
 

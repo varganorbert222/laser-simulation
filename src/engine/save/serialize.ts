@@ -25,22 +25,22 @@ import { identity as matIdentity } from '../math/mat4';
 import {
   normalizeSurfaceMaterial,
   type SurfaceMaterial,
-} from '../physics/optics/surface-material';
-import type { DisplayVision } from '../physics/optics/display-vision';
+} from '../physics/optics/surface/surface-material';
+import type { DisplayVision } from '../physics/optics/display/display-vision';
 import {
   createDefaultDisplayVision,
   normalizeDisplayVision,
-} from '../physics/optics/display-vision';
-import type { EnvironmentLighting } from '../physics/optics/environment-lighting';
+} from '../physics/optics/display/display-vision';
+import type { EnvironmentLighting } from '../physics/optics/scene/environment-lighting';
 import {
   createDefaultEnvironmentLighting,
   normalizeEnvironmentLighting,
-} from '../physics/optics/environment-lighting';
-import type { AtmosphereSettings } from '../physics/optics/atmosphere-settings';
+} from '../physics/optics/scene/environment-lighting';
+import type { AtmosphereSettings } from '../physics/optics/atmosphere/atmosphere-settings';
 import {
   createDefaultAtmosphereSettings,
   normalizeAtmosphereSettings,
-} from '../physics/optics/atmosphere-settings';
+} from '../physics/optics/atmosphere/atmosphere-settings';
 import type { GravityEnvironment } from '../physics/fluid/gravity-environment';
 import {
   createDefaultGravityEnvironment,
@@ -51,12 +51,12 @@ import {
   createDefaultWindEnvironment,
   normalizeWindEnvironment,
 } from '../physics/fluid/wind-environment';
-import type { GlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
+import type { GlobalSunVolumetrics } from '../physics/optics/scene/global-sun-volumetrics';
 import {
   createDefaultGlobalSunVolumetrics,
   normalizeGlobalSunVolumetrics,
-} from '../physics/optics/global-sun-volumetrics';
-import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
+} from '../physics/optics/scene/global-sun-volumetrics';
+import { refreshSceneSunBinding } from '../physics/optics/scene/scene-sun';
 import {
   normalizeQualityResource,
   type Quality,

@@ -17,22 +17,12 @@ import {
   type HierarchyOutlinerState,
   type HierarchyReorderEvent,
 } from '@engine';
+import type {
+  HierarchyContextAction,
+  HierarchySelectEvent,
+} from '../../../../core/editor/hierarchy.types';
 
-export type HierarchyContextAction =
-  | 'add'
-  | 'addSmoke'
-  | 'addSun'
-  | 'rename'
-  | 'copy'
-  | 'cut'
-  | 'paste'
-  | 'duplicate'
-  | 'delete';
-
-export type HierarchySelectEvent = {
-  id: string;
-  mode: 'replace' | 'toggle' | 'range';
-};
+export type { HierarchyContextAction, HierarchySelectEvent };
 
 @Component({
   selector: 'app-hierarchy-panel',

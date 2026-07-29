@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSunLightEmitter } from '../../ecs/components';
-import { World } from '../../ecs/world';
-import { createSceneEntity } from '../../hierarchy/entity-factory';
+import { defaultSunLightEmitter } from '../../../ecs/components';
+import { World } from '../../../ecs/world';
+import { createSceneEntity } from '../../../hierarchy/entity-factory';
 import {
   refreshSceneSunBinding,
   resolveSceneSunBinding,

@@ -676,7 +676,7 @@ void sampleMedia(
       // Particulate: stronger remap (cloud-like puff contrast); climate softer.
       float remPowP0 = uMediaLayerKind0 > 1.5 ? 1.45 : 1.2;
       float fillP0 = densityRemap(fieldP0, lowP0, highP0, remPowP0) * uMediaDensity0 * plumeP0;
-      // Height falloff — denser / darker lower band (cloud base / smoke settle).
+      // Height falloff â€” denser / darker lower band (cloud base / smoke settle).
       float nyP0 = localP0.y / max(uMediaHalfExt0.y, 1e-3);
       float heightFallP0 = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP0));
       float turbP0 = clamp(uMediaTurbulence0, 0.0, 1.0);
@@ -700,7 +700,7 @@ void sampleMedia(
             mieWeight += ssMP0;
           }
         } else if (kind0 < 0.5 && hasInterior < 0.5) {
-          // Outdoor climate dual — skipped when an insulating interior covers this point.
+          // Outdoor climate dual â€” skipped when an insulating interior covers this point.
           float saO0 = max(uMediaAbsorb0, 0.0) * dP0;
           float ssRO0 = max(uMediaScatter0, 0.0) * dP0;
           float ssMO0 = max(uMediaScatterMie0, 0.0) * dP0;
@@ -730,7 +730,7 @@ void sampleMedia(
       // Particulate: stronger remap (cloud-like puff contrast); climate softer.
       float remPowP1 = uMediaLayerKind1 > 1.5 ? 1.45 : 1.2;
       float fillP1 = densityRemap(fieldP1, lowP1, highP1, remPowP1) * uMediaDensity1 * plumeP1;
-      // Height falloff — denser / darker lower band (cloud base / smoke settle).
+      // Height falloff â€” denser / darker lower band (cloud base / smoke settle).
       float nyP1 = localP1.y / max(uMediaHalfExt1.y, 1e-3);
       float heightFallP1 = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP1));
       float turbP1 = clamp(uMediaTurbulence1, 0.0, 1.0);
@@ -754,7 +754,7 @@ void sampleMedia(
             mieWeight += ssMP1;
           }
         } else if (kind1 < 0.5 && hasInterior < 0.5) {
-          // Outdoor climate dual — skipped when an insulating interior covers this point.
+          // Outdoor climate dual â€” skipped when an insulating interior covers this point.
           float saO1 = max(uMediaAbsorb1, 0.0) * dP1;
           float ssRO1 = max(uMediaScatter1, 0.0) * dP1;
           float ssMO1 = max(uMediaScatterMie1, 0.0) * dP1;
@@ -784,7 +784,7 @@ void sampleMedia(
       // Particulate: stronger remap (cloud-like puff contrast); climate softer.
       float remPowP2 = uMediaLayerKind2 > 1.5 ? 1.45 : 1.2;
       float fillP2 = densityRemap(fieldP2, lowP2, highP2, remPowP2) * uMediaDensity2 * plumeP2;
-      // Height falloff — denser / darker lower band (cloud base / smoke settle).
+      // Height falloff â€” denser / darker lower band (cloud base / smoke settle).
       float nyP2 = localP2.y / max(uMediaHalfExt2.y, 1e-3);
       float heightFallP2 = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP2));
       float turbP2 = clamp(uMediaTurbulence2, 0.0, 1.0);
@@ -808,7 +808,7 @@ void sampleMedia(
             mieWeight += ssMP2;
           }
         } else if (kind2 < 0.5 && hasInterior < 0.5) {
-          // Outdoor climate dual — skipped when an insulating interior covers this point.
+          // Outdoor climate dual â€” skipped when an insulating interior covers this point.
           float saO2 = max(uMediaAbsorb2, 0.0) * dP2;
           float ssRO2 = max(uMediaScatter2, 0.0) * dP2;
           float ssMO2 = max(uMediaScatterMie2, 0.0) * dP2;
@@ -838,7 +838,7 @@ void sampleMedia(
       // Particulate: stronger remap (cloud-like puff contrast); climate softer.
       float remPowP3 = uMediaLayerKind3 > 1.5 ? 1.45 : 1.2;
       float fillP3 = densityRemap(fieldP3, lowP3, highP3, remPowP3) * uMediaDensity3 * plumeP3;
-      // Height falloff — denser / darker lower band (cloud base / smoke settle).
+      // Height falloff â€” denser / darker lower band (cloud base / smoke settle).
       float nyP3 = localP3.y / max(uMediaHalfExt3.y, 1e-3);
       float heightFallP3 = mix(0.55, 1.0, smoothstep(-0.9, 0.2, nyP3));
       float turbP3 = clamp(uMediaTurbulence3, 0.0, 1.0);
@@ -862,7 +862,7 @@ void sampleMedia(
             mieWeight += ssMP3;
           }
         } else if (kind3 < 0.5 && hasInterior < 0.5) {
-          // Outdoor climate dual — skipped when an insulating interior covers this point.
+          // Outdoor climate dual â€” skipped when an insulating interior covers this point.
           float saO3 = max(uMediaAbsorb3, 0.0) * dP3;
           float ssRO3 = max(uMediaScatter3, 0.0) * dP3;
           float ssMO3 = max(uMediaScatterMie3, 0.0) * dP3;
@@ -983,7 +983,7 @@ float phaseHG(float cosTheta, float g) {
 
 const float INV_4PI = 0.0795774715;
 
-/* Shared with surface plugin — CPU twin: engine/physics/optics/beam-model.ts evalRadianceField */
+/* Shared with surface plugin — CPU twin: engine/physics/optics/beam/beam-model.ts evalRadianceField */
 const float RF_DISPLAY_SCALE = 1e-3;
 
 float rfUnpackPairHi(float packed) {
@@ -1410,7 +1410,7 @@ vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
           float inScatter0 = (sigmaSR * specR0 * phaseR0
             + sigmaSM * specM0 * phaseM0) * stepSize;
           float ms0 = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
-          // Lscatter *= shadowT (light→medium); then *= T (camera→medium) via outer T.
+          // Lscatter *= shadowT (lightâ†’medium); then *= T (cameraâ†’medium) via outer T.
           col += tint * uLightColor0 * Li * T * uLightPower0
             * shadowT0 * (inScatter0 + ms0);
         }
@@ -1437,7 +1437,7 @@ vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
           float inScatter1 = (sigmaSR * specR1 * phaseR1
             + sigmaSM * specM1 * phaseM1) * stepSize;
           float ms1 = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
-          // Lscatter *= shadowT (light→medium); then *= T (camera→medium) via outer T.
+          // Lscatter *= shadowT (lightâ†’medium); then *= T (cameraâ†’medium) via outer T.
           col += tint * uLightColor1 * Li * T * uLightPower1
             * shadowT1 * (inScatter1 + ms1);
         }
@@ -1464,7 +1464,7 @@ vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
           float inScatter2 = (sigmaSR * specR2 * phaseR2
             + sigmaSM * specM2 * phaseM2) * stepSize;
           float ms2 = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
-          // Lscatter *= shadowT (light→medium); then *= T (camera→medium) via outer T.
+          // Lscatter *= shadowT (lightâ†’medium); then *= T (cameraâ†’medium) via outer T.
           col += tint * uLightColor2 * Li * T * uLightPower2
             * shadowT2 * (inScatter2 + ms2);
         }
@@ -1491,7 +1491,7 @@ vec3 march(vec3 ro, vec3 rd, float sceneZCam) {
           float inScatter3 = (sigmaSR * specR3 * phaseR3
             + sigmaSM * specM3 * phaseM3) * stepSize;
           float ms3 = omega0 * uVolumeMultiScatter * INV_4PI * sigmaS * stepSize;
-          // Lscatter *= shadowT (light→medium); then *= T (camera→medium) via outer T.
+          // Lscatter *= shadowT (lightâ†’medium); then *= T (cameraâ†’medium) via outer T.
           col += tint * uLightColor3 * Li * T * uLightPower3
             * shadowT3 * (inScatter3 + ms3);
         }

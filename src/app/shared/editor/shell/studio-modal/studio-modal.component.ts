@@ -14,7 +14,7 @@ import {
   ViewEncapsulation,
   inject,
 } from '@angular/core';
-import { LocalizationService } from '../../../core/services/localization.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 type ResizeEdge = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 

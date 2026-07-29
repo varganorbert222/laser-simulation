@@ -3,7 +3,7 @@
  * Educational / display-oriented — not a calibrated radiometric BRDF.
  */
 
-import { clampUnit } from '../../math/clamp';
+import { clampUnit } from '../../../math/clamp';
 
 export type SurfaceFinishPreset =
   | 'matte_black'

@@ -6,9 +6,9 @@
  * Volumetric Li and surface BRDF both evaluate the same field.
  */
 
-import type { LightEmitter } from '../../ecs/components';
-import { clamp01, clampRange } from '../../math/clamp';
-import { smoothstep } from '../../math/smoothstep';
+import type { LightEmitter } from '../../../ecs/components';
+import { clamp01, clampRange } from '../../../math/clamp';
+import { smoothstep } from '../../../math/smoothstep';
 import {
   aberrationRadiusScale,
   propagateLaserWaists,
@@ -28,7 +28,7 @@ import {
   spillToGpuWeights,
 } from './optics-spill';
 import { evalResidualDensity } from './optics-residual';
-import type { SurfaceMaterial } from './surface-material';
+import type { SurfaceMaterial } from '../surface/surface-material';
 
 export type BeamKind = 'omni' | 'cone' | 'tube' | 'gaussian';
 

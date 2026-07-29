@@ -5,10 +5,8 @@ import type { Vec3 } from '../../math/vec3';
 import { vec3 } from '../../math/vec3';
 
 export type FogGridRes = 32 | 48 | 64 | 96;
-export const FOG_GRID_RESOLUTIONS = [32, 48, 64, 96] as const satisfies readonly FogGridRes[];
 
 export type FogBoundaryMode = 'closed' | 'openTop';
-export const FOG_BOUNDARY_MODES = ['closed', 'openTop'] as const satisfies readonly FogBoundaryMode[];
 
 export function isFogGridRes(v: unknown): v is FogGridRes {
   return v === 32 || v === 48 || v === 64 || v === 96;

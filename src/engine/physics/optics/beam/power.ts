@@ -1,6 +1,6 @@
 /** Emitter optical power limits and unit helpers (internal storage is always watts). */
 
-import { clamp01, clampRange } from '../../math/clamp';
+import { clamp01, clampRange } from '../../../math/clamp';
 
 const POWER_W_MIN = 0;
 /** 1 kW — hard cap for custom values. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rayleighScatterWeight } from './wavelength';
+import { rayleighScatterWeight } from '../display/wavelength';
 import {
   clampParticleSizeForModel,
   clampParticleSizeNm,

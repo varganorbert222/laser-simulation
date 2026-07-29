@@ -99,19 +99,23 @@ describe('render preferences', () => {
     expect(demo.resources.Atmosphere.exposure).toBeCloseTo(1.8);
   });
 
-  it('resolveStartupWorld applies prefs only when no active scene', () => {
+  it('resolveStartupWorld overlays global Quality prefs onto active scene', () => {
     const storage = createMemorySceneStorage();
     const prefsSeed = createDemoWorld();
     prefsSeed.resources.Quality = createQuality('low');
     prefsSeed.resources.Atmosphere = createAtmosphereSettingsForQuality(
       'low',
-      prefsSeed.resources.Atmosphere,
+      {
+        ...prefsSeed.resources.Atmosphere,
+        hour: 8,
+        minute: 0,
+        enabled: true,
+      },
     );
     prefsSeed.resources.Quality = refreshQualityPresets(
       prefsSeed.resources.Quality,
       prefsSeed.resources.Atmosphere.qualityPreset,
     );
-    expect(prefsSeed.resources.Quality.overallPreset).toBe('low');
     writeRenderPreferences(captureRenderPreferences(prefsSeed), storage);
 
     const emptyBoot = resolveStartupWorld(storage);
@@ -122,7 +126,12 @@ describe('render preferences', () => {
     sceneWorld.resources.Quality = createQuality('high');
     sceneWorld.resources.Atmosphere = createAtmosphereSettingsForQuality(
       'high',
-      sceneWorld.resources.Atmosphere,
+      {
+        ...sceneWorld.resources.Atmosphere,
+        hour: 21,
+        minute: 30,
+        enabled: false,
+      },
     );
     sceneWorld.resources.Quality = refreshQualityPresets(
       sceneWorld.resources.Quality,
@@ -135,21 +144,25 @@ describe('render preferences', () => {
     writeRenderPreferences(captureRenderPreferences(prefsSeed), storage);
 
     const withScene = resolveStartupWorld(storage);
-    // Scene document wins — prefs stay low, but are not overlaid onto the active scene.
-    expect(withScene.world.resources.Quality.volumetricsPreset).toBe('high');
-    expect(withScene.world.resources.Atmosphere.qualityPreset).toBe('high');
-    expect(withScene.world.resources.Quality.volumetricsPreset).not.toBe('low');
+    // Global graphics prefs win for Quality / sky look.
+    expect(withScene.world.resources.Quality.volumetricsPreset).toBe('low');
+    expect(withScene.world.resources.Atmosphere.qualityPreset).toBe('low');
+    // Scene keeps civil time / enabled.
+    expect(withScene.world.resources.Atmosphere.hour).toBe(21);
+    expect(withScene.world.resources.Atmosphere.minute).toBe(30);
+    expect(withScene.world.resources.Atmosphere.enabled).toBe(false);
   });
 
-  it('normalize rejects bad version / shape', () => {
+  it('normalize accepts quality-only legacy shape', () => {
     expect(normalizeRenderPreferences(null)).toBeNull();
     expect(normalizeRenderPreferences({ version: 99 })).toBeNull();
-    expect(
-      normalizeRenderPreferences({
-        version: 1,
-        quality: createQuality('medium'),
-      }),
-    ).toBeNull();
+    const qOnly = normalizeRenderPreferences({
+      version: 1,
+      quality: createQuality('medium'),
+    });
+    expect(qOnly).not.toBeNull();
+    expect(qOnly!.quality.overallPreset).toBe('medium');
+    expect(qOnly!.atmosphere).toBeTruthy();
   });
 
   it('uses a dedicated storage key', () => {

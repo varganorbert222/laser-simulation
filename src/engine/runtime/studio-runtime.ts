@@ -2,8 +2,8 @@ import { Schedule } from '../ecs/schedule';
 import { gatherRenderPackSystem } from '../ecs/systems/gather-render-pack';
 import { worldTransformSystem } from '../ecs/systems/world-transform';
 import type { World } from '../ecs/world';
-import { atmosphereAdvanceTime } from '../physics/optics/atmosphere-settings';
-import { syncPrimarySunFromAtmosphere } from '../physics/optics/atmosphere-scene-sun';
+import { atmosphereAdvanceTime } from '../physics/optics/atmosphere/atmosphere-settings';
+import { syncPrimarySunFromAtmosphere } from '../physics/optics/atmosphere/atmosphere-scene-sun';
 import { gatherRenderPack } from '../render/pack';
 import type { FramePresenter } from './frame-presenter';
 

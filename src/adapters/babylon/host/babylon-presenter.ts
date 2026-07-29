@@ -55,7 +55,7 @@ import { bindViewportPicking } from '../picking/viewport-picking';
 import { StudioPipeline } from '../postfx/studio-pipeline';
 import { VolumetricBinder } from '../volumetrics/volumetric-binder';
 import { FogBinder } from '../fog/fog-binder';
-import { WaterOpticsBinder } from '../fluids/water-optics-binder';
+import { WaterOpticsBinder } from '../water/water-optics-binder';
 
 /** Approximate shader warmup progress (WebGL has no native % for parallel compile). */
 export interface ShaderCompileStatus {
@@ -91,7 +91,7 @@ export class BabylonPresenter implements FramePresenter {
   private readonly lights: SurfaceLightSync;
   private readonly pipeline: StudioPipeline;
   private readonly volumetrics: VolumetricBinder;
-  private readonly fluids: FogBinder;
+  private readonly fog: FogBinder;
   private readonly waters: WaterOpticsBinder;
   private readonly atmosphereBaker: AtmosphereLutBaker;
   private readonly atmosphereNight: AtmosphereNightTextures;
@@ -186,9 +186,9 @@ export class BabylonPresenter implements FramePresenter {
       this.world.resources.Quality.renderScale,
     );
     this.volumetrics.bindWorld(this.world, this.camera);
-    this.fluids = new FogBinder(this.scene);
+    this.fog = new FogBinder(this.scene);
     this.waters = new WaterOpticsBinder(this.scene);
-    this.volumetrics.bindFluids(this.fluids);
+    this.volumetrics.bindFog(this.fog);
     this.atmosphereBaker = new AtmosphereLutBaker(this.engine, this.scene);
     this.atmosphereNight = new AtmosphereNightTextures(this.scene);
     this.atmosphereSkybox = new AtmosphereSkybox(
@@ -247,7 +247,7 @@ export class BabylonPresenter implements FramePresenter {
     this.depthRenderer.enabled = false;
     this.volumetrics.setSceneDepthTexture(this.depthRenderer.getDepthMap());
     // Fog atlases; analytical water PP sits right after volumetric compose; StudioPipeline bloom/FXAA attaches after.
-    this.fluids.attach(
+    this.fog.attach(
       this.world,
       this.camera,
       this.depthRenderer.getDepthMap(),
@@ -558,7 +558,7 @@ export class BabylonPresenter implements FramePresenter {
     this.depthRenderer.getDepthMap().render(true);
     const pack = this.world.resources.RenderFrame ?? gatherRenderPack(this.world);
     try {
-      this.fluids.step(pack, this.lastDt);
+      this.fog.step(pack, this.lastDt);
       this.waters.step(pack, this.lastDt);
     } catch (err) {
       console.warn('[BabylonPresenter] fluid step failed', err);
@@ -645,7 +645,7 @@ export class BabylonPresenter implements FramePresenter {
     this.staticSkybox.dispose();
     this.atmosphereNight.dispose();
     this.atmosphereBaker.dispose();
-    this.fluids.dispose();
+    this.fog.dispose();
     this.waters.dispose();
     this.volumetrics.dispose();
     this.scene.disableDepthRenderer(this.camera);

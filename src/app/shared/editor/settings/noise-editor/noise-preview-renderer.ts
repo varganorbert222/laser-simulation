@@ -1,6 +1,6 @@
 import type { BakedNoiseVolume } from '@engine';
 import { clampRange } from '@engine';
-import { NOISE_PREVIEW_FRAG, NOISE_PREVIEW_VERT } from '../../../../generated/shaders';
+import { NOISE_PREVIEW_FRAG, NOISE_PREVIEW_VERT } from '../../../../../generated/shaders';
 
 /**
  * Lightweight WebGL2 volume preview (orbit with pointer drag).

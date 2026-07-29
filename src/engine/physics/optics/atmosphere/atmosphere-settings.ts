@@ -8,17 +8,17 @@ import {
   localCivilFromUtcMs,
   utcMsFromLocalCivil,
   type SolarPosition,
-} from '../astro/solar-position';
+} from '../../astro/solar-position';
 import {
   DEFAULT_MOON_TEXTURE_ID,
   DEFAULT_NIGHT_SKY_TEXTURE_ID,
-} from '../../assets/asset-manifest';
+} from '../../../assets/asset-manifest';
 import {
   createDefaultAtmosphereModel,
   normalizeAtmosphereModel,
   type AtmosphereModel,
 } from './atmosphere-model';
-import { clampRgb, type Rgb01 } from './color';
+import { clampRgb, type Rgb01 } from '../display/color';
 
 /** Same ladder as volumetric {@link QualityLadder}. */
 export type AtmosphereQualityPreset = 'low' | 'medium' | 'high' | 'ultra' | 'custom';

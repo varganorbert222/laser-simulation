@@ -122,300 +122,340 @@
   }
 
   @if (light().params.mode === 'laser') {
-    <h4 class="subhead">{{ l10n.t('laserOptics') }}</h4>
-    <p class="hint">{{ l10n.t('hintLaserOptics') }}</p>
+    <details class="section" open>
+      <summary>{{ l10n.t('laserOptics') }}</summary>
+      <div class="section-body">
+        <p class="hint">{{ l10n.t('hintLaserOptics') }}</p>
 
-    <h5 class="subhead-sm">{{ l10n.t('laserBeamProfile') }}</h5>
-    <label [attr.title]="l10n.t('tipW0')">
-      w₀ (m)
-      <input
-        type="range"
-        min="0.0005"
-        max="0.02"
-        step="0.0001"
-        [value]="laserW0()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserW0($any($event.target).value)"
-      />
-      <span class="value">{{ laserW0() * 1000 | number: '1.2-2' }} mm</span>
-    </label>
-    <label [attr.title]="l10n.t('tipM2')">
-      M²
-      <input
-        type="range"
-        min="1"
-        max="10"
-        step="0.05"
-        [value]="laserM2()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('m2', $any($event.target).value)"
-      />
-      <span class="value">{{ laserM2() | number: '1.2-2' }}</span>
-    </label>
-    <label [attr.title]="l10n.t('tipEllipticRatio')">
-      {{ l10n.t('ellipticRatio') }}
-      <input
-        type="range"
-        min="0.2"
-        max="8"
-        step="0.05"
-        [value]="laserElliptic()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('ellipticRatio', $any($event.target).value)"
-      />
-      <span class="value">{{ laserElliptic() | number: '1.2-2' }}</span>
-    </label>
-    <label [attr.title]="l10n.t('tipTopHatMix')">
-      {{ l10n.t('topHatMix') }}
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        [value]="laserTopHat()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('topHatMix', $any($event.target).value)"
-      />
-      <span class="value">{{ laserTopHat() | number: '1.2-2' }}</span>
-    </label>
+        <details class="section" open>
+          <summary>{{ l10n.t('laserBeamProfile') }}</summary>
+          <div class="section-body">
+            <label [attr.title]="l10n.t('tipW0')">
+              w₀ (m)
+              <input
+                type="range"
+                min="0.0005"
+                max="0.02"
+                step="0.0001"
+                [value]="laserW0()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserW0($any($event.target).value)"
+              />
+              <span class="value">{{ laserW0() * 1000 | number: '1.2-2' }} mm</span>
+            </label>
+            <label [attr.title]="l10n.t('tipM2')">
+              M²
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="0.05"
+                [value]="laserM2()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('m2', $any($event.target).value)"
+              />
+              <span class="value">{{ laserM2() | number: '1.2-2' }}</span>
+            </label>
+            <label [attr.title]="l10n.t('tipEllipticRatio')">
+              {{ l10n.t('ellipticRatio') }}
+              <input
+                type="range"
+                min="0.2"
+                max="8"
+                step="0.05"
+                [value]="laserElliptic()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('ellipticRatio', $any($event.target).value)"
+              />
+              <span class="value">{{ laserElliptic() | number: '1.2-2' }}</span>
+            </label>
+            <label [attr.title]="l10n.t('tipTopHatMix')">
+              {{ l10n.t('topHatMix') }}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                [value]="laserTopHat()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('topHatMix', $any($event.target).value)"
+              />
+              <span class="value">{{ laserTopHat() | number: '1.2-2' }}</span>
+            </label>
+          </div>
+        </details>
 
-    <h5 class="subhead-sm">{{ l10n.t('laserFocus') }}</h5>
-    <label [attr.title]="l10n.t('tipWaistOffset')">
-      {{ l10n.t('waistOffset') }}
-      <input
-        type="range"
-        min="-5"
-        max="5"
-        step="0.05"
-        [value]="laserWaistOffset()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('waistOffsetM', $any($event.target).value)"
-      />
-      <span class="value">{{ laserWaistOffset() | number: '1.2-2' }} m</span>
-    </label>
-    <label [attr.title]="l10n.t('tipProbeDistance')">
-      {{ l10n.t('probeDistance') }}
-      <input
-        type="range"
-        min="0.5"
-        max="20"
-        step="0.1"
-        [value]="laserProbeDistance()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('probeDistanceM', $any($event.target).value)"
-      />
-      <span class="value">{{ laserProbeDistance() | number: '1.1-1' }} m</span>
-    </label>
+        <details class="section" open>
+          <summary>{{ l10n.t('laserFocus') }}</summary>
+          <div class="section-body">
+            <label [attr.title]="l10n.t('tipWaistOffset')">
+              {{ l10n.t('waistOffset') }}
+              <input
+                type="range"
+                min="-5"
+                max="5"
+                step="0.05"
+                [value]="laserWaistOffset()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('waistOffsetM', $any($event.target).value)"
+              />
+              <span class="value">{{ laserWaistOffset() | number: '1.2-2' }} m</span>
+            </label>
+            <label [attr.title]="l10n.t('tipProbeDistance')">
+              {{ l10n.t('probeDistance') }}
+              <input
+                type="range"
+                min="0.5"
+                max="20"
+                step="0.1"
+                [value]="laserProbeDistance()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('probeDistanceM', $any($event.target).value)"
+              />
+              <span class="value">{{ laserProbeDistance() | number: '1.1-1' }} m</span>
+            </label>
+          </div>
+        </details>
 
-    <h5 class="subhead-sm">{{ l10n.t('laserAberrations') }}</h5>
-    <label [attr.title]="l10n.t('tipSphericalAberration')">
-      {{ l10n.t('sphericalAberration') }}
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        [value]="laserSpherical()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('sphericalAberration', $any($event.target).value)"
-      />
-      <span class="value">{{ laserSpherical() | number: '1.2-2' }}</span>
-    </label>
-    <label [attr.title]="l10n.t('tipComa')">
-      {{ l10n.t('coma') }}
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        [value]="laserComa()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('coma', $any($event.target).value)"
-      />
-      <span class="value">{{ laserComa() | number: '1.2-2' }}</span>
-    </label>
-    <label [attr.title]="l10n.t('tipAstigmatism')">
-      {{ l10n.t('astigmatism') }}
-      <input
-        type="range"
-        min="0"
-        max="1"
-        step="0.01"
-        [value]="laserAstig()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onLaserParam('astigmatism', $any($event.target).value)"
-      />
-      <span class="value">{{ laserAstig() | number: '1.2-2' }}</span>
-    </label>
+        <details class="section">
+          <summary>{{ l10n.t('laserAberrations') }}</summary>
+          <div class="section-body">
+            <label [attr.title]="l10n.t('tipSphericalAberration')">
+              {{ l10n.t('sphericalAberration') }}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                [value]="laserSpherical()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('sphericalAberration', $any($event.target).value)"
+              />
+              <span class="value">{{ laserSpherical() | number: '1.2-2' }}</span>
+            </label>
+            <label [attr.title]="l10n.t('tipComa')">
+              {{ l10n.t('coma') }}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                [value]="laserComa()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('coma', $any($event.target).value)"
+              />
+              <span class="value">{{ laserComa() | number: '1.2-2' }}</span>
+            </label>
+            <label [attr.title]="l10n.t('tipAstigmatism')">
+              {{ l10n.t('astigmatism') }}
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                [value]="laserAstig()"
+                [disabled]="!editor.isEditMode()"
+                (input)="onLaserParam('astigmatism', $any($event.target).value)"
+              />
+              <span class="value">{{ laserAstig() | number: '1.2-2' }}</span>
+            </label>
+          </div>
+        </details>
+      </div>
+    </details>
   }
 
   @if (light().params.mode === 'spotlight' || light().params.mode === 'flashlight') {
-    <h4 class="subhead">{{ l10n.t('coneOptics') }}</h4>
-    <p class="hint">
-      {{
-        light().params.mode === 'flashlight'
-          ? l10n.t('hintFlashlight')
-          : l10n.t('hintSpotlight')
-      }}
-    </p>
-    <label>
-      {{ l10n.t('innerCone') }}
-      <input
-        type="range"
-        min="1"
-        max="60"
-        step="0.5"
-        [value]="spotInner()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onSpotParam('innerConeDeg', $any($event.target).value)"
-      />
-      <span class="value">{{ spotInner() | number: '1.1-1' }}°</span>
-    </label>
-    <label>
-      {{ l10n.t('outerCone') }}
-      <input
-        type="range"
-        min="2"
-        max="90"
-        step="0.5"
-        [value]="spotOuter()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onSpotParam('outerConeDeg', $any($event.target).value)"
-      />
-      <span class="value">{{ spotOuter() | number: '1.1-1' }}°</span>
-    </label>
-    <label>
-      {{ l10n.t('apertureSharpness') }}
-      <input
-        type="range"
-        min="0.5"
-        max="12"
-        step="0.1"
-        [value]="spotSharpness()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onSpotParam('apertureSharpness', $any($event.target).value)"
-      />
-      <span class="value">{{ spotSharpness() | number: '1.1-1' }}</span>
-    </label>
+    <details class="section" open>
+      <summary>{{ l10n.t('coneOptics') }}</summary>
+      <div class="section-body">
+        <p class="hint">
+          {{
+            light().params.mode === 'flashlight'
+              ? l10n.t('hintFlashlight')
+              : l10n.t('hintSpotlight')
+          }}
+        </p>
+        <label>
+          {{ l10n.t('innerCone') }}
+          <input
+            type="range"
+            min="1"
+            max="60"
+            step="0.5"
+            [value]="spotInner()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onSpotParam('innerConeDeg', $any($event.target).value)"
+          />
+          <span class="value">{{ spotInner() | number: '1.1-1' }}°</span>
+        </label>
+        <label>
+          {{ l10n.t('outerCone') }}
+          <input
+            type="range"
+            min="2"
+            max="90"
+            step="0.5"
+            [value]="spotOuter()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onSpotParam('outerConeDeg', $any($event.target).value)"
+          />
+          <span class="value">{{ spotOuter() | number: '1.1-1' }}°</span>
+        </label>
+        <label>
+          {{ l10n.t('apertureSharpness') }}
+          <input
+            type="range"
+            min="0.5"
+            max="12"
+            step="0.1"
+            [value]="spotSharpness()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onSpotParam('apertureSharpness', $any($event.target).value)"
+          />
+          <span class="value">{{ spotSharpness() | number: '1.1-1' }}</span>
+        </label>
+      </div>
+    </details>
   }
 
   @if (light().params.mode === 'omni_lamp') {
-    <h4 class="subhead">{{ l10n.t('omniOptics') }}</h4>
-    <label>
-      {{ l10n.t('softRadius') }}
-      <input
-        type="range"
-        min="0.05"
-        max="3"
-        step="0.01"
-        [value]="omniSoftRadius()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onOmniParam('softRadiusM', $any($event.target).value)"
-      />
-      <span class="value">{{ omniSoftRadius() | number: '1.2-2' }} m</span>
-    </label>
-    <label>
-      {{ l10n.t('falloff') }}
-      <input
-        type="range"
-        min="0.5"
-        max="6"
-        step="0.1"
-        [value]="omniFalloff()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onOmniParam('falloff', $any($event.target).value)"
-      />
-      <span class="value">{{ omniFalloff() | number: '1.1-1' }}</span>
-    </label>
+    <details class="section" open>
+      <summary>{{ l10n.t('omniOptics') }}</summary>
+      <div class="section-body">
+        <label>
+          {{ l10n.t('softRadius') }}
+          <input
+            type="range"
+            min="0.05"
+            max="3"
+            step="0.01"
+            [value]="omniSoftRadius()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onOmniParam('softRadiusM', $any($event.target).value)"
+          />
+          <span class="value">{{ omniSoftRadius() | number: '1.2-2' }} m</span>
+        </label>
+        <label>
+          {{ l10n.t('falloff') }}
+          <input
+            type="range"
+            min="0.5"
+            max="6"
+            step="0.1"
+            [value]="omniFalloff()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onOmniParam('falloff', $any($event.target).value)"
+          />
+          <span class="value">{{ omniFalloff() | number: '1.1-1' }}</span>
+        </label>
+      </div>
+    </details>
   }
 
   @if (light().params.mode === 'parallel') {
-    <h4 class="subhead">{{ l10n.t('parallelOptics') }}</h4>
-    <p class="hint">{{ l10n.t('hintParallel') }}</p>
-    <label>
-      {{ l10n.t('beamRadius') }}
-      <input
-        type="range"
-        min="0.005"
-        max="0.5"
-        step="0.001"
-        [value]="parallelRadius()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onParallelParam('beamRadiusM', $any($event.target).value)"
-      />
-      <span class="value">{{ parallelRadius() * 1000 | number: '1.1-1' }} mm</span>
-    </label>
-    <label>
-      {{ l10n.t('residualMrad') }}
-      <input
-        type="range"
-        min="0"
-        max="20"
-        step="0.1"
-        [value]="parallelResidual()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onParallelParam('residualMrad', $any($event.target).value)"
-      />
-      <span class="value">{{ parallelResidual() | number: '1.1-1' }} mrad</span>
-    </label>
+    <details class="section" open>
+      <summary>{{ l10n.t('parallelOptics') }}</summary>
+      <div class="section-body">
+        <p class="hint">{{ l10n.t('hintParallel') }}</p>
+        <label>
+          {{ l10n.t('beamRadius') }}
+          <input
+            type="range"
+            min="0.005"
+            max="0.5"
+            step="0.001"
+            [value]="parallelRadius()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onParallelParam('beamRadiusM', $any($event.target).value)"
+          />
+          <span class="value">{{ parallelRadius() * 1000 | number: '1.1-1' }} mm</span>
+        </label>
+        <label>
+          {{ l10n.t('residualMrad') }}
+          <input
+            type="range"
+            min="0"
+            max="20"
+            step="0.1"
+            [value]="parallelResidual()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onParallelParam('residualMrad', $any($event.target).value)"
+          />
+          <span class="value">{{ parallelResidual() | number: '1.1-1' }} mrad</span>
+        </label>
+      </div>
+    </details>
   }
 
   @if (light().params.mode === 'sun') {
-    <h4 class="subhead">{{ l10n.t('sunOptics') }}</h4>
-    <p class="hint">{{ l10n.t('hintSun') }}</p>
-    <label>
-      {{ l10n.t('angularDiameter') }}
-      <input
-        type="range"
-        min="0.1"
-        max="5"
-        step="0.01"
-        [value]="sunAngularDiameter()"
-        [disabled]="!editor.isEditMode()"
-        (input)="onSunAngularDiameter($any($event.target).value)"
-      />
-      <span class="value">{{ sunAngularDiameter() | number: '1.2-2' }}°</span>
-    </label>
+    <details class="section" open>
+      <summary>{{ l10n.t('sunOptics') }}</summary>
+      <div class="section-body">
+        <p class="hint">{{ l10n.t('hintSun') }}</p>
+        <label>
+          {{ l10n.t('angularDiameter') }}
+          <input
+            type="range"
+            min="0.1"
+            max="5"
+            step="0.01"
+            [value]="sunAngularDiameter()"
+            [disabled]="!editor.isEditMode()"
+            (input)="onSunAngularDiameter($any($event.target).value)"
+          />
+          <span class="value">{{ sunAngularDiameter() | number: '1.2-2' }}°</span>
+        </label>
+      </div>
+    </details>
   }
 
-  <h4 class="subhead">{{ l10n.t('lensFlare') }}</h4>
-  <label class="check" [attr.title]="l10n.t('tipLensFlareEnabled')">
-    <input
-      type="checkbox"
-      [checked]="light().lensFlareEnabled"
-      [disabled]="!editor.isEditMode()"
-      (change)="onLensFlareEnabled($any($event.target).checked)"
-    />
-    {{ l10n.t('lensFlareEnabled') }}
-  </label>
-  <label [attr.title]="l10n.t('tipLensFlareIntensity')">
-    {{ l10n.t('lensFlareIntensity') }}
-    <input
-      type="range"
-      min="0"
-      max="4"
-      step="0.05"
-      [value]="light().lensFlareIntensity"
-      [disabled]="!editor.isEditMode() || !light().lensFlareEnabled"
-      (input)="onLensFlareIntensity($any($event.target).value)"
-    />
-    <span class="value">{{ light().lensFlareIntensity | number: '1.2-2' }}</span>
-  </label>
-  <p class="hint">{{ l10n.t('hintLensFlareLight') }}</p>
+  <details class="section" open>
+    <summary>{{ l10n.t('lensFlare') }}</summary>
+    <div class="section-body">
+      <label class="check" [attr.title]="l10n.t('tipLensFlareEnabled')">
+        <input
+          type="checkbox"
+          [checked]="light().lensFlareEnabled"
+          [disabled]="!editor.isEditMode()"
+          (change)="onLensFlareEnabled($any($event.target).checked)"
+        />
+        {{ l10n.t('lensFlareEnabled') }}
+      </label>
+      <label class="flare-slider" [attr.title]="l10n.t('tipLensFlareIntensity')">
+        <span>{{ l10n.t('lensFlareIntensity') }}</span>
+        <input
+          type="range"
+          min="0"
+          max="8"
+          step="0.05"
+          [value]="light().lensFlareIntensity"
+          [disabled]="!editor.isEditMode() || !light().lensFlareEnabled"
+          (input)="onLensFlareIntensity($any($event.target).value)"
+        />
+        <span class="value">{{ light().lensFlareIntensity | number: '1.2-2' }}</span>
+      </label>
+      <p class="hint">{{ l10n.t('hintLensFlareLight') }}</p>
+    </div>
+  </details>
 
-  <h4 class="subhead">{{ l10n.t('opticsSpill') }}</h4>
-  <label [attr.title]="l10n.t('tipStrayPowerFraction')">
-    {{ l10n.t('strayPowerFraction') }}
-    <input
-      type="range"
-      min="0"
-      max="0.85"
-      step="0.01"
-      [value]="strayPowerFraction()"
-      [disabled]="!editor.isEditMode()"
-      (input)="onStrayPowerFraction($any($event.target).value)"
-    />
-    <span class="value">{{ strayPowerFraction() * 100 | number: '1.0-0' }}%</span>
-  </label>
-  <p class="hint">{{ l10n.t('hintOpticsSpill') }}</p>
+  <details class="section">
+    <summary>{{ l10n.t('opticsSpill') }}</summary>
+    <div class="section-body">
+      <label [attr.title]="l10n.t('tipStrayPowerFraction')">
+        {{ l10n.t('strayPowerFraction') }}
+        <input
+          type="range"
+          min="0"
+          max="0.85"
+          step="0.01"
+          [value]="strayPowerFraction()"
+          [disabled]="!editor.isEditMode()"
+          (input)="onStrayPowerFraction($any($event.target).value)"
+        />
+        <span class="value">{{ strayPowerFraction() * 100 | number: '1.0-0' }}%</span>
+      </label>
+      <p class="hint">{{ l10n.t('hintOpticsSpill') }}</p>
+    </div>
+  </details>
 </section>

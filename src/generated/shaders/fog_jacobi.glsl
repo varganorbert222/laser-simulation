@@ -8,7 +8,7 @@ uniform sampler2D uDivergence;
 uniform sampler2D uPhi;
 uniform float uUseFreeSurface; // 1 = water level-set Dirichlet air
 
-/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fluid/atlas.ts */
+/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fog/atlas.ts */
 
 uniform float uGridRes;
 uniform float uTilesX;

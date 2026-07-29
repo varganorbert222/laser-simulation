@@ -275,7 +275,7 @@ float phaseHG(float cosTheta, float g) {
 
 const float INV_4PI = 0.0795774715;
 
-/* Shared with surface plugin — CPU twin: engine/physics/optics/beam-model.ts evalRadianceField */
+/* Shared with surface plugin — CPU twin: engine/physics/optics/beam/beam-model.ts evalRadianceField */
 // @include contract/radiance_field.glsl
 
 vec3 refractSafeMarch(vec3 i, vec3 n, float eta) {

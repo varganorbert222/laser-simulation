@@ -22,10 +22,10 @@ import {
   type LightMode,
   type PowerUnit,
 } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { LocalizationService } from '../../../core/services/localization.service';
-import { SpectralColorFieldComponent } from '../spectral-color-field/spectral-color-field.component';
-import { HdrColorFieldComponent } from '../hdr-color-field/hdr-color-field.component';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { SpectralColorFieldComponent } from '../../fields/spectral-color-field/spectral-color-field.component';
+import { HdrColorFieldComponent } from '../../fields/hdr-color-field/hdr-color-field.component';
 
 @Component({
   selector: 'app-light-emitter-section',

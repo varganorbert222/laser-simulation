@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { World } from '../../ecs/world';
-import { createSceneEntity } from '../../hierarchy/entity-factory';
-import { lightWorldPose, worldTransformSystem } from '../../ecs/systems/world-transform';
-import { normalize } from '../../math/vec3';
+import { World } from '../../../ecs/world';
+import { createSceneEntity } from '../../../hierarchy/entity-factory';
+import { lightWorldPose, worldTransformSystem } from '../../../ecs/systems/world-transform';
+import { normalize } from '../../../math/vec3';
 import {
   normalizeAtmosphereSettings,
   resolveAtmosphereSolarPosition,
@@ -10,7 +10,7 @@ import {
 import {
   syncPrimarySunFromAtmosphere,
 } from './atmosphere-scene-sun';
-import { refreshSceneSunBinding } from './scene-sun';
+import { refreshSceneSunBinding } from '../scene/scene-sun';
 
 describe('atmosphere-scene-sun', () => {
   it('creates a primary sun when atmosphere is enabled and none exists', () => {

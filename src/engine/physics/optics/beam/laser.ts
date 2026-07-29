@@ -1,6 +1,6 @@
 /** Gaussian beam waist radius w(z), Rayleigh range, and TEM00 irradiance helpers. */
 
-import { clamp01, clampRange } from '../../math/clamp';
+import { clamp01, clampRange } from '../../../math/clamp';
 
 /** Soft display scale so étendue-normalized Li stays in a usable HDR range. */
 export const DISPLAY_RADIANCE_SCALE = 1e-3;

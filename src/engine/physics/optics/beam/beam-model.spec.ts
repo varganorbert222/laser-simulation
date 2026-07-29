@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { LightEmitter } from '../../ecs/components';
+import type { LightEmitter } from '../../../ecs/components';
 import { defaultOpticsSpill } from './optics-spill';
 import { defaultLaserParams } from './modes';
 import {
@@ -11,7 +11,7 @@ import {
   unpackLaserProfilePack,
   type BeamModel,
 } from './beam-model';
-import { defaultSurfaceMaterial } from './surface-material';
+import { defaultSurfaceMaterial } from '../surface/surface-material';
 
 function emitter(partial: Partial<LightEmitter> & Pick<LightEmitter, 'params'>): LightEmitter {
   return {

@@ -1,10 +1,12 @@
 /**
- * Browser-persisted last-used Quality + Atmosphere + GlobalSunVolumetrics settings.
- * Named Low→Ultra packs stay static in code; this only remembers the live
- * values the user last had (including Custom tweaks).
+ * Browser-persisted global graphics preferences (Quality + sky render + GlobalSun).
+ * These are project-level — not authored per scene. Civil time / site stay on the
+ * scene's Atmosphere resource.
  */
 
 import {
+  createDefaultAtmosphereSettings,
+  createDefaultGlobalSunVolumetrics,
   normalizeAtmosphereSettings,
   normalizeGlobalSunVolumetrics,
   normalizeQualityResource,
@@ -28,8 +30,20 @@ export interface PreferencesStorage {
 export interface RenderPreferences {
   version: typeof RENDER_PREFERENCES_VERSION;
   quality: Quality;
+  /**
+   * Atmosphere *render* look (samples, exposure, LUTs, textures).
+   * Civil time / site / enabled are scene-owned and preserved on scene load.
+   */
   atmosphere: AtmosphereSettings;
   globalSunVolumetrics?: GlobalSunVolumetrics;
+}
+
+export interface ApplyRenderPreferencesOptions {
+  /**
+   * When true (scene load), keep the world's Atmosphere civil time / site / enabled
+   * and only overlay render/look fields from prefs.
+   */
+  preserveSceneTimeOfDay?: boolean;
 }
 
 function browserStorage(): PreferencesStorage | null {
@@ -68,13 +82,16 @@ export function normalizeRenderPreferences(raw: unknown): RenderPreferences | nu
   const obj = raw as Partial<RenderPreferences>;
   if (obj.version !== RENDER_PREFERENCES_VERSION) return null;
   if (!obj.quality || typeof obj.quality !== 'object') return null;
-  if (!obj.atmosphere || typeof obj.atmosphere !== 'object') return null;
   const quality = normalizeQualityResource(obj.quality);
   const atmosphere = normalizeAtmosphereSettings({
-    ...obj.atmosphere,
+    ...(obj.atmosphere && typeof obj.atmosphere === 'object'
+      ? obj.atmosphere
+      : createDefaultAtmosphereSettings()),
     skyboxHdrColors: quality.colorProfile === 'hdr',
   });
-  const globalSunVolumetrics = normalizeGlobalSunVolumetrics(obj.globalSunVolumetrics);
+  const globalSunVolumetrics = normalizeGlobalSunVolumetrics(
+    obj.globalSunVolumetrics ?? createDefaultGlobalSunVolumetrics(),
+  );
   return {
     version: RENDER_PREFERENCES_VERSION,
     quality: refreshQualityPresets(quality, atmosphere.qualityPreset),
@@ -108,7 +125,7 @@ export function writeRenderPreferences(
   }
 }
 
-/** Snapshot live world resources into browser preferences. */
+/** Snapshot live world graphics into browser preferences. */
 export function captureRenderPreferences(world: World): RenderPreferences {
   return {
     version: RENDER_PREFERENCES_VERSION,
@@ -118,24 +135,52 @@ export function captureRenderPreferences(world: World): RenderPreferences {
   };
 }
 
-/** Apply remembered Quality + Atmosphere onto a world (demo / unsaved session). */
+/**
+ * Merge prefs Atmosphere render fields onto a scene Atmosphere, keeping civil
+ * time / site / enabled from the scene.
+ */
+export function mergeAtmosphereKeepSceneTimeOfDay(
+  sceneAtmosphere: AtmosphereSettings,
+  prefsAtmosphere: AtmosphereSettings,
+): AtmosphereSettings {
+  return normalizeAtmosphereSettings({
+    ...prefsAtmosphere,
+    enabled: sceneAtmosphere.enabled,
+    latitudeDeg: sceneAtmosphere.latitudeDeg,
+    longitudeDeg: sceneAtmosphere.longitudeDeg,
+    timezoneOffsetHours: sceneAtmosphere.timezoneOffsetHours,
+    year: sceneAtmosphere.year,
+    month: sceneAtmosphere.month,
+    day: sceneAtmosphere.day,
+    hour: sceneAtmosphere.hour,
+    minute: sceneAtmosphere.minute,
+    timeAnimating: sceneAtmosphere.timeAnimating,
+    timeSpeedHoursPerSecond: sceneAtmosphere.timeSpeedHoursPerSecond,
+    skyboxHdrColors: prefsAtmosphere.skyboxHdrColors,
+  });
+}
+
+/** Apply remembered global graphics onto a world. */
 export function applyRenderPreferences(
   world: World,
   prefs: RenderPreferences | null | undefined,
+  opts?: ApplyRenderPreferencesOptions,
 ): World {
   if (!prefs) return world;
   const quality = normalizeQualityResource(prefs.quality);
-  const atmosphere = normalizeAtmosphereSettings({
+  const prefsAtmosphere = normalizeAtmosphereSettings({
     ...prefs.atmosphere,
     skyboxHdrColors: quality.colorProfile === 'hdr',
   });
+  const atmosphere = opts?.preserveSceneTimeOfDay
+    ? mergeAtmosphereKeepSceneTimeOfDay(world.resources.Atmosphere, prefsAtmosphere)
+    : prefsAtmosphere;
+
   world.resources.Quality = refreshQualityPresets(quality, atmosphere.qualityPreset);
   world.resources.Atmosphere = atmosphere;
-  if (prefs.globalSunVolumetrics) {
-    world.resources.GlobalSunVolumetrics = normalizeGlobalSunVolumetrics(
-      prefs.globalSunVolumetrics,
-    );
-  }
+  world.resources.GlobalSunVolumetrics = normalizeGlobalSunVolumetrics(
+    prefs.globalSunVolumetrics ?? createDefaultGlobalSunVolumetrics(),
+  );
   world.bump();
   return world;
 }

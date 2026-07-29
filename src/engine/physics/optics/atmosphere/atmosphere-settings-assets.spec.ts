@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_MOON_TEXTURE_ID,
   DEFAULT_NIGHT_SKY_TEXTURE_ID,
-} from '../../assets/asset-manifest';
+} from '../../../assets/asset-manifest';
 import {
   createDefaultAtmosphereSettings,
   normalizeAtmosphereSettings,

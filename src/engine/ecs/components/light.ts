@@ -1,27 +1,27 @@
 import { clampRange, clampUnit } from '../../math/clamp';
-import type { ModeParams } from '../../physics/optics/modes';
+import type { ModeParams } from '../../physics/optics/beam/modes';
 import {
   defaultModeParams,
   normalizeModeParamsPublic,
-} from '../../physics/optics/modes';
+} from '../../physics/optics/beam/modes';
 import {
   apertureCouplingFromLegacyMaterial,
   type LegacyFixtureSurfaceMaterial,
-} from '../../physics/optics/surface-material';
+} from '../../physics/optics/surface/surface-material';
 import {
   defaultOpticsSpill,
   normalizeOpticsSpill,
   type OpticsSpillParams,
-} from '../../physics/optics/optics-spill';
-import { clampPowerW } from '../../physics/optics/power';
+} from '../../physics/optics/beam/optics-spill';
+import { clampPowerW } from '../../physics/optics/beam/power';
 import {
   defaultHdrAppearance,
   estimateIntensityLmFromSpectral,
   normalizeHdrAppearance,
-} from '../../physics/optics/light-appearance';
-import { wavelengthToRgb } from '../../physics/optics/wavelength';
+} from '../../physics/optics/surface/light-appearance';
+import { wavelengthToRgb } from '../../physics/optics/display/wavelength';
 
-export type { OpticsSpillParams } from '../../physics/optics/optics-spill';
+export type { OpticsSpillParams } from '../../physics/optics/beam/optics-spill';
 
 export interface LightEmitter {
   wavelengthNm: number;
@@ -110,7 +110,7 @@ export function defaultSunLightEmitter(): LightEmitter {
 }
 
 export function defaultLightEmitterForMode(
-  mode: import('../../physics/optics/modes').LightMode,
+  mode: import('../../physics/optics/beam/modes').LightMode,
 ): LightEmitter {
   if (mode === 'sun') return defaultSunLightEmitter();
   const base = defaultLightEmitter();

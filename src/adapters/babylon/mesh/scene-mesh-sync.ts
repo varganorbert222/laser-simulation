@@ -26,9 +26,9 @@ import {
   type Transform,
   type World,
 } from '@engine';
-import { DebugFloor } from '../debug-floor';
+import { DebugFloor } from './debug-floor';
 import { LightSelectionGizmos } from '../lights/light-selection-gizmo';
-import { StudioTransformGizmo } from '../transform-gizmo';
+import { StudioTransformGizmo } from '../gizmos/transform-gizmo';
 
 export class SceneMeshSync {
   readonly meshes = new Map<string, AbstractMesh>();

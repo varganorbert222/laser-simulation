@@ -2,6 +2,7 @@ export {
   downloadSceneJson,
   documentToWorld,
   readFileAsText,
+  stripGlobalGraphicsFromSceneDocument,
   worldToDocument,
   type SceneDocument,
 } from './scene-io';
@@ -34,9 +35,11 @@ export {
   captureRenderPreferences,
   createMemoryPreferencesStorage,
   defaultPreferencesStorage,
+  mergeAtmosphereKeepSceneTimeOfDay,
   normalizeRenderPreferences,
   readRenderPreferences,
   writeRenderPreferences,
+  type ApplyRenderPreferencesOptions,
   type PreferencesStorage,
   type RenderPreferences,
 } from './render-preferences';

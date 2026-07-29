@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { createDemoWorld } from '../../scene/demo-world';
-import { worldTransformSystem } from '../../ecs/systems/world-transform';
-import { gatherRenderPack } from '../../render/pack';
+import { createDemoWorld } from '../../../scene/demo-world';
+import { worldTransformSystem } from '../../../ecs/systems/world-transform';
+import { gatherRenderPack } from '../../../render/pack';
 import { normalizeAtmosphereSettings } from './atmosphere-settings';
 
 describe('atmosphere pack integration', () => {

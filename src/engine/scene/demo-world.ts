@@ -3,13 +3,13 @@ import { vec3 } from '../math/vec3';
 import { World } from '../ecs/world';
 import { createSceneEntity } from '../hierarchy/entity-factory';
 import { defaultFogVolume, defaultFluidVolume, defaultLightEmitter, defaultSmokeEmitter, defaultSunLightEmitter } from '../ecs/components';
-import { defaultMediaVolumeForKind } from '../physics/optics/media-optical-presets';
+import { defaultMediaVolumeForKind } from '../physics/optics/media/media-optical-presets';
 import {
   defaultGroundSurfaceMaterial,
   defaultSurfaceMaterial,
   surfaceMaterialFromPreset,
-} from '../physics/optics/surface-material';
-import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
+} from '../physics/optics/surface/surface-material';
+import { refreshSceneSunBinding } from '../physics/optics/scene/scene-sun';
 import { createQuality } from '../render/quality';
 
 /** Minimal starter scene: scene root, floor, and one sun. */

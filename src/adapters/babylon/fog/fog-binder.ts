@@ -117,7 +117,7 @@ export class FogBinder {
   private _frame: GatheredFrame | null = null;
   private _effectsReady = false;
 
-  /** Density atlases aligned with GatheredFrame.fogs / fluids slot order. */
+  /** Density atlases aligned with GatheredFrame.fogs slot order. */
   readonly densityAtlases: (RenderTargetTexture | null)[] = [null, null];
 
   constructor(scene: Scene) {
@@ -241,7 +241,7 @@ export class FogBinder {
   /** Step all active fog volumes; call before volumetric raymarch. Never throws into the render loop. */
   step(frame: GatheredFrame, dt: number): void {
     this._frame = frame;
-    this._activeFogs = (frame.fogs?.length ? frame.fogs : frame.fluids).slice(0, 2);
+    this._activeFogs = frame.fogs.slice(0, 2);
     this.densityAtlases[0] = null;
     this.densityAtlases[1] = null;
 

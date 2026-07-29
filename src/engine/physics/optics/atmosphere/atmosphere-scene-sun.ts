@@ -3,21 +3,21 @@
  * when Atmosphere.enabled. Creates a Sun if the scene has none.
  */
 
-import { defaultSunLightEmitter } from '../../ecs/components';
-import type { World } from '../../ecs/world';
-import { createSceneEntity } from '../../hierarchy/entity-factory';
-import { fromDirection } from '../../math/quat';
-import { length, normalize, scale, vec3 } from '../../math/vec3';
+import { defaultSunLightEmitter } from '../../../ecs/components';
+import type { World } from '../../../ecs/world';
+import { createSceneEntity } from '../../../hierarchy/entity-factory';
+import { fromDirection } from '../../../math/quat';
+import { length, normalize, scale, vec3 } from '../../../math/vec3';
 import { sunIrradianceRgb } from './atmosphere-model';
 import {
   resolveAtmosphereSolarPosition,
   type AtmosphereSettings,
 } from './atmosphere-settings';
-import { resolveSceneAmbientLevel } from './environment-lighting';
+import { resolveSceneAmbientLevel } from '../scene/environment-lighting';
 import {
   isSunEmitter,
   refreshSceneSunBinding,
-} from './scene-sun';
+} from '../scene/scene-sun';
 
 const SUN_SKY_DISTANCE_M = 12;
 

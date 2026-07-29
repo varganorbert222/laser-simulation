@@ -6,8 +6,8 @@ import type {
   MediaVolume,
   SmokeEmitter,
 } from '../ecs/components';
-import type { SurfaceMaterial } from '../physics/optics/surface-material';
-import { refreshSceneSunBinding } from '../physics/optics/scene-sun';
+import type { SurfaceMaterial } from '../physics/optics/surface/surface-material';
+import { refreshSceneSunBinding } from '../physics/optics/scene/scene-sun';
 import type { World } from '../ecs/world';
 import type { Command } from './stack';
 import { snapshotCommand } from './stack';

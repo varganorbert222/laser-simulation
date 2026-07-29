@@ -2,7 +2,7 @@
  * Global wind for GPU fluid force pass.
  * gustAmount === 0 → static direction×strength; >0 → host-side noise modulation.
  */
-import { clampRange, clampUnit } from '../../math/clamp';
+import { clampRange } from '../../math/clamp';
 import { length, normalize, type Vec3, vec3 } from '../../math/vec3';
 
 export interface WindEnvironment {
@@ -107,8 +107,4 @@ export function resolveWindForce(
     mag = Math.max(0, mag);
   }
   return [d[0] * mag, d[1] * mag, d[2] * mag];
-}
-
-export function clampWindCoupling(v: number, fallback = 1): number {
-  return clampUnit(v, fallback);
 }

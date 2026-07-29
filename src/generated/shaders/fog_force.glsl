@@ -19,7 +19,7 @@ uniform vec3 uContainerLinearAccel;
 uniform vec3 uContainerAngularVel;
 uniform vec3 uContainerCom;
 
-/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fluid/atlas.ts */
+/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fog/atlas.ts */
 
 uniform float uGridRes;
 uniform float uTilesX;

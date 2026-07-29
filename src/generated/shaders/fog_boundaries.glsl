@@ -7,7 +7,7 @@ uniform float uBoundaryPad;
 uniform float uMode; // 0 velocity (zero), 1 scalar (zero), 2 level-set (solid → +1)
 uniform float uBoundaryOpenTop; // 1 = open top outflow for smoke
 
-/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fluid/atlas.ts */
+/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fog/atlas.ts */
 
 uniform float uGridRes;
 uniform float uTilesX;

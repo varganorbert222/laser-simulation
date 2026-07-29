@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { surfaceBrdfWeights } from './beam-model';
+import { surfaceBrdfWeights } from '../beam/beam-model';
 import { defaultGroundSurfaceMaterial, surfaceMaterialFromPreset } from './surface-material';
-import { gaussianTem00Profile } from './laser';
+import { gaussianTem00Profile } from '../beam/laser';
 import { laserSpotTerms } from './surface-spot';
 
 describe('surface spot BRDF', () => {

@@ -3,7 +3,6 @@ import { defaultFogVolume, normalizeFogVolume } from '../../ecs/components/fog';
 import { defaultFluidVolume, normalizeFluidVolume } from '../../ecs/components/fluid';
 import { defaultFogPreset } from '../fog/presets';
 import { applyWaterPreset } from './water-presets';
-import { jacobiIterationsForLadder } from './presets';
 import { particleCountForFill } from './sph-sim';
 
 describe('FogVolume normalize', () => {
@@ -75,12 +74,5 @@ describe('particleCountForFill', () => {
     const fine = particleCountForFill(half, 0.5, 0.04);
     const coarse = particleCountForFill(half, 0.5, 0.12);
     expect(fine).toBeGreaterThan(coarse);
-  });
-});
-
-describe('jacobiIterationsForLadder', () => {
-  it('scales with quality', () => {
-    expect(jacobiIterationsForLadder('low')).toBe(12);
-    expect(jacobiIterationsForLadder('ultra')).toBe(32);
   });
 });

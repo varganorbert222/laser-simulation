@@ -33,6 +33,9 @@ import {
   type ColorProfile,
   type TonemapMode,
   type LensFlareGroupTune,
+  type LensFlareOptics,
+  type LensFlareElement,
+  type LensFlareElementKind,
 } from '@engine';
 import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
@@ -49,7 +52,7 @@ import {
   patchSelectedComponents,
   selectionComponentPrimary,
 } from '../editor/patch-component';
-import type { HierarchySelectEvent } from '../../shared/editor/hierarchy-panel/hierarchy-panel.component';
+import type { HierarchySelectEvent } from '../editor/hierarchy.types';
 
 /**
  * Thin façade for templates — delegates to domain editor services.
@@ -397,6 +400,30 @@ export class EditorFacade {
 
   patchLensFlareSun(partial: Partial<LensFlareGroupTune>): void {
     this.session.patchLensFlareSun(partial);
+  }
+
+  patchLensFlareOptics(
+    partial: Partial<Omit<LensFlareOptics, 'elements'>> & {
+      elements?: LensFlareElement[];
+    },
+  ): void {
+    this.session.patchLensFlareOptics(partial);
+  }
+
+  addLensFlareElement(kind: LensFlareElementKind = 'ghost'): void {
+    this.session.addLensFlareElement(kind);
+  }
+
+  removeLensFlareElement(index: number): void {
+    this.session.removeLensFlareElement(index);
+  }
+
+  patchLensFlareElement(index: number, partial: Partial<LensFlareElement>): void {
+    this.session.patchLensFlareElement(index, partial);
+  }
+
+  moveLensFlareElement(from: number, to: number): void {
+    this.session.moveLensFlareElement(from, to);
   }
 
   setTonemapMode(mode: TonemapMode): void {

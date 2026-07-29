@@ -5,7 +5,7 @@ import {
   SMOKE_EMISSION_RATE_MIN,
   SMOKE_PLUME_LENGTH_M_MAX,
   SMOKE_PLUME_LENGTH_M_MIN,
-} from '../../physics/optics/smoke-plume';
+} from '../../physics/optics/media/smoke-plume';
 import { clampRange } from '../../math/clamp';
 
 /**

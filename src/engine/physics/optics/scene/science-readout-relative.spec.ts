@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildScienceReadout, RELATIVE_BRIGHTNESS_REF_POINTER } from './science-readout';
-import { relativeBeamBrightness, relativeDotBrightness } from './laser-brightness';
+import { relativeBeamBrightness, relativeDotBrightness } from '../display/laser-brightness';
 
 describe('science readout relative brightness', () => {
   it('exposes Laser Beam and Dot relative ratios vs peak and 532 nm pointer', () => {

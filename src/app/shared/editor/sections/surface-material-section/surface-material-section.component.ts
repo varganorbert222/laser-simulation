@@ -7,8 +7,8 @@ import {
   type SurfaceFinishPreset,
   type SurfaceMaterial,
 } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { LocalizationService } from '../../../core/services/localization.service';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 @Component({
   selector: 'app-surface-material-section',

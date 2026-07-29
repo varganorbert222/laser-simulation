@@ -20,8 +20,8 @@ import {
   evaluateDisplayResponse,
   type DisplayResponseCurve,
 } from './display-response-curve';
-import { clampAmbientLevel, ENVIRONMENT_AMBIENT_DEFAULT } from './environment-lighting';
-import { clamp01, clampRange } from '../../math/clamp';
+import { clampAmbientLevel, ENVIRONMENT_AMBIENT_DEFAULT } from '../scene/environment-lighting';
+import { clamp01, clampRange } from '../../../math/clamp';
 import {
   PHOTOPIC_LUMINOUS_EFFICACY,
   PHOTOPIC_NM_MAX,

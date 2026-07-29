@@ -15,7 +15,7 @@ import {
   migrateLegacyPresetId,
   type MediaLayer,
   type MediaPresetId,
-} from './atmosphere-climate';
+} from '../atmosphere/atmosphere-climate';
 import type { ScatterModel } from './scatter-model';
 import {
   clampMieAnisotropy,
@@ -336,10 +336,10 @@ export {
   migrateLegacyPresetId,
   presetsForLayer,
   sampleLayeredMediaRates,
-} from './atmosphere-climate';
+} from '../atmosphere/atmosphere-climate';
 export type {
   LayeredMediaSampleInput,
   LayeredMediaSampleResult,
   MediaLayer,
   MediaPresetId,
-} from './atmosphere-climate';
+} from '../atmosphere/atmosphere-climate';

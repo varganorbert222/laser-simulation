@@ -6,8 +6,8 @@ import { normalize, sub } from '../math/vec3';
 import {
   beamModelFromEmitter,
   beamModelToGpuParams,
-} from '../physics/optics/beam-model';
-import { mediaSpectralExponent } from '../physics/optics/scatter-model';
+} from '../physics/optics/beam/beam-model';
+import { mediaSpectralExponent } from '../physics/optics/media/scatter-model';
 import {
   GPU_LAYER_INTERIOR,
   GPU_LAYER_OUTDOOR,
@@ -15,27 +15,27 @@ import {
   GPU_SCATTER_MODEL_CLIMATE,
   GPU_SCATTER_MODEL_RAYLEIGH,
   GPU_SCATTER_MODEL_TYNDALL,
-} from '../physics/optics/atmosphere-climate';
-import { isClimatePreset } from '../physics/optics/media-optical-presets';
+} from '../physics/optics/atmosphere/atmosphere-climate';
+import { isClimatePreset } from '../physics/optics/media/media-optical-presets';
 import {
   environmentSunDirUnit,
   environmentVolumetricHemiRgb,
   environmentVolumetricSunRgb,
   resolveSceneAmbientLevel,
-} from '../physics/optics/environment-lighting';
-import { normalizeGlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
+} from '../physics/optics/scene/environment-lighting';
+import { normalizeGlobalSunVolumetrics } from '../physics/optics/scene/global-sun-volumetrics';
 import {
   skyIrradianceApprox,
   sunIrradianceRgb,
-} from '../physics/optics/atmosphere-model';
-import { resolveAtmosphereSolarPosition } from '../physics/optics/atmosphere-settings';
-import { isSunEmitter, refreshSceneSunBinding } from '../physics/optics/scene-sun';
-import { resolveEmitterAppearance } from '../physics/optics/light-appearance';
-import { resolveVisionBrightnessOpts } from '../physics/optics/display-vision';
+} from '../physics/optics/atmosphere/atmosphere-model';
+import { resolveAtmosphereSolarPosition } from '../physics/optics/atmosphere/atmosphere-settings';
+import { isSunEmitter, refreshSceneSunBinding } from '../physics/optics/scene/scene-sun';
+import { resolveEmitterAppearance } from '../physics/optics/surface/light-appearance';
+import { resolveVisionBrightnessOpts } from '../physics/optics/display/display-vision';
 import {
   PLUME_DISABLED_CONE_COS,
   coneCosFromHalfAngleDeg,
-} from '../physics/optics/smoke-plume';
+} from '../physics/optics/media/smoke-plume';
 import {
   fluidAdvectionModeIndex,
   fluidVorticityStrengthForMode,
@@ -44,7 +44,7 @@ import {
   shadowStepsForQuality,
 } from './quality';
 import { MAX_GPU_FOGS, MAX_GPU_LIGHTS, MAX_GPU_MEDIA, MAX_GPU_WATERS, MAX_LENS_FLARES } from './contract/slots';
-import { fluidAtlasLayout } from '../physics/fluid/atlas';
+import { fogAtlasLayout } from '../physics/fog/atlas';
 import { resolveGravityAccel } from '../physics/fluid/gravity-environment';
 import { resolveWindForce } from '../physics/fluid/wind-environment';
 import { particleCountForFill } from '../physics/fluid/sph-sim';
@@ -117,11 +117,6 @@ export interface GpuMedia {
   plumeLengthM: number;
 }
 
-/** @deprecated Prefer GpuFog; kept as volumetric fog slot payload (kind always smoke). */
-export const GPU_FLUID_KIND_SMOKE = 0;
-/** @deprecated Water is SPH GpuWater — not packed as GpuFluid. */
-export const GPU_FLUID_KIND_WATER = 1;
-
 /** Grid NS fog / smoke volume for FogBinder + raymarch. */
 export interface GpuFog {
   entityId: string;
@@ -157,14 +152,6 @@ export interface GpuFog {
   windCoupling: number;
   inertiaCoupling: number;
 }
-
-/** @deprecated Alias — FogBinder still reads `fluids` / GpuFluid.kind. */
-export type GpuFluid = GpuFog & {
-  kind: number;
-  fillHeight: number;
-  causticStrength: number;
-  foamStrength: number;
-};
 
 /** Analytical water tank for WaterOpticsBinder. */
 export interface GpuWater {
@@ -211,11 +198,6 @@ export interface GatheredFrame {
   fogs: GpuFog[];
   /** SPH water tanks. */
   waters: GpuWater[];
-  /**
-   * @deprecated Compatibility shim for FogBinder / volumetric fog slots.
-   * Same as fogs with kind=SMOKE.
-   */
-  fluids: GpuFluid[];
   cameraPosition: Vec3;
   timeS: number;
   quality: {
@@ -462,7 +444,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
       ? getBasis(xform.matrix)
       : { x: [1, 0, 0] as Vec3, y: [0, 1, 0] as Vec3, z: [0, 0, 1] as Vec3 };
     const gridRes = qEarly.fluidGridRes || vol.gridRes;
-    const layout = fluidAtlasLayout(gridRes);
+    const layout = fogAtlasLayout(gridRes);
     const smoke = world.get(id, 'SmokeEmitter');
     let emissionRate = vol.emissionRate;
     let coneCos = PLUME_DISABLED_CONE_COS;
@@ -555,14 +537,6 @@ export function gatherRenderPack(world: World): GatheredFrame {
     });
   }
 
-  const fluids: GpuFluid[] = fogs.map((fog) => ({
-    ...fog,
-    kind: GPU_FLUID_KIND_SMOKE,
-    fillHeight: 0,
-    causticStrength: 0,
-    foamStrength: 0,
-  }));
-
   const q = world.resources.Quality;
   const timeS = world.resources.Time.elapsedS;
   const gravity = resolveGravityAccel(world.resources.GravityEnvironment);
@@ -654,7 +628,6 @@ export function gatherRenderPack(world: World): GatheredFrame {
     media,
     fogs,
     waters,
-    fluids,
     cameraPosition: camPos,
     timeS,
     quality: {

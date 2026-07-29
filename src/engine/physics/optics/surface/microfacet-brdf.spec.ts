@@ -10,7 +10,7 @@ import {
   gaussianTem00Profile,
   m2FromParallelness,
   peakIrradiance,
-} from './laser';
+} from '../beam/laser';
 import { laserSpotTerms } from './surface-spot';
 
 describe('TEM00 / étendue', () => {

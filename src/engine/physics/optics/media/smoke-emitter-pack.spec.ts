@@ -1,14 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { defaultSmokeEmitter, normalizeSmokeEmitter } from '../../ecs/components';
-import { World } from '../../ecs/world';
-import { createSmokeEmitterCommand } from '../../commands/hierarchy-commands';
-import { gatherRenderPack } from '../../render/pack';
+import { defaultSmokeEmitter, normalizeSmokeEmitter } from '../../../ecs/components';
+import { World } from '../../../ecs/world';
+import { createSmokeEmitterCommand } from '../../../commands/hierarchy-commands';
+import { gatherRenderPack } from '../../../render/pack';
 import { PLUME_DISABLED_CONE_COS, coneCosFromHalfAngleDeg } from './smoke-plume';
-import { createSceneEntity } from '../../hierarchy/entity-factory';
+import { createSceneEntity } from '../../../hierarchy/entity-factory';
 import { defaultMediaVolumeForKind } from './media-optical-presets';
-import { identity as matIdentity } from '../../math/mat4';
-import { worldTransformSystem } from '../../ecs/systems/world-transform';
-import { GPU_FLUID_KIND_SMOKE } from '../../render/pack';
+import { identity as matIdentity } from '../../../math/mat4';
+import { worldTransformSystem } from '../../../ecs/systems/world-transform';
 
 describe('SmokeEmitter pack / normalize', () => {
   it('normalizeSmokeEmitter fills defaults', () => {
@@ -42,7 +41,7 @@ describe('SmokeEmitter pack / normalize', () => {
     worldTransformSystem(world);
     const pack = gatherRenderPack(world);
     expect(pack.media.some((m) => m.coneCos > 0)).toBe(false);
-    const f = pack.fluids.find((x) => x.kind === GPU_FLUID_KIND_SMOKE);
+    const f = pack.fogs.find((x) => x.emissionRate > 0 && x.coneCos > 0);
     expect(f).toBeTruthy();
     expect(f!.emissionRate).toBeGreaterThan(0);
     expect(f!.coneCos).toBeCloseTo(coneCosFromHalfAngleDeg(25), 5);

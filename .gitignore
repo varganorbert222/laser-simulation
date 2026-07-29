@@ -42,5 +42,8 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Blender autosave
+*.blend1
+
 # Binary media under assets/ (keep folders + README via tracked .gitkeep)
 /assets/**/*.{glb,gltf,bin,png,jpg,jpeg,webp,hdr,exr,ktx,ktx2,wav,ogg,mp3,flac,m4a}

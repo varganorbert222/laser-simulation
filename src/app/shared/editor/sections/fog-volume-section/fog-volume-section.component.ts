@@ -1,10 +1,10 @@
 import { Component, inject, input } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { type FogVolume, type Vec3Editable } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { LocalizationService } from '../../../core/services/localization.service';
-import { ColorFieldComponent } from '../color-field/color-field.component';
-import { Vec3FieldComponent } from '../vec3-field/vec3-field.component';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { ColorFieldComponent } from '../../fields/color-field/color-field.component';
+import { Vec3FieldComponent } from '../../fields/vec3-field/vec3-field.component';
 
 @Component({
   selector: 'app-fog-volume-section',

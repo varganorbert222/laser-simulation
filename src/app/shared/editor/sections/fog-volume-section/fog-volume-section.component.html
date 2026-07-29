@@ -11,170 +11,190 @@
     />
   </label>
 
-  <app-vec3-field
-    [label]="l10n.t('halfExtents')"
-    [value]="halfExtentsVec()"
-    (valueChange)="onHalfExtents($event)"
-  />
+  <details class="section" open>
+    <summary>{{ l10n.t('fogColor') }}</summary>
+    <div class="section-body">
+      <app-vec3-field
+        [label]="l10n.t('halfExtents')"
+        [value]="halfExtentsVec()"
+        (valueChange)="onHalfExtents($event)"
+      />
 
-  <app-color-field [label]="l10n.t('fogColor')" [rgb]="fog().color" (rgbChange)="onColor($event)" />
-
-  <label>
-    {{ l10n.t('fogViscosity') }}
-    <input
-      type="range"
-      min="0"
-      max="2"
-      step="0.01"
-      [value]="fog().viscosity"
-      (input)="onNumber('viscosity', $any($event.target).value)"
-    />
-    <span class="val">{{ fog().viscosity | number: '1.0-3' }}</span>
-  </label>
-
-  <label>
-    {{ l10n.t('fogDissipation') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [value]="fog().dissipation"
-      (input)="onNumber('dissipation', $any($event.target).value)"
-    />
-    <span class="val">{{ fog().dissipation | number: '1.0-3' }}</span>
-  </label>
-
-  <label>
-    {{ l10n.t('fogBuoyancy') }}
-    <input
-      type="range"
-      min="0"
-      max="5"
-      step="0.05"
-      [value]="fog().buoyancy"
-      (input)="onNumber('buoyancy', $any($event.target).value)"
-    />
-    <span class="val">{{ fog().buoyancy | number: '1.0-2' }}</span>
-  </label>
-
-  <label>
-    {{ l10n.t('fogVorticity') }}
-    <input
-      type="range"
-      min="0"
-      max="5"
-      step="0.05"
-      [value]="fog().vorticityStrength"
-      (input)="onNumber('vorticityStrength', $any($event.target).value)"
-    />
-    <span class="val">{{ fog().vorticityStrength | number: '1.0-2' }}</span>
-  </label>
-
-  <label>
-    {{ l10n.t('fogEmission') }}
-    <input
-      type="range"
-      min="0"
-      max="5"
-      step="0.05"
-      [value]="fog().emissionRate"
-      (input)="onNumber('emissionRate', $any($event.target).value)"
-    />
-    <span class="val">{{ fog().emissionRate | number: '1.0-2' }}</span>
-  </label>
-
-  <label>
-    {{ l10n.t('fogMaxDensity') }}
-    <input
-      type="range"
-      min="0.05"
-      max="4"
-      step="0.05"
-      [value]="fog().maxDensity"
-      (input)="onNumber('maxDensity', $any($event.target).value)"
-    />
-    <span class="val">{{ fog().maxDensity | number: '1.0-2' }}</span>
-  </label>
-
-  <div class="kind-row">
-    <span>{{ l10n.t('fogBoundaryMode') }}</span>
-    <div class="kind-toggle">
-      <button
-        type="button"
-        class="kind-btn"
-        [class.active]="fog().boundaryMode === 'closed'"
-        (click)="onBoundaryMode('closed')"
-      >
-        {{ l10n.t('fogBoundaryClosed') }}
-      </button>
-      <button
-        type="button"
-        class="kind-btn"
-        [class.active]="fog().boundaryMode === 'openTop'"
-        (click)="onBoundaryMode('openTop')"
-      >
-        {{ l10n.t('fogBoundaryOpenTop') }}
-      </button>
+      <app-color-field [label]="l10n.t('fogColor')" [rgb]="fog().color" (rgbChange)="onColor($event)" />
     </div>
-  </div>
+  </details>
 
-  <label>
-    {{ l10n.t('fogWindCoupling') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.05"
-      [value]="fog().windCoupling"
-      (input)="onNumber('windCoupling', $any($event.target).value)"
-    />
-  </label>
-  <label>
-    {{ l10n.t('fogInertiaCoupling') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.05"
-      [value]="fog().inertiaCoupling"
-      (input)="onNumber('inertiaCoupling', $any($event.target).value)"
-    />
-  </label>
+  <details class="section" open>
+    <summary>{{ l10n.t('fogViscosity') }}</summary>
+    <div class="section-body">
+      <label>
+        {{ l10n.t('fogViscosity') }}
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="0.01"
+          [value]="fog().viscosity"
+          (input)="onNumber('viscosity', $any($event.target).value)"
+        />
+        <span class="val">{{ fog().viscosity | number: '1.0-3' }}</span>
+      </label>
 
-  <label>
-    {{ l10n.t('fogOpticalDensity') }}
-    <input
-      type="range"
-      min="0"
-      max="5"
-      step="0.05"
-      [value]="fog().opticalDensity"
-      (input)="onNumber('opticalDensity', $any($event.target).value)"
-    />
-  </label>
+      <label>
+        {{ l10n.t('fogDissipation') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="fog().dissipation"
+          (input)="onNumber('dissipation', $any($event.target).value)"
+        />
+        <span class="val">{{ fog().dissipation | number: '1.0-3' }}</span>
+      </label>
 
-  <label>
-    {{ l10n.t('fogScatter') }}
-    <input
-      type="range"
-      min="0"
-      max="2"
-      step="0.01"
-      [value]="fog().scatter"
-      (input)="onNumber('scatter', $any($event.target).value)"
-    />
-  </label>
+      <label>
+        {{ l10n.t('fogBuoyancy') }}
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.05"
+          [value]="fog().buoyancy"
+          (input)="onNumber('buoyancy', $any($event.target).value)"
+        />
+        <span class="val">{{ fog().buoyancy | number: '1.0-2' }}</span>
+      </label>
 
-  <label>
-    {{ l10n.t('fogAbsorb') }}
-    <input
-      type="range"
-      min="0"
-      max="2"
-      step="0.01"
-      [value]="fog().absorption"
-      (input)="onNumber('absorption', $any($event.target).value)"
-    />
-  </label>
+      <label>
+        {{ l10n.t('fogVorticity') }}
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.05"
+          [value]="fog().vorticityStrength"
+          (input)="onNumber('vorticityStrength', $any($event.target).value)"
+        />
+        <span class="val">{{ fog().vorticityStrength | number: '1.0-2' }}</span>
+      </label>
+
+      <label>
+        {{ l10n.t('fogEmission') }}
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.05"
+          [value]="fog().emissionRate"
+          (input)="onNumber('emissionRate', $any($event.target).value)"
+        />
+        <span class="val">{{ fog().emissionRate | number: '1.0-2' }}</span>
+      </label>
+
+      <label>
+        {{ l10n.t('fogMaxDensity') }}
+        <input
+          type="range"
+          min="0.05"
+          max="4"
+          step="0.05"
+          [value]="fog().maxDensity"
+          (input)="onNumber('maxDensity', $any($event.target).value)"
+        />
+        <span class="val">{{ fog().maxDensity | number: '1.0-2' }}</span>
+      </label>
+    </div>
+  </details>
+
+  <details class="section">
+    <summary>{{ l10n.t('fogBoundaryMode') }}</summary>
+    <div class="section-body">
+      <div class="kind-row">
+        <span>{{ l10n.t('fogBoundaryMode') }}</span>
+        <div class="kind-toggle">
+          <button
+            type="button"
+            class="kind-btn"
+            [class.active]="fog().boundaryMode === 'closed'"
+            (click)="onBoundaryMode('closed')"
+          >
+            {{ l10n.t('fogBoundaryClosed') }}
+          </button>
+          <button
+            type="button"
+            class="kind-btn"
+            [class.active]="fog().boundaryMode === 'openTop'"
+            (click)="onBoundaryMode('openTop')"
+          >
+            {{ l10n.t('fogBoundaryOpenTop') }}
+          </button>
+        </div>
+      </div>
+
+      <label>
+        {{ l10n.t('fogWindCoupling') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="fog().windCoupling"
+          (input)="onNumber('windCoupling', $any($event.target).value)"
+        />
+      </label>
+      <label>
+        {{ l10n.t('fogInertiaCoupling') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          [value]="fog().inertiaCoupling"
+          (input)="onNumber('inertiaCoupling', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('fogOpticalDensity') }}</summary>
+    <div class="section-body">
+      <label>
+        {{ l10n.t('fogOpticalDensity') }}
+        <input
+          type="range"
+          min="0"
+          max="5"
+          step="0.05"
+          [value]="fog().opticalDensity"
+          (input)="onNumber('opticalDensity', $any($event.target).value)"
+        />
+      </label>
+
+      <label>
+        {{ l10n.t('fogScatter') }}
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="0.01"
+          [value]="fog().scatter"
+          (input)="onNumber('scatter', $any($event.target).value)"
+        />
+      </label>
+
+      <label>
+        {{ l10n.t('fogAbsorb') }}
+        <input
+          type="range"
+          min="0"
+          max="2"
+          step="0.01"
+          [value]="fog().absorption"
+          (input)="onNumber('absorption', $any($event.target).value)"
+        />
+      </label>
+    </div>
+  </details>
 </section>

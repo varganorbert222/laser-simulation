@@ -8,8 +8,8 @@ import {
   normalizeDisplayResponseCurve,
   type DisplayResponseCurve,
 } from './display-response-curve';
-import type { AtmosphereSettings } from './atmosphere-settings';
-import { resolveSceneAmbientLevel } from './environment-lighting';
+import type { AtmosphereSettings } from '../atmosphere/atmosphere-settings';
+import { resolveSceneAmbientLevel } from '../scene/environment-lighting';
 import type { VisionBrightnessOpts } from './laser-brightness';
 
 export interface DisplayVision {

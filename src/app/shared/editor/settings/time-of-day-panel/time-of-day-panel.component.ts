@@ -6,9 +6,9 @@ import {
   type AtmosphereSeasonPresetId,
   type AtmosphereTimePresetId,
 } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { LocalizationService } from '../../../core/services/localization.service';
-import type { LocaleKey } from '../../../i18n/messages';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import type { LocaleKey } from '../../../../i18n/messages';
 
 @Component({
   selector: 'app-time-of-day-panel',

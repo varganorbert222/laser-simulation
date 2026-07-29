@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { climateOpticalRates, CLIMATE_OUTDOOR_HAZE_FLOOR_M } from './atmosphere-climate';
+import { climateOpticalRates, CLIMATE_OUTDOOR_HAZE_FLOOR_M } from '../atmosphere/atmosphere-climate';
 import {
   displayLuminousPower,
   physicalLuminousScale,
-} from './laser-brightness';
+} from '../display/laser-brightness';
 
 describe('150 mW green night visibility (clearNight)', () => {
   const powerW = 0.15;

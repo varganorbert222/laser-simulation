@@ -14,20 +14,20 @@ import {
   normalizeEditorTooling,
   normalizeEditorSelection,
 } from './resources';
-import type { DisplayVision } from '../physics/optics/display-vision';
-import { createDefaultDisplayVision } from '../physics/optics/display-vision';
-import type { EnvironmentLighting } from '../physics/optics/environment-lighting';
-import { createDefaultEnvironmentLighting } from '../physics/optics/environment-lighting';
-import type { AtmosphereSettings } from '../physics/optics/atmosphere-settings';
-import { createDefaultAtmosphereSettings } from '../physics/optics/atmosphere-settings';
-import type { SceneSunBinding } from '../physics/optics/scene-sun';
-import { createDefaultSceneSunBinding } from '../physics/optics/scene-sun';
+import type { DisplayVision } from '../physics/optics/display/display-vision';
+import { createDefaultDisplayVision } from '../physics/optics/display/display-vision';
+import type { EnvironmentLighting } from '../physics/optics/scene/environment-lighting';
+import { createDefaultEnvironmentLighting } from '../physics/optics/scene/environment-lighting';
+import type { AtmosphereSettings } from '../physics/optics/atmosphere/atmosphere-settings';
+import { createDefaultAtmosphereSettings } from '../physics/optics/atmosphere/atmosphere-settings';
+import type { SceneSunBinding } from '../physics/optics/scene/scene-sun';
+import { createDefaultSceneSunBinding } from '../physics/optics/scene/scene-sun';
 import type { GravityEnvironment } from '../physics/fluid/gravity-environment';
 import { createDefaultGravityEnvironment } from '../physics/fluid/gravity-environment';
 import type { WindEnvironment } from '../physics/fluid/wind-environment';
 import { createDefaultWindEnvironment } from '../physics/fluid/wind-environment';
-import type { GlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
-import { createDefaultGlobalSunVolumetrics } from '../physics/optics/global-sun-volumetrics';
+import type { GlobalSunVolumetrics } from '../physics/optics/scene/global-sun-volumetrics';
+import { createDefaultGlobalSunVolumetrics } from '../physics/optics/scene/global-sun-volumetrics';
 import type { Quality } from '../render/quality';
 import { createQuality } from '../render/quality';
 import type { GatheredFrame } from '../render/pack';

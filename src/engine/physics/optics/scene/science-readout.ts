@@ -1,10 +1,10 @@
 import {
   divergenceMrad,
   rayleighRange,
-} from './laser';
-import { propagateLaserWaists } from './beam-optics';
-import { normalizeLaserParams } from './modes';
-import type { ModeParams } from './modes';
+} from '../beam/laser';
+import { propagateLaserWaists } from '../beam/beam-optics';
+import { normalizeLaserParams } from '../beam/modes';
+import type { ModeParams } from '../beam/modes';
 import {
   eyeAdaptationGainFromAmbient,
   laserBeamLuminousProduct,
@@ -14,21 +14,21 @@ import {
   relativeBeamBrightness,
   relativeDotBrightness,
   type VisionBrightnessOpts,
-} from './laser-brightness';
+} from '../display/laser-brightness';
 import { ENVIRONMENT_AMBIENT_DEFAULT } from './environment-lighting';
 import {
   deriveFromWavelengthNm,
   rayleighScatterWeight,
   wavelengthToRgb,
-} from './wavelength';
-import type { OpticsSpillParams } from './optics-spill';
-import { hasOpticsSpill, normalizeOpticsSpill } from './optics-spill';
+} from '../display/wavelength';
+import type { OpticsSpillParams } from '../beam/optics-spill';
+import { hasOpticsSpill, normalizeOpticsSpill } from '../beam/optics-spill';
 import {
   isSpectralLightMode,
   resolveEmitterAppearance,
   resolveHdrChroma,
   type LightHdrAppearance,
-} from './light-appearance';
+} from '../surface/light-appearance';
 
 export type {
   LaserParams,
@@ -37,7 +37,7 @@ export type {
   OmniParams,
   ParallelParams,
   SpotParams,
-} from './modes';
+} from '../beam/modes';
 
 /** Classic calculator reference: 1 mW at photopic peak (V≈1). */
 export const RELATIVE_BRIGHTNESS_REF_PHOTOPIC = {
@@ -584,4 +584,4 @@ function buildHdrLampReadout(input: LightEmitterInput): ScienceReadout {
   };
 }
 
-export { POWER_PRESETS_W } from './power';
+export { POWER_PRESETS_W } from '../beam/power';

@@ -14,7 +14,7 @@ import {
 import {
   surfaceMaterialFromPreset,
   type SurfaceMaterial,
-} from '../../physics/optics/surface-material';
+} from '../../physics/optics/surface/surface-material';
 
 export type { WaterPresetId };
 

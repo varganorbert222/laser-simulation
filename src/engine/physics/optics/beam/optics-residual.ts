@@ -16,7 +16,7 @@
  * Pipeline: irradiance = core×(1−f) + f×residualDensity; BRDF is applied later.
  */
 
-import { smoothstep } from '../../math/smoothstep';
+import { smoothstep } from '../../../math/smoothstep';
 import { gaussianTem00Density } from './laser';
 
 /** Relative weights of residual lobes (sum ≈ 1). */

@@ -1,83 +1,94 @@
 <section class="block">
   <h3>{{ l10n.t('surfaceMaterial') }}</h3>
 
-  <div class="finish-row" [attr.title]="l10n.t('tipFixtureFinish')">
-    <span>{{ l10n.t('fixtureFinish') }}</span>
-    <div class="finish-toggle" role="group" [attr.aria-label]="l10n.t('fixtureFinish')">
-      @for (p of finishPresets; track p) {
-        <button
-          type="button"
-          class="finish-btn"
-          [class.active]="material().preset === p"
-          [disabled]="!editor.isEditMode()"
-          (click)="onFinishPreset(p)"
-        >
-          {{ finishLabel(p) }}
-        </button>
-      }
-      <button
-        type="button"
-        class="finish-btn"
-        [class.active]="material().preset === 'custom'"
-        [disabled]="!editor.isEditMode()"
-        (click)="onFinishPreset('custom')"
-      >
-        {{ l10n.t('finishCustom') }}
-      </button>
+  <details class="section" open>
+    <summary>{{ l10n.t('fixtureFinish') }}</summary>
+    <div class="section-body">
+      <div class="finish-row" [attr.title]="l10n.t('tipFixtureFinish')">
+        <span>{{ l10n.t('fixtureFinish') }}</span>
+        <div class="finish-toggle" role="group" [attr.aria-label]="l10n.t('fixtureFinish')">
+          @for (p of finishPresets; track p) {
+            <button
+              type="button"
+              class="finish-btn"
+              [class.active]="material().preset === p"
+              [disabled]="!editor.isEditMode()"
+              (click)="onFinishPreset(p)"
+            >
+              {{ finishLabel(p) }}
+            </button>
+          }
+          <button
+            type="button"
+            class="finish-btn"
+            [class.active]="material().preset === 'custom'"
+            [disabled]="!editor.isEditMode()"
+            (click)="onFinishPreset('custom')"
+          >
+            {{ l10n.t('finishCustom') }}
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-  <label [attr.title]="l10n.t('tipAlbedo')">
-    {{ l10n.t('albedo') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [value]="material().albedo"
-      [disabled]="!editor.isEditMode()"
-      (input)="onSurfaceParam('albedo', $any($event.target).value)"
-    />
-    <span class="value">{{ material().albedo | number: '1.2-2' }}</span>
-  </label>
-  <label [attr.title]="l10n.t('tipMetalness')">
-    {{ l10n.t('metalness') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [value]="material().metalness"
-      [disabled]="!editor.isEditMode()"
-      (input)="onSurfaceParam('metalness', $any($event.target).value)"
-    />
-    <span class="value">{{ material().metalness | number: '1.2-2' }}</span>
-  </label>
-  <label [attr.title]="l10n.t('tipRoughness')">
-    {{ l10n.t('roughness') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [value]="material().roughness"
-      [disabled]="!editor.isEditMode()"
-      (input)="onSurfaceParam('roughness', $any($event.target).value)"
-    />
-    <span class="value">{{ material().roughness | number: '1.2-2' }}</span>
-  </label>
-  <label [attr.title]="l10n.t('tipTransmission')">
-    {{ l10n.t('transmission') }}
-    <input
-      type="range"
-      min="0"
-      max="1"
-      step="0.01"
-      [value]="material().transmission"
-      [disabled]="!editor.isEditMode()"
-      (input)="onSurfaceParam('transmission', $any($event.target).value)"
-    />
-    <span class="value">{{ material().transmission | number: '1.2-2' }}</span>
-  </label>
-  <p class="hint">{{ l10n.t('hintSurfaceMaterial') }}</p>
-  <p class="hint">{{ l10n.t('hintTransmission') }}</p>
+  </details>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('albedo') }} / {{ l10n.t('metalness') }} / {{ l10n.t('roughness') }}</summary>
+    <div class="section-body">
+      <label [attr.title]="l10n.t('tipAlbedo')">
+        {{ l10n.t('albedo') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="material().albedo"
+          [disabled]="!editor.isEditMode()"
+          (input)="onSurfaceParam('albedo', $any($event.target).value)"
+        />
+        <span class="value">{{ material().albedo | number: '1.2-2' }}</span>
+      </label>
+      <label [attr.title]="l10n.t('tipMetalness')">
+        {{ l10n.t('metalness') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="material().metalness"
+          [disabled]="!editor.isEditMode()"
+          (input)="onSurfaceParam('metalness', $any($event.target).value)"
+        />
+        <span class="value">{{ material().metalness | number: '1.2-2' }}</span>
+      </label>
+      <label [attr.title]="l10n.t('tipRoughness')">
+        {{ l10n.t('roughness') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="material().roughness"
+          [disabled]="!editor.isEditMode()"
+          (input)="onSurfaceParam('roughness', $any($event.target).value)"
+        />
+        <span class="value">{{ material().roughness | number: '1.2-2' }}</span>
+      </label>
+      <label [attr.title]="l10n.t('tipTransmission')">
+        {{ l10n.t('transmission') }}
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          [value]="material().transmission"
+          [disabled]="!editor.isEditMode()"
+          (input)="onSurfaceParam('transmission', $any($event.target).value)"
+        />
+        <span class="value">{{ material().transmission | number: '1.2-2' }}</span>
+      </label>
+      <p class="hint">{{ l10n.t('hintSurfaceMaterial') }}</p>
+      <p class="hint">{{ l10n.t('hintTransmission') }}</p>
+    </div>
+  </details>
 </section>

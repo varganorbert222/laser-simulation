@@ -14,20 +14,20 @@ import { clampRange } from '@engine';
 import { EngineHostService } from '../../core/services/engine-host.service';
 import { EditorFacade } from '../../core/services/editor-facade.service';
 import { LocalizationService } from '../../core/services/localization.service';
-import { RenderSettingsPanelComponent } from '../../shared/editor/render-settings-panel/render-settings-panel.component';
-import { PresentationSettingsPanelComponent } from '../../shared/editor/presentation-settings-panel/presentation-settings-panel.component';
-import { VisionSettingsPanelComponent } from '../../shared/editor/vision-settings-panel/vision-settings-panel.component';
-import { TimeOfDayPanelComponent } from '../../shared/editor/time-of-day-panel/time-of-day-panel.component';
-import { NoiseEditorComponent } from '../../shared/editor/noise-editor/noise-editor.component';
-import { AssetCatalogPanelComponent } from '../../shared/editor/asset-catalog-panel/asset-catalog-panel.component';
-import { StudioModalComponent } from '../../shared/editor/studio-modal/studio-modal.component';
+import { RenderSettingsPanelComponent } from '../../shared/editor/settings/render-settings-panel/render-settings-panel.component';
+import { PresentationSettingsPanelComponent } from '../../shared/editor/settings/presentation-settings-panel/presentation-settings-panel.component';
+import { VisionSettingsPanelComponent } from '../../shared/editor/settings/vision-settings-panel/vision-settings-panel.component';
+import { TimeOfDayPanelComponent } from '../../shared/editor/settings/time-of-day-panel/time-of-day-panel.component';
+import { NoiseEditorComponent } from '../../shared/editor/settings/noise-editor/noise-editor.component';
+import { AssetCatalogPanelComponent } from '../../shared/editor/settings/asset-catalog-panel/asset-catalog-panel.component';
+import { StudioModalComponent } from '../../shared/editor/shell/studio-modal/studio-modal.component';
 import {
   HierarchyPanelComponent,
-  type HierarchyContextAction,
-} from '../../shared/editor/hierarchy-panel/hierarchy-panel.component';
-import { InspectorPanelComponent } from '../../shared/editor/inspector-panel/inspector-panel.component';
-import { ScienceReadoutComponent } from '../../shared/editor/science-readout/science-readout.component';
-import { ViewportAxesComponent } from '../../shared/editor/viewport-axes/viewport-axes.component';
+} from '../../shared/editor/layout/hierarchy-panel/hierarchy-panel.component';
+import type { HierarchyContextAction } from '../../core/editor/hierarchy.types';
+import { InspectorPanelComponent } from '../../shared/editor/layout/inspector-panel/inspector-panel.component';
+import { ScienceReadoutComponent } from '../../shared/editor/layout/science-readout/science-readout.component';
+import { ViewportAxesComponent } from '../../shared/editor/layout/viewport-axes/viewport-axes.component';
 import { editorUndoShortcut } from '@engine';
 import { NoiseVolumeService } from '../../core/editor/noise-volume.service';
 

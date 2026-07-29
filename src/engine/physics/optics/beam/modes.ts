@@ -1,6 +1,6 @@
 /** Light emission mode parameters (domain types — no science readout dependency). */
 
-import { clampRange, clampUnit } from '../../math/clamp';
+import { clampRange, clampUnit } from '../../../math/clamp';
 import { clampM2, m2FromParallelness } from './laser';
 
 /**

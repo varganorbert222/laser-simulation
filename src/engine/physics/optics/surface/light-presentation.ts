@@ -3,7 +3,7 @@
  * is co-located with a LightEmitter. Spot intensity uses light gains only.
  */
 
-import { clampRange, clampUnit } from '../../math/clamp';
+import { clampRange, clampUnit } from '../../../math/clamp';
 import {
   normalizeSurfaceMaterial,
   specularLike,

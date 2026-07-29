@@ -33,7 +33,7 @@ describe('scene library', () => {
     expect(meta.map((m) => m.label).sort()).toEqual(['Alpha', 'Beta']);
   });
 
-  it('overwrites existing id and round-trips through storage', () => {
+  it('overwrites existing id; Quality stays global (not scene-authored)', () => {
     const storage = createMemorySceneStorage();
     let lib = createEmptySceneLibrary();
     const world = createDemoWorld();
@@ -52,9 +52,10 @@ describe('scene library', () => {
     const loaded = readSceneLibrary(storage);
     expect(Object.keys(loaded.scenes)).toHaveLength(1);
     expect(loaded.scenes[id]!.label).toBe('Lab v2');
-    const w = loadWorldFromLibrary(loaded, id)!;
-    expect(w.resources.Quality.overallPreset).toBe('ultra');
-    expect(w.resources.Quality.preset).toBe('ultra');
+    // Scene document stores a neutral Quality stub — live Quality comes from prefs.
+    expect(loaded.scenes[id]!.document.resources.Quality.overallPreset).toBe('medium');
+    const w = loadWorldFromLibrary(loaded, id, storage)!;
+    expect(w.resources.Quality.overallPreset).toBe('medium');
     expect(w.resources.ActiveScene.sceneId).toBe(id);
   });
 

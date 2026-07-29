@@ -43,12 +43,12 @@ const SPIKY_GRAD_COEFF = -45 / Math.PI;
 const VISC_LAP_COEFF = 45 / Math.PI;
 
 /** Lattice spacing for a given particle radius (close-packed diameter). */
-export function packingSpacing(particleRadius: number): number {
+function packingSpacing(particleRadius: number): number {
   return Math.max(0.02, particleRadius * 2);
 }
 
 /** SPH smoothing length from particle radius. */
-export function smoothingFromRadius(particleRadius: number): number {
+function smoothingFromRadius(particleRadius: number): number {
   return Math.max(0.04, particleRadius * 2.2);
 }
 
@@ -190,21 +190,6 @@ export function spawnFill(
     mass: defaultMass(1, h, n, halfExtents),
     halfExtents: [hx, hy, hz],
     particleRadius: r,
-  };
-}
-
-export function createEmptySphState(capacity = MAX_SPH_PARTICLES): SphState {
-  const n = Math.min(MAX_SPH_PARTICLES, Math.max(1, capacity));
-  return {
-    count: 0,
-    pos: new Float32Array(n * 3),
-    vel: new Float32Array(n * 3),
-    density: new Float32Array(n),
-    pressure: new Float32Array(n),
-    h: 0.1,
-    mass: 1,
-    halfExtents: [1, 1, 1],
-    particleRadius: 0.05,
   };
 }
 
@@ -418,12 +403,3 @@ export function step(state: SphState, dt: number, params: SphParams): void {
     vel[o + 2] = vz;
   }
 }
-
-/** Re-export step as namespaced helpers for binder convenience. */
-export const SphSim = {
-  spawnFill,
-  step,
-  createEmptySphState,
-  MAX_PARTICLES: MAX_SPH_PARTICLES,
-  particleCountForFill,
-};

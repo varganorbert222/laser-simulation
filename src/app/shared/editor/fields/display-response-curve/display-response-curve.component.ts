@@ -39,8 +39,8 @@ import {
   type DisplayResponseCurve,
   type DisplayResponsePoint,
 } from '@engine';
-import { EngineHostService } from '../../../core/services/engine-host.service';
-import { LocalizationService } from '../../../core/services/localization.service';
+import { EngineHostService } from '../../../../core/services/engine-host.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
 
 /** Live emitter sample plotted on the response curve. */
 interface LiveCurveSample {

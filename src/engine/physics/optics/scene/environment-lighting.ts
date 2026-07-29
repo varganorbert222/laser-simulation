@@ -6,12 +6,12 @@
  * Volumetric media also receive this as environment irradiance (cloud lighting):
  * hemi + sun in-scatter, plus an isotropic multiple-scatter fraction around emitters.
  */
-import { clampUnit } from '../../math/clamp';
+import { clampUnit } from '../../../math/clamp';
 import { ambientFromSolarElevation } from './ambient-from-solar';
 import {
   resolveAtmosphereSolarPosition,
   type AtmosphereSettings,
-} from './atmosphere-settings';
+} from '../atmosphere/atmosphere-settings';
 
 export interface EnvironmentLighting {
   /**

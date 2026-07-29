@@ -365,7 +365,7 @@ vec3 srLightDir(vec3 worldPos, vec3 o, vec3 dIn, float mode) {
         float power = uSrPower0;
 
         // Optical irradiance (BeamModel: TEM00 / cone / tube / omni + spill)
-        // × Cook–Torrance GGX (Fresnel V·H, D, G). L = Point/Spot/Directional by mode.
+        // Ă— Cookâ€“Torrance GGX (Fresnel VÂ·H, D, G). L = Point/Spot/Directional by mode.
         float Li = rfEvalRadianceField(worldPos, o, dBeam, mode, p0, p1, p2, p3, p4, p5, spill);
         vec3 L = srLightDir(worldPos, o, dBeam, mode);
         float nDotL = max(dot(N, L), 0.0);
@@ -397,7 +397,7 @@ vec3 srLightDir(vec3 worldPos, vec3 o, vec3 dIn, float mode) {
         float power = uSrPower1;
 
         // Optical irradiance (BeamModel: TEM00 / cone / tube / omni + spill)
-        // × Cook–Torrance GGX (Fresnel V·H, D, G). L = Point/Spot/Directional by mode.
+        // Ă— Cookâ€“Torrance GGX (Fresnel VÂ·H, D, G). L = Point/Spot/Directional by mode.
         float Li = rfEvalRadianceField(worldPos, o, dBeam, mode, p0, p1, p2, p3, p4, p5, spill);
         vec3 L = srLightDir(worldPos, o, dBeam, mode);
         float nDotL = max(dot(N, L), 0.0);
@@ -429,7 +429,7 @@ vec3 srLightDir(vec3 worldPos, vec3 o, vec3 dIn, float mode) {
         float power = uSrPower2;
 
         // Optical irradiance (BeamModel: TEM00 / cone / tube / omni + spill)
-        // × Cook–Torrance GGX (Fresnel V·H, D, G). L = Point/Spot/Directional by mode.
+        // Ă— Cookâ€“Torrance GGX (Fresnel VÂ·H, D, G). L = Point/Spot/Directional by mode.
         float Li = rfEvalRadianceField(worldPos, o, dBeam, mode, p0, p1, p2, p3, p4, p5, spill);
         vec3 L = srLightDir(worldPos, o, dBeam, mode);
         float nDotL = max(dot(N, L), 0.0);
@@ -461,7 +461,7 @@ vec3 srLightDir(vec3 worldPos, vec3 o, vec3 dIn, float mode) {
         float power = uSrPower3;
 
         // Optical irradiance (BeamModel: TEM00 / cone / tube / omni + spill)
-        // × Cook–Torrance GGX (Fresnel V·H, D, G). L = Point/Spot/Directional by mode.
+        // Ă— Cookâ€“Torrance GGX (Fresnel VÂ·H, D, G). L = Point/Spot/Directional by mode.
         float Li = rfEvalRadianceField(worldPos, o, dBeam, mode, p0, p1, p2, p3, p4, p5, spill);
         vec3 L = srLightDir(worldPos, o, dBeam, mode);
         float nDotL = max(dot(N, L), 0.0);

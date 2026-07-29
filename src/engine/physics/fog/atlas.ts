@@ -1,9 +1,9 @@
 /**
  * 3D grid ↔ 2D slice-atlas layout (WebGL2 has no 3D render targets).
- * CPU twin of shaders/src/fluid/atlas.glsl
+ * CPU twin of shaders/src/fog/atlas.glsl
  */
 
-export interface FluidAtlasLayout {
+export interface FogAtlasLayout {
   gridRes: number;
   tilesX: number;
   tilesY: number;
@@ -13,7 +13,7 @@ export interface FluidAtlasLayout {
 }
 
 /** Square-ish tile grid covering `gridRes` Z-slices. */
-export function fluidAtlasLayout(gridRes: number): FluidAtlasLayout {
+export function fogAtlasLayout(gridRes: number): FogAtlasLayout {
   const n = Math.max(1, Math.floor(gridRes));
   const tilesX = Math.max(1, Math.ceil(Math.sqrt(n)));
   const tilesY = Math.max(1, Math.ceil(n / tilesX));
@@ -32,7 +32,7 @@ export function voxelToAtlasUv(
   ix: number,
   iy: number,
   iz: number,
-  layout: FluidAtlasLayout,
+  layout: FogAtlasLayout,
 ): [number, number] {
   const { gridRes: n, tilesX, atlasWidth, atlasHeight } = layout;
   const clampedZ = Math.max(0, Math.min(n - 1, Math.floor(iz)));
@@ -47,7 +47,7 @@ export function voxelToAtlasUv(
 export function atlasUvToVoxel(
   u: number,
   v: number,
-  layout: FluidAtlasLayout,
+  layout: FogAtlasLayout,
 ): { ix: number; iy: number; iz: number } | null {
   const { gridRes: n, tilesX, atlasWidth, atlasHeight, sliceCount } = layout;
   const px = u * atlasWidth;

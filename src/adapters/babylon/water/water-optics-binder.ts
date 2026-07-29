@@ -420,6 +420,3 @@ export class WaterOpticsBinder {
     this._active = null;
   }
 }
-
-/** @deprecated Use WaterOpticsBinder. */
-export { WaterOpticsBinder as SphFluidBinder };

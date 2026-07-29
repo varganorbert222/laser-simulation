@@ -8,8 +8,8 @@ import {
   defaultSmokeEmitter,
   defaultSunLightEmitter,
 } from '../ecs/components';
-import { defaultSurfaceMaterial } from '../physics/optics/surface-material';
-import { refreshSceneSunBinding, wouldSuppressAdditionalSun } from '../physics/optics/scene-sun';
+import { defaultSurfaceMaterial } from '../physics/optics/surface/surface-material';
+import { refreshSceneSunBinding, wouldSuppressAdditionalSun } from '../physics/optics/scene/scene-sun';
 import type { World } from '../ecs/world';
 import { applySelection } from './selection';
 import { createSceneEntity } from '../hierarchy/entity-factory';

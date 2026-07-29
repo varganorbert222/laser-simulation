@@ -11,8 +11,8 @@
  * luminous product. Physical irradiance in BeamModel stays ∝ P; this curve is
  * only the display scalar. Beam radius is NOT grown with power (étendue).
  */
-import { clamp01, clampRange } from '../../math/clamp';
-import { POWER_W_MAX, clampPowerW, powerWFromSliderT, sliderTFromPowerW } from './power';
+import { clamp01, clampRange } from '../../../math/clamp';
+import { POWER_W_MAX, clampPowerW, powerWFromSliderT, sliderTFromPowerW } from '../beam/power';
 
 /** Soft HDR ceiling for GPU / ACES headroom. */
 export const DISPLAY_RESPONSE_HDR_MAX = 96;

@@ -21,255 +21,356 @@
       {{ presetLabel('custom') }}
     </button>
   </div>
-  <label class="check">
-    <input
-      type="checkbox"
-      [checked]="editor.antiAliasing()"
-      (change)="editor.setAntiAliasing($any($event.target).checked)"
-    />
-    {{ l10n.t('antiAliasing') }}
-  </label>
-  <label class="check">
-    <input
-      type="checkbox"
-      [checked]="editor.theatricalGlow()"
-      (change)="editor.setTheatricalGlow($any($event.target).checked)"
-    />
-    {{ l10n.t('theatricalGlow') }}
-  </label>
-  <label class="check">
-    <input
-      type="checkbox"
-      [checked]="editor.lensFlare()"
-      (change)="editor.setLensFlare($any($event.target).checked)"
-    />
-    {{ l10n.t('lensFlare') }}
-  </label>
-  <p class="hint">{{ l10n.t('hintLensFlare') }}</p>
 
-  @if (editor.lensFlare()) {
-    <h4 class="subhead">{{ l10n.t('lensFlareLights') }}</h4>
-    <p class="hint">{{ l10n.t('hintLensFlareLights') }}</p>
-    <label class="check">
-      <input
-        type="checkbox"
-        [checked]="editor.qualitySettings().lensFlareLights.enabled"
-        (change)="onLights('enabled', $any($event.target).checked)"
-      />
-      {{ l10n.t('lensFlareGroupEnabled') }}
-    </label>
-    @if (editor.qualitySettings().lensFlareLights.enabled) {
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareIntensity') }}</span>
+  <details class="section" open>
+    <summary>{{ l10n.t('presentationBasics') }}</summary>
+    <div class="section-body">
+      <label class="check">
         <input
-          type="range"
-          min="0"
-          max="4"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareLights.intensity"
-          (input)="onLights('intensity', $any($event.target).value)"
+          type="checkbox"
+          [checked]="editor.antiAliasing()"
+          (change)="editor.setAntiAliasing($any($event.target).checked)"
         />
-        <span class="value">{{ editor.qualitySettings().lensFlareLights.intensity | number: '1.2-2' }}</span>
+        {{ l10n.t('antiAliasing') }}
       </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareGhosts') }}</span>
+      <label class="check">
         <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareLights.ghosts"
-          (input)="onLights('ghosts', $any($event.target).value)"
+          type="checkbox"
+          [checked]="editor.theatricalGlow()"
+          (change)="editor.setTheatricalGlow($any($event.target).checked)"
         />
-        <span class="value">{{ editor.qualitySettings().lensFlareLights.ghosts | number: '1.2-2' }}</span>
+        {{ l10n.t('theatricalGlow') }}
       </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareStreaks') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareLights.streaks"
-          (input)="onLights('streaks', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareLights.streaks | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareHalo') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareLights.halo"
-          (input)="onLights('halo', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareLights.halo | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareChromatic') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareLights.chromatic"
-          (input)="onLights('chromatic', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareLights.chromatic | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareDirt') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareLights.dirt"
-          (input)="onLights('dirt', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareLights.dirt | number: '1.2-2' }}</span>
-      </label>
-    }
+    </div>
+  </details>
 
-    <h4 class="subhead">{{ l10n.t('lensFlareSun') }}</h4>
-    <p class="hint">{{ l10n.t('hintLensFlareSun') }}</p>
-    <label class="check">
-      <input
-        type="checkbox"
-        [checked]="editor.qualitySettings().lensFlareSun.enabled"
-        (change)="onSun('enabled', $any($event.target).checked)"
-      />
-      {{ l10n.t('lensFlareGroupEnabled') }}
-    </label>
-    @if (editor.qualitySettings().lensFlareSun.enabled) {
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareIntensity') }}</span>
+  <details class="section" open>
+    <summary>{{ l10n.t('lensFlare') }}</summary>
+    <div class="section-body">
+      <label class="check">
         <input
-          type="range"
-          min="0"
-          max="4"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareSun.intensity"
-          (input)="onSun('intensity', $any($event.target).value)"
+          type="checkbox"
+          [checked]="editor.lensFlare()"
+          (change)="editor.setLensFlare($any($event.target).checked)"
         />
-        <span class="value">{{ editor.qualitySettings().lensFlareSun.intensity | number: '1.2-2' }}</span>
+        {{ l10n.t('lensFlareEnabled') }}
       </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareGhosts') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareSun.ghosts"
-          (input)="onSun('ghosts', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareSun.ghosts | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareStreaks') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareSun.streaks"
-          (input)="onSun('streaks', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareSun.streaks | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareHalo') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareSun.halo"
-          (input)="onSun('halo', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareSun.halo | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareChromatic') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareSun.chromatic"
-          (input)="onSun('chromatic', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareSun.chromatic | number: '1.2-2' }}</span>
-      </label>
-      <label class="flare-slider">
-        <span>{{ l10n.t('lensFlareDirt') }}</span>
-        <input
-          type="range"
-          min="0"
-          max="2"
-          step="0.05"
-          [value]="editor.qualitySettings().lensFlareSun.dirt"
-          (input)="onSun('dirt', $any($event.target).value)"
-        />
-        <span class="value">{{ editor.qualitySettings().lensFlareSun.dirt | number: '1.2-2' }}</span>
-      </label>
-    }
-  }
+      <p class="hint">{{ l10n.t('hintLensFlare') }}</p>
 
-  <label>
-    {{ l10n.t('colorProfile') }}
-    <select
-      [value]="editor.qualitySettings().colorProfile"
-      (change)="onColorProfile($any($event.target).value)"
-    >
-      <option value="hdr">{{ l10n.t('colorProfileHdr') }}</option>
-      <option value="sdr">{{ l10n.t('colorProfileSdr') }}</option>
-    </select>
-  </label>
-  <p class="hint">{{ l10n.t('hintColorProfile') }}</p>
-  <label>
-    {{ l10n.t('outputGamma') }}
-    <input
-      type="number"
-      min="1"
-      max="3"
-      step="0.1"
-      [value]="editor.qualitySettings().outputGamma"
-      (change)="onOutputGamma($any($event.target).value)"
-    />
-  </label>
-  <div class="preset-row">
-    <button
-      type="button"
-      class="preset-btn"
-      [class.active]="editor.qualitySettings().outputGamma === 2.2"
-      (click)="onOutputGamma('2.2')"
-    >
-      2.2
-    </button>
-    <button
-      type="button"
-      class="preset-btn"
-      [class.active]="editor.qualitySettings().outputGamma === 2.4"
-      (click)="onOutputGamma('2.4')"
-    >
-      2.4
-    </button>
-  </div>
-  <p class="hint">{{ l10n.t('hintOutputGamma') }}</p>
-  <label>
-    {{ l10n.t('tonemapMode') }}
-    <select
-      [value]="editor.tonemapMode()"
-      (change)="onTonemap($any($event.target).value)"
-    >
-      <option value="aces">ACES</option>
-      <option value="reinhard">Reinhard</option>
-      <option value="hable">Hable</option>
-    </select>
-  </label>
-  <p class="hint">{{ l10n.t('hintTonemapMode') }}</p>
+      @if (editor.lensFlare()) {
+        <details class="section nested" open>
+          <summary>{{ l10n.t('lensFlareOptics') }}</summary>
+          <div class="section-body">
+            <p class="hint">{{ l10n.t('hintLensFlareOptics') }}</p>
+            <label class="flare-slider">
+              <span>{{ l10n.t('lensFlareChromatic') }}</span>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.05"
+                [value]="editor.qualitySettings().lensFlareOptics.chromatic"
+                (input)="onOpticsSlider('chromatic', $any($event.target).value)"
+              />
+              <span class="value">{{
+                editor.qualitySettings().lensFlareOptics.chromatic | number: '1.2-2'
+              }}</span>
+            </label>
+            <label class="flare-slider">
+              <span>{{ l10n.t('lensFlareDirt') }}</span>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.05"
+                [value]="editor.qualitySettings().lensFlareOptics.dirt"
+                (input)="onOpticsSlider('dirt', $any($event.target).value)"
+              />
+              <span class="value">{{
+                editor.qualitySettings().lensFlareOptics.dirt | number: '1.2-2'
+              }}</span>
+            </label>
+
+            <div class="element-toolbar">
+              <span class="element-count">
+                {{ editor.qualitySettings().lensFlareOptics.elements.length }} /
+                {{ maxElements }}
+              </span>
+              <button
+                type="button"
+                class="preset-btn"
+                [disabled]="!canAddElement()"
+                (click)="addElement('ghost')"
+              >
+                {{ l10n.t('flareAddGhost') }}
+              </button>
+              <button
+                type="button"
+                class="preset-btn"
+                [disabled]="!canAddElement()"
+                (click)="addElement('streak')"
+              >
+                {{ l10n.t('flareAddStreak') }}
+              </button>
+              <button
+                type="button"
+                class="preset-btn"
+                [disabled]="!canAddElement()"
+                (click)="addElement('halo')"
+              >
+                {{ l10n.t('flareAddHalo') }}
+              </button>
+            </div>
+
+            @for (
+              el of editor.qualitySettings().lensFlareOptics.elements;
+              track $index;
+              let i = $index
+            ) {
+              <details class="section nested">
+                <summary>
+                  {{ l10n.t('flareElement') }} {{ i + 1 }} — {{ kindLabel(el.kind) }}
+                </summary>
+                <div class="section-body">
+                  <div class="element-actions">
+                    <button
+                      type="button"
+                      class="preset-btn"
+                      [disabled]="i === 0"
+                      (click)="moveElement(i, -1)"
+                    >
+                      {{ l10n.t('flareMoveUp') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="preset-btn"
+                      [disabled]="
+                        i >= editor.qualitySettings().lensFlareOptics.elements.length - 1
+                      "
+                      (click)="moveElement(i, 1)"
+                    >
+                      {{ l10n.t('flareMoveDown') }}
+                    </button>
+                    <button
+                      type="button"
+                      class="preset-btn danger"
+                      (click)="removeElement(i)"
+                    >
+                      {{ l10n.t('flareRemove') }}
+                    </button>
+                  </div>
+                  <label>
+                    {{ l10n.t('flareElementKind') }}
+                    <select
+                      [value]="el.kind"
+                      (change)="onElementKind(i, $any($event.target).value)"
+                    >
+                      <option value="ghost">{{ l10n.t('flareKindGhost') }}</option>
+                      <option value="streak">{{ l10n.t('flareKindStreak') }}</option>
+                      <option value="halo">{{ l10n.t('flareKindHalo') }}</option>
+                    </select>
+                  </label>
+                  <app-color-field
+                    [label]="l10n.t('flareOverlayColor')"
+                    [rgb]="el.color"
+                    (rgbChange)="onElementColor(i, $event)"
+                  />
+                  <label class="flare-slider">
+                    <span>{{ l10n.t('flareSize') }}</span>
+                    <input
+                      type="range"
+                      min="0.05"
+                      max="4"
+                      step="0.05"
+                      [value]="el.size"
+                      (input)="onElementSlider(i, 'size', $any($event.target).value)"
+                    />
+                    <span class="value">{{ el.size | number: '1.2-2' }}</span>
+                  </label>
+                  @if (el.kind !== 'streak') {
+                    <label class="flare-slider">
+                      <span>{{ l10n.t('flareAxis') }}</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="2"
+                        step="0.01"
+                        [value]="el.axis"
+                        (input)="onElementSlider(i, 'axis', $any($event.target).value)"
+                      />
+                      <span class="value">{{ el.axis | number: '1.2-2' }}</span>
+                    </label>
+                    <p class="hint">{{ l10n.t('hintFlareAxis') }}</p>
+                  }
+                  <label class="flare-slider">
+                    <span>{{ l10n.t('flareWeight') }}</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="2"
+                      step="0.05"
+                      [value]="el.weight"
+                      (input)="onElementSlider(i, 'weight', $any($event.target).value)"
+                    />
+                    <span class="value">{{ el.weight | number: '1.2-2' }}</span>
+                  </label>
+                </div>
+              </details>
+            }
+          </div>
+        </details>
+
+        <details class="section nested" open>
+          <summary>{{ l10n.t('lensFlareLights') }}</summary>
+          <div class="section-body">
+            <p class="hint">{{ l10n.t('hintLensFlareLights') }}</p>
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="editor.qualitySettings().lensFlareLights.enabled"
+                (change)="onLights('enabled', $any($event.target).checked)"
+              />
+              {{ l10n.t('lensFlareGroupEnabled') }}
+            </label>
+            @if (editor.qualitySettings().lensFlareLights.enabled) {
+              <label class="flare-slider">
+                <span>{{ l10n.t('lensFlareIntensity') }}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  step="0.05"
+                  [value]="editor.qualitySettings().lensFlareLights.intensity"
+                  (input)="onLights('intensity', $any($event.target).value)"
+                />
+                <span class="value">{{
+                  editor.qualitySettings().lensFlareLights.intensity | number: '1.2-2'
+                }}</span>
+              </label>
+              <label class="flare-slider">
+                <span>{{ l10n.t('lensFlareVolBloom') }}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.05"
+                  [value]="editor.qualitySettings().lensFlareLights.volBloom"
+                  (input)="onLights('volBloom', $any($event.target).value)"
+                />
+                <span class="value">{{
+                  editor.qualitySettings().lensFlareLights.volBloom | number: '1.2-2'
+                }}</span>
+              </label>
+              <p class="hint">{{ l10n.t('hintLensFlareVolBloom') }}</p>
+            }
+          </div>
+        </details>
+
+        <details class="section nested">
+          <summary>{{ l10n.t('lensFlareSun') }}</summary>
+          <div class="section-body">
+            <p class="hint">{{ l10n.t('hintLensFlareSun') }}</p>
+            <label class="check">
+              <input
+                type="checkbox"
+                [checked]="editor.qualitySettings().lensFlareSun.enabled"
+                (change)="onSun('enabled', $any($event.target).checked)"
+              />
+              {{ l10n.t('lensFlareGroupEnabled') }}
+            </label>
+            @if (editor.qualitySettings().lensFlareSun.enabled) {
+              <label class="flare-slider">
+                <span>{{ l10n.t('lensFlareIntensity') }}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="4"
+                  step="0.05"
+                  [value]="editor.qualitySettings().lensFlareSun.intensity"
+                  (input)="onSun('intensity', $any($event.target).value)"
+                />
+                <span class="value">{{
+                  editor.qualitySettings().lensFlareSun.intensity | number: '1.2-2'
+                }}</span>
+              </label>
+              <label class="flare-slider">
+                <span>{{ l10n.t('lensFlareVolBloom') }}</span>
+                <input
+                  type="range"
+                  min="0"
+                  max="2"
+                  step="0.05"
+                  [value]="editor.qualitySettings().lensFlareSun.volBloom"
+                  (input)="onSun('volBloom', $any($event.target).value)"
+                />
+                <span class="value">{{
+                  editor.qualitySettings().lensFlareSun.volBloom | number: '1.2-2'
+                }}</span>
+              </label>
+              <p class="hint">{{ l10n.t('hintLensFlareVolBloom') }}</p>
+            }
+          </div>
+        </details>
+      }
+    </div>
+  </details>
+
+  <details class="section" open>
+    <summary>{{ l10n.t('presentationColor') }}</summary>
+    <div class="section-body">
+      <label>
+        {{ l10n.t('colorProfile') }}
+        <select
+          [value]="editor.qualitySettings().colorProfile"
+          (change)="onColorProfile($any($event.target).value)"
+        >
+          <option value="hdr">{{ l10n.t('colorProfileHdr') }}</option>
+          <option value="sdr">{{ l10n.t('colorProfileSdr') }}</option>
+        </select>
+      </label>
+      <p class="hint">{{ l10n.t('hintColorProfile') }}</p>
+      <label>
+        {{ l10n.t('outputGamma') }}
+        <input
+          type="number"
+          min="1"
+          max="3"
+          step="0.1"
+          [value]="editor.qualitySettings().outputGamma"
+          (change)="onOutputGamma($any($event.target).value)"
+        />
+      </label>
+      <div class="preset-row">
+        <button
+          type="button"
+          class="preset-btn"
+          [class.active]="editor.qualitySettings().outputGamma === 2.2"
+          (click)="onOutputGamma('2.2')"
+        >
+          2.2
+        </button>
+        <button
+          type="button"
+          class="preset-btn"
+          [class.active]="editor.qualitySettings().outputGamma === 2.4"
+          (click)="onOutputGamma('2.4')"
+        >
+          2.4
+        </button>
+      </div>
+      <p class="hint">{{ l10n.t('hintOutputGamma') }}</p>
+      <label>
+        {{ l10n.t('tonemapMode') }}
+        <select
+          [value]="editor.tonemapMode()"
+          (change)="onTonemap($any($event.target).value)"
+        >
+          <option value="aces">ACES</option>
+          <option value="reinhard">Reinhard</option>
+          <option value="hable">Hable</option>
+        </select>
+      </label>
+      <p class="hint">{{ l10n.t('hintTonemapMode') }}</p>
+    </div>
+  </details>
 </div>

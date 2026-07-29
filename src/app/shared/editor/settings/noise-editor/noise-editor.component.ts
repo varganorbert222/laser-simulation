@@ -13,9 +13,9 @@ import {
   type NoiseDimension,
   type NoiseVolumeResolution,
 } from '@engine';
-import { LocalizationService } from '../../../core/services/localization.service';
-import { NoiseVolumeService } from '../../../core/editor/noise-volume.service';
-import type { LocaleKey } from '../../../i18n/messages';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { NoiseVolumeService } from '../../../../core/editor/noise-volume.service';
+import type { LocaleKey } from '../../../../i18n/messages';
 import { NoisePreviewRenderer } from './noise-preview-renderer';
 
 const BLEND_KEYS: Record<NoiseBlendMode, LocaleKey> = {

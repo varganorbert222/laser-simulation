@@ -1,5 +1,5 @@
 import { PointerEventTypes, type Scene } from '@babylonjs/core';
-import type { StudioTransformGizmo } from '../transform-gizmo';
+import type { StudioTransformGizmo } from '../gizmos/transform-gizmo';
 
 export interface ViewportPickModifiers {
   ctrlKey?: boolean;

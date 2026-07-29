@@ -3,7 +3,7 @@
  * CPU twin of SurfaceRadiancePlugin fragment paths.
  */
 
-import { clamp01 } from '../../math/clamp';
+import { clamp01 } from '../../../math/clamp';
 
 const INV_PI = 1 / Math.PI;
 const DIELECTRIC_F0 = 0.04;

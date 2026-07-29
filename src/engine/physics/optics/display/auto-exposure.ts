@@ -3,7 +3,7 @@
  * Used at compose time when Atmosphere is enabled — lasers contribute only via
  * visible HDR energy in the frame (volumetric scatter + surface), not watts/nm.
  */
-import { clampRange } from '../../math/clamp';
+import { clampRange } from '../../../math/clamp';
 
 /** Middle-grey key (Reinhard / photographic). */
 export const AUTO_EXPOSURE_KEY = 0.18;

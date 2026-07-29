@@ -1,5 +1,5 @@
 import { C, EV, H, VISIBLE_NM_MAX, VISIBLE_NM_MIN } from './constants';
-import { clamp01, clampRange } from '../../math/clamp';
+import { clamp01, clampRange } from '../../../math/clamp';
 import type { Rgb01 } from './color';
 
 export interface WavelengthDerived {

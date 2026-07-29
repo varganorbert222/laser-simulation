@@ -5,9 +5,12 @@ import {
 } from '../physics/fluid/presets';
 import {
   defaultLensFlareLightsTune,
+  defaultLensFlareOptics,
   defaultLensFlareSunTune,
   normalizeLensFlareGroupTune,
+  normalizeLensFlareOptics,
   type LensFlareGroupTune,
+  type LensFlareOptics,
 } from './lens-flare';
 
 /**
@@ -88,6 +91,11 @@ export interface Quality {
    * Per-light opt-in via LightEmitter.lensFlareEnabled. Default true on Medium+.
    */
   lensFlare: boolean;
+  /**
+   * Shared camera optical flare profile (element list + CA / dirt).
+   * Project-level — not part of the Low→Ultra presentation ladder.
+   */
+  lensFlareOptics: LensFlareOptics;
   /**
    * Look params for scene lights (laser / lamp / spot / omni). Project-level —
    * not part of the Low→Ultra presentation ladder.
@@ -586,7 +594,11 @@ export function createQuality(
   preset: QualityLadder = 'medium',
   preserve?: Pick<
     Partial<Quality>,
-    'colorProfile' | 'outputGamma' | 'lensFlareLights' | 'lensFlareSun'
+    | 'colorProfile'
+    | 'outputGamma'
+    | 'lensFlareOptics'
+    | 'lensFlareLights'
+    | 'lensFlareSun'
   >,
 ): Quality {
   const vol = volumetricsTuneForPreset(preset);
@@ -607,6 +619,10 @@ export function createQuality(
     outputGamma: clampOutputGamma(
       typeof preserve?.outputGamma === 'number' ? preserve.outputGamma : 2.2,
       2.2,
+    ),
+    lensFlareOptics: normalizeLensFlareOptics(
+      preserve?.lensFlareOptics,
+      defaultLensFlareOptics(),
     ),
     lensFlareLights: normalizeLensFlareGroupTune(
       preserve?.lensFlareLights,
@@ -715,6 +731,10 @@ export function normalizeQualityResource(
     theatricalGlow:
       typeof raw?.theatricalGlow === 'boolean' ? raw.theatricalGlow : base.theatricalGlow,
     lensFlare: typeof raw?.lensFlare === 'boolean' ? raw.lensFlare : base.lensFlare,
+    lensFlareOptics: normalizeLensFlareOptics(
+      raw?.lensFlareOptics as Partial<LensFlareOptics> | undefined,
+      base.lensFlareOptics,
+    ),
     lensFlareLights: normalizeLensFlareGroupTune(
       raw?.lensFlareLights as Partial<LensFlareGroupTune> | undefined,
       base.lensFlareLights,

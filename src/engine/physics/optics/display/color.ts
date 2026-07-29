@@ -7,7 +7,7 @@
  *   chroma × intensity → ACES / hue-preserving tonemap → monitor RGB
  */
 
-import { clamp01, clampRange } from '../../math/clamp';
+import { clamp01, clampRange } from '../../../math/clamp';
 
 export type Rgb01 = readonly [number, number, number];
 

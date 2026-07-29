@@ -1,9 +1,9 @@
 import { Component, computed, inject } from '@angular/core';
 import { resolveSceneAmbientLevel } from '@engine';
-import { EditorFacade } from '../../../core/services/editor-facade.service';
-import { EngineHostService } from '../../../core/services/engine-host.service';
-import { LocalizationService } from '../../../core/services/localization.service';
-import { DisplayResponseCurveComponent } from '../display-response-curve/display-response-curve.component';
+import { EditorFacade } from '../../../../core/services/editor-facade.service';
+import { EngineHostService } from '../../../../core/services/engine-host.service';
+import { LocalizationService } from '../../../../core/services/localization.service';
+import { DisplayResponseCurveComponent } from '../../fields/display-response-curve/display-response-curve.component';
 
 @Component({
   selector: 'app-vision-settings-panel',

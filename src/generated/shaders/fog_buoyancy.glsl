@@ -12,7 +12,7 @@ uniform float uBuoyancy;
 uniform float uTempAmbient;
 uniform vec3 uGravityDir; // usually (0,1,0) in grid space (up)
 
-/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fluid/atlas.ts */
+/** 3D grid ↔ 2D slice-atlas helpers. CPU twin: engine/physics/fog/atlas.ts */
 
 uniform float uGridRes;
 uniform float uTilesX;

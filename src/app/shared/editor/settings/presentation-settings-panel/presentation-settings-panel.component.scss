@@ -1,4 +1,4 @@
-@use '../render-settings-panel/panel-form';
+@use '../../styles/panel-form';
 
 .presentation-settings {
   display: flex;
@@ -8,12 +8,55 @@
   box-sizing: border-box;
 }
 
-h4.subhead {
-  margin: 0.55rem 0 0;
-  font-size: 0.78rem;
+.section {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.section.nested {
+  background: rgba(0, 0, 0, 0.12);
+  margin-top: 0.15rem;
+}
+
+.section summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  color: var(--ls-text, #e8e2d6);
-  opacity: 0.92;
+  letter-spacing: 0.02em;
+  color: #e8e2d4;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.section summary::-webkit-details-marker {
+  display: none;
+}
+
+.section summary::before {
+  content: '▸';
+  display: inline-block;
+  font-size: 0.7rem;
+  opacity: 0.7;
+  transition: transform 0.12s ease;
+}
+
+.section[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0 0.7rem 0.7rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 0.55rem;
 }
 
 label.flare-slider {
@@ -33,4 +76,23 @@ label.flare-slider input[type='range'] {
   font-variant-numeric: tabular-nums;
   color: var(--ls-text, #e8e2d6);
   text-align: right;
+}
+
+.element-toolbar,
+.element-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.element-count {
+  font-size: 0.72rem;
+  opacity: 0.75;
+  margin-right: 0.25rem;
+}
+
+.preset-btn.danger {
+  opacity: 0.9;
+  border-color: rgba(200, 90, 80, 0.45);
 }

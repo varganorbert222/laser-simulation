@@ -26,8 +26,13 @@ import {
   clampOutputGamma,
   normalizeTonemapMode,
   normalizeLensFlareGroupTune,
+  normalizeLensFlareOptics,
   defaultLensFlareLightsTune,
+  defaultLensFlareOptics,
   defaultLensFlareSunTune,
+  createLensFlareElement,
+  normalizeLensFlareElement,
+  MAX_FLARE_ELEMENTS,
   applyVolumetricsPreset,
   applyShadowPreset,
   applyPresentationPreset,
@@ -55,12 +60,17 @@ import {
   type QualityPresetSelection,
   type ShadowQuality,
   type LensFlareGroupTune,
+  type LensFlareOptics,
+  type LensFlareElement,
+  type LensFlareElementKind,
   type World,
 } from '@engine';
 import {
+  applyRenderPreferences,
   documentToWorld,
   downloadSceneJson,
   readFileAsText,
+  readRenderPreferences,
   sanitizeSceneFilename,
   captureRenderPreferences,
   createDemoWorldWithPreferences,
@@ -75,7 +85,7 @@ export class SessionService {
   private readonly engine = inject(EngineHostService);
   private readonly scenes = inject(SceneLibraryService);
 
-  /** Remember live Quality + Atmosphere in the browser (presets stay static). */
+  /** Persist global graphics (Quality / sky look / GlobalSun) — not scene-bound. */
   private persistRenderPreferences(): void {
     writeRenderPreferences(captureRenderPreferences(this.engine.world()));
   }
@@ -146,6 +156,7 @@ export class SessionService {
       world.resources.Quality = createQuality(preset, {
         colorProfile: prev.colorProfile,
         outputGamma: prev.outputGamma,
+        lensFlareOptics: prev.lensFlareOptics,
         lensFlareLights: prev.lensFlareLights,
         lensFlareSun: prev.lensFlareSun,
       });
@@ -249,6 +260,12 @@ export class SessionService {
       if (partial.tonemapMode !== undefined) {
         next.tonemapMode = normalizeTonemapMode(partial.tonemapMode);
       }
+      if (partial.lensFlareOptics !== undefined) {
+        next.lensFlareOptics = normalizeLensFlareOptics(
+          partial.lensFlareOptics,
+          cur.lensFlareOptics ?? defaultLensFlareOptics(),
+        );
+      }
       if (partial.lensFlareLights !== undefined) {
         next.lensFlareLights = normalizeLensFlareGroupTune(
           partial.lensFlareLights,
@@ -329,6 +346,64 @@ export class SessionService {
     this.patchQuality({
       lensFlareSun: { ...cur, ...partial },
     });
+  }
+
+  patchLensFlareOptics(
+    partial: Partial<Omit<LensFlareOptics, 'elements'>> & {
+      elements?: LensFlareElement[];
+    },
+  ): void {
+    const cur = this.engine.world().resources.Quality.lensFlareOptics ?? defaultLensFlareOptics();
+    this.patchQuality({
+      lensFlareOptics: {
+        chromatic: partial.chromatic ?? cur.chromatic,
+        dirt: partial.dirt ?? cur.dirt,
+        elements: partial.elements ?? cur.elements,
+      },
+    });
+  }
+
+  addLensFlareElement(kind: LensFlareElementKind = 'ghost'): void {
+    const cur = this.engine.world().resources.Quality.lensFlareOptics ?? defaultLensFlareOptics();
+    if (cur.elements.length >= MAX_FLARE_ELEMENTS) return;
+    this.patchLensFlareOptics({
+      elements: [...cur.elements, createLensFlareElement(kind)],
+    });
+  }
+
+  removeLensFlareElement(index: number): void {
+    const cur = this.engine.world().resources.Quality.lensFlareOptics ?? defaultLensFlareOptics();
+    if (index < 0 || index >= cur.elements.length) return;
+    this.patchLensFlareOptics({
+      elements: cur.elements.filter((_, i) => i !== index),
+    });
+  }
+
+  patchLensFlareElement(index: number, partial: Partial<LensFlareElement>): void {
+    const cur = this.engine.world().resources.Quality.lensFlareOptics ?? defaultLensFlareOptics();
+    if (index < 0 || index >= cur.elements.length) return;
+    const next = cur.elements.map((el, i) =>
+      i === index ? normalizeLensFlareElement({ ...el, ...partial }, el) : el,
+    );
+    this.patchLensFlareOptics({ elements: next });
+  }
+
+  moveLensFlareElement(from: number, to: number): void {
+    const cur = this.engine.world().resources.Quality.lensFlareOptics ?? defaultLensFlareOptics();
+    if (
+      from < 0 ||
+      to < 0 ||
+      from >= cur.elements.length ||
+      to >= cur.elements.length ||
+      from === to
+    ) {
+      return;
+    }
+    const next = [...cur.elements];
+    const [item] = next.splice(from, 1);
+    if (!item) return;
+    next.splice(to, 0, item);
+    this.patchLensFlareOptics({ elements: next });
   }
 
   setTonemapMode(mode: TonemapMode): void {
@@ -504,9 +579,7 @@ export class SessionService {
         hourOfDay,
       );
       this.syncSunIfAtmosphere(world);
-
     });
-    this.persistRenderPreferences();
   }
 
   setAtmosphereTimePreset(id: AtmosphereTimePresetId): void {
@@ -516,9 +589,7 @@ export class SessionService {
         id,
       );
       this.syncSunIfAtmosphere(world);
-
     });
-    this.persistRenderPreferences();
   }
 
   setAtmosphereSeasonPreset(id: AtmosphereSeasonPresetId): void {
@@ -528,13 +599,16 @@ export class SessionService {
         id,
       );
       this.syncSunIfAtmosphere(world);
-
     });
-    this.persistRenderPreferences();
   }
 
   setAtmosphereTimeAnimating(animating: boolean): void {
-    this.patchAtmosphere({ timeAnimating: animating });
+    this.engine.mutate((world) => {
+      world.resources.Atmosphere = normalizeAtmosphereSettings({
+        ...world.resources.Atmosphere,
+        timeAnimating: animating,
+      });
+    });
   }
 
   setAtmosphereNow(): void {
@@ -544,9 +618,7 @@ export class SessionService {
         Date.now(),
       );
       this.syncSunIfAtmosphere(world);
-
     });
-    this.persistRenderPreferences();
   }
 
   private syncSunIfAtmosphere(world: World): void {
@@ -609,7 +681,10 @@ export class SessionService {
 
   async importSceneFile(file: File, opts?: { alsoSaveToLibrary?: boolean }): Promise<void> {
     const text = await readFileAsText(file);
-    const world = documentToWorld(text);
+    let world = documentToWorld(text);
+    world = applyRenderPreferences(world, readRenderPreferences(), {
+      preserveSceneTimeOfDay: true,
+    });
     const label =
       world.resources.ActiveScene.label?.trim() ||
       file.name.replace(/\.json$/i, '') ||

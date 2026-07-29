@@ -20,14 +20,17 @@ import '@babylonjs/core/Engines/Extensions/engine.readTexture.js';
 import { Constants } from '@babylonjs/core/Engines/constants';
 import {
   AUTO_EXPOSURE_KEY,
+  FLARE_ELEMENT_SLOTS,
   LENS_FLARE_SLOTS,
   MANUAL_HDR_EXPOSURE,
   VOLUMETRIC_FLUID_SLOTS,
   VOLUMETRIC_LIGHT_SLOTS,
   VOLUMETRIC_MEDIA_SLOTS,
   clampRenderScale,
+  defaultLensFlareOptics,
   exposureFromAvgLuminance,
   gatherRenderPack,
+  lensFlareElementKindCode,
   lensFlareFacingWeight,
   manualComposeExposure,
   smoothExposure,
@@ -47,7 +50,6 @@ import {
 } from '../shaders/load-shaders';
 import { NoiseTextureCache } from './noise-volume-texture';
 import type { FogBinder } from '../fog/fog-binder';
-import type { FluidBinder } from '../fluids/fluid-binder';
 
 Effect.ShadersStore[VOLUMETRIC_SHADER_KEY] = VOLUMETRIC_FRAGMENT;
 Effect.ShadersStore[VOLUMETRIC_COMPOSE_SHADER_KEY] = VOLUMETRIC_COMPOSE_FRAGMENT;
@@ -97,6 +99,10 @@ export class VolumetricBinder {
   private lastVolH = 0;
   lastPack: GatheredFrame | null = null;
 
+  /** Temporal EMA of lens-flare amplitudes (stable vs volumetric sparkle). */
+  private readonly flareIntensitySmooth = new Map<string, number>();
+  private flareSmoothFrame = 0;
+
   private _world: World | null = null;
   private _camera: Camera | null = null;
   private _sceneDepth: BaseTexture | null = null;
@@ -107,7 +113,7 @@ export class VolumetricBinder {
   private smoothedExposure = MANUAL_HDR_EXPOSURE;
   private readingLuminance = false;
   private _meterSceneTex: BaseTexture | null = null;
-  private _fluids: FogBinder | FluidBinder | null = null;
+  private _fog: FogBinder | null = null;
   private readonly _fluidDummy: RenderTargetTexture;
 
   constructor(
@@ -252,16 +258,11 @@ export class VolumetricBinder {
       'uLensFlareEnabled',
       'uFlareCount',
       'uUseSceneDepthFlare',
-      'uFlareLightsGhosts',
-      'uFlareLightsStreaks',
-      'uFlareLightsHalo',
-      'uFlareLightsChromatic',
-      'uFlareLightsDirt',
-      'uFlareSunGhosts',
-      'uFlareSunStreaks',
-      'uFlareSunHalo',
-      'uFlareSunChromatic',
-      'uFlareSunDirt',
+      'uFlareLightsVolBloom',
+      'uFlareSunVolBloom',
+      'uFlareElementCount',
+      'uFlareChromatic',
+      'uFlareDirt',
     ];
     for (let i = 0; i < LENS_FLARE_SLOTS; i++) {
       flareUniformNames.push(
@@ -269,6 +270,15 @@ export class VolumetricBinder {
         `uFlareColor${i}`,
         `uFlareIntensity${i}`,
         `uFlareDirectional${i}`,
+      );
+    }
+    for (let i = 0; i < FLARE_ELEMENT_SLOTS; i++) {
+      flareUniformNames.push(
+        `uFlareElKind${i}`,
+        `uFlareElColor${i}`,
+        `uFlareElSize${i}`,
+        `uFlareElAxis${i}`,
+        `uFlareElWeight${i}`,
       );
     }
     this.compose = new PostProcess(
@@ -330,8 +340,8 @@ export class VolumetricBinder {
     this._camera = camera;
   }
 
-  bindFluids(fluids: FogBinder | FluidBinder | null): void {
-    this._fluids = fluids;
+  bindFog(fog: FogBinder | null): void {
+    this._fog = fog;
   }
 
   /** Scene depth (camera-space Z) for solid occlusion — typically from DepthRenderer. */
@@ -348,12 +358,32 @@ export class VolumetricBinder {
    * Project gathered flare sources to screen UV + camera-space depth and bind
    * compose uniforms (pre-tonemap HDR optical flare).
    */
+  private smoothFlareIntensity(key: string, target: number): number {
+    // Slow rise/fall damps volumetric sparkle; faster decay when fully off.
+    const prev = this.flareIntensitySmooth.get(key);
+    if (prev === undefined) {
+      this.flareIntensitySmooth.set(key, target);
+      return target;
+    }
+    const alpha = target < 1e-4 ? 0.4 : target < prev * 0.35 ? 0.28 : 0.12;
+    const next = prev + (target - prev) * alpha;
+    this.flareIntensitySmooth.set(key, next);
+    return next;
+  }
+
   private applyLensFlareUniforms(fx: EffectLike): void {
     const clearSlot = (i: number) => {
       fx.setVector3(`uFlareScreen${i}`, Vector3.Zero());
       fx.setVector3(`uFlareColor${i}`, Vector3.Zero());
       fx.setFloat(`uFlareIntensity${i}`, 0);
       fx.setFloat(`uFlareDirectional${i}`, 0);
+    };
+    const clearElement = (i: number) => {
+      fx.setFloat(`uFlareElKind${i}`, 0);
+      fx.setVector3(`uFlareElColor${i}`, Vector3.Zero());
+      fx.setFloat(`uFlareElSize${i}`, 1);
+      fx.setFloat(`uFlareElAxis${i}`, 0);
+      fx.setFloat(`uFlareElWeight${i}`, 0);
     };
 
     const q = this._world?.resources.Quality;
@@ -362,7 +392,12 @@ export class VolumetricBinder {
       fx.setFloat('uLensFlareEnabled', 0);
       fx.setFloat('uFlareCount', 0);
       fx.setFloat('uUseSceneDepthFlare', 0);
+      fx.setFloat('uFlareElementCount', 0);
+      fx.setFloat('uFlareChromatic', 0);
+      fx.setFloat('uFlareDirt', 0);
       for (let i = 0; i < LENS_FLARE_SLOTS; i++) clearSlot(i);
+      for (let i = 0; i < FLARE_ELEMENT_SLOTS; i++) clearElement(i);
+      this.flareIntensitySmooth.clear();
       return;
     }
 
@@ -374,16 +409,29 @@ export class VolumetricBinder {
 
     const lightsTune = q?.lensFlareLights;
     const sunTune = q?.lensFlareSun;
-    fx.setFloat('uFlareLightsGhosts', lightsTune?.ghosts ?? 1);
-    fx.setFloat('uFlareLightsStreaks', lightsTune?.streaks ?? 1);
-    fx.setFloat('uFlareLightsHalo', lightsTune?.halo ?? 1);
-    fx.setFloat('uFlareLightsChromatic', lightsTune?.chromatic ?? 1);
-    fx.setFloat('uFlareLightsDirt', lightsTune?.dirt ?? 1);
-    fx.setFloat('uFlareSunGhosts', sunTune?.ghosts ?? 1);
-    fx.setFloat('uFlareSunStreaks', sunTune?.streaks ?? 1);
-    fx.setFloat('uFlareSunHalo', sunTune?.halo ?? 1);
-    fx.setFloat('uFlareSunChromatic', sunTune?.chromatic ?? 1);
-    fx.setFloat('uFlareSunDirt', sunTune?.dirt ?? 1);
+    fx.setFloat('uFlareLightsVolBloom', lightsTune?.volBloom ?? 1);
+    fx.setFloat('uFlareSunVolBloom', sunTune?.volBloom ?? 1);
+
+    const optics = q?.lensFlareOptics ?? defaultLensFlareOptics();
+    fx.setFloat('uFlareChromatic', optics.chromatic);
+    fx.setFloat('uFlareDirt', optics.dirt);
+    const elCount = Math.min(optics.elements.length, FLARE_ELEMENT_SLOTS);
+    fx.setFloat('uFlareElementCount', elCount);
+    for (let i = 0; i < FLARE_ELEMENT_SLOTS; i++) {
+      const el = i < elCount ? optics.elements[i] : undefined;
+      if (!el) {
+        clearElement(i);
+        continue;
+      }
+      fx.setFloat(`uFlareElKind${i}`, lensFlareElementKindCode(el.kind));
+      fx.setVector3(
+        `uFlareElColor${i}`,
+        new Vector3(el.color[0], el.color[1], el.color[2]),
+      );
+      fx.setFloat(`uFlareElSize${i}`, el.size);
+      fx.setFloat(`uFlareElAxis${i}`, el.axis);
+      fx.setFloat(`uFlareElWeight${i}`, el.weight);
+    }
 
     const cam = this._camera;
     const scene = cam.getScene();
@@ -394,6 +442,9 @@ export class VolumetricBinder {
     const view = cam.getViewMatrix();
     const viewport = new Viewport(0, 0, w, h);
     const identity = Matrix.Identity();
+
+    this.flareSmoothFrame = (this.flareSmoothFrame + 1) & 0xffff;
+    const liveKeys = new Set<string>();
 
     let count = 0;
     const flares = pack.lensFlares ?? [];
@@ -430,6 +481,11 @@ export class VolumetricBinder {
       if (!Number.isFinite(uvx) || !Number.isFinite(uvy)) continue;
       const depth = Math.max(viewPos.z, f.directional > 0.5 ? 1e4 : 0);
 
+      // Quantized UV key so EMA follows the source across small motion without slot remapping pops.
+      const key = `${f.directional > 0.5 ? 's' : 'l'}:${(uvx * 32) | 0}:${(uvy * 32) | 0}`;
+      liveKeys.add(key);
+      intensity = this.smoothFlareIntensity(key, intensity);
+
       fx.setVector3(`uFlareScreen${count}`, new Vector3(uvx, uvy, depth));
       fx.setVector3(
         `uFlareColor${count}`,
@@ -438,6 +494,13 @@ export class VolumetricBinder {
       fx.setFloat(`uFlareIntensity${count}`, intensity);
       fx.setFloat(`uFlareDirectional${count}`, f.directional);
       count++;
+    }
+
+    // Drop stale EMA entries so reappearing lights don't inherit old peaks.
+    if ((this.flareSmoothFrame & 15) === 0) {
+      for (const k of [...this.flareIntensitySmooth.keys()]) {
+        if (!liveKeys.has(k)) this.flareIntensitySmooth.delete(k);
+      }
     }
 
     for (let i = count; i < LENS_FLARE_SLOTS; i++) clearSlot(i);
@@ -709,15 +772,14 @@ export class VolumetricBinder {
       this.setFluidUniforms(effect, pack, i);
     }
     // Fog density slots only — analytical water uses uWater* medium uniforms.
-    const fogSlots = pack.fogs ?? pack.fluids ?? [];
+    const fogSlots = pack.fogs ?? [];
     effect.setFloat('uFluidCount', Math.min(fogSlots.length, VOLUMETRIC_FLUID_SLOTS));
   }
 
   private setFluidUniforms(effect: EffectLike, pack: GatheredFrame, index: number): void {
-    // Prefer pack.fogs; fall back to deprecated pack.fluids shim.
-    const F = pack.fogs?.[index] ?? pack.fluids?.[index];
+    const F = pack.fogs?.[index];
     const s = String(index);
-    const atlas = this._fluids?.densityAtlases[index] ?? this._fluidDummy;
+    const atlas = this._fog?.densityAtlases[index] ?? this._fluidDummy;
     effect.setTexture(`uFluidDensityAtlas${s}`, atlas);
     if (!F) {
       effect.setVector3(`uFluidCenter${s}`, Vector3.Zero());

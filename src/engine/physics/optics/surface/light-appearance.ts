@@ -3,8 +3,8 @@
  * vs spectral lasers (wavelengthNm + powerW).
  */
 
-import { clamp01, clampRange } from '../../math/clamp';
-import { clampRgb, normalizeChromaticity, type Rgb01 } from './color';
+import { clamp01, clampRange } from '../../../math/clamp';
+import { clampRgb, normalizeChromaticity, type Rgb01 } from '../display/color';
 import {
   displayLuminousToneMap,
   eyeAdaptationGainFromAmbient,
@@ -12,11 +12,11 @@ import {
   displayLuminousPower,
   photopicLuminousEfficacy,
   type VisionBrightnessOpts,
-} from './laser-brightness';
-import { ENVIRONMENT_AMBIENT_DEFAULT } from './environment-lighting';
-import type { LightMode } from './modes';
-import { isSunMode } from './modes';
-import { rayleighScatterWeight, wavelengthToRgb } from './wavelength';
+} from '../display/laser-brightness';
+import { ENVIRONMENT_AMBIENT_DEFAULT } from '../scene/environment-lighting';
+import type { LightMode } from '../beam/modes';
+import { isSunMode } from '../beam/modes';
+import { rayleighScatterWeight, wavelengthToRgb } from '../display/wavelength';
 
 /** Lasers stay spectral (λ + W). All other emitters use HDR lamp fields. */
 export function isSpectralLightMode(mode: LightMode): boolean {

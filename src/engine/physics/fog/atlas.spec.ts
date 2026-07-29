@@ -3,13 +3,13 @@ import {
   atlasUvToVoxel,
   buoyancyForce,
   clampSimDt,
-  fluidAtlasLayout,
+  fogAtlasLayout,
   voxelToAtlasUv,
 } from './atlas';
 
-describe('fluidAtlasLayout', () => {
+describe('fogAtlasLayout', () => {
   it('packs 32³ into a square-ish atlas', () => {
-    const L = fluidAtlasLayout(32);
+    const L = fogAtlasLayout(32);
     expect(L.gridRes).toBe(32);
     expect(L.tilesX * L.tilesY).toBeGreaterThanOrEqual(32);
     expect(L.atlasWidth).toBe(32 * L.tilesX);
@@ -17,7 +17,7 @@ describe('fluidAtlasLayout', () => {
   });
 
   it('round-trips voxel centers through UV', () => {
-    const L = fluidAtlasLayout(32);
+    const L = fogAtlasLayout(32);
     for (const iz of [0, 1, 15, 31]) {
       const [u, v] = voxelToAtlasUv(4, 7, iz, L);
       const back = atlasUvToVoxel(u, v, L);
@@ -26,7 +26,7 @@ describe('fluidAtlasLayout', () => {
   });
 
   it('rejects UV past last valid slice padding', () => {
-    const L = fluidAtlasLayout(32);
+    const L = fogAtlasLayout(32);
     // Far past last tile row.
     expect(atlasUvToVoxel(0.99, 0.99, L)).toBeNull();
   });

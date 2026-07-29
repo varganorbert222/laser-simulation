@@ -6,7 +6,7 @@ import {
   defaultParticleSizeNm,
   isScatterModel,
   type ScatterModel,
-} from '../../physics/optics/scatter-model';
+} from '../../physics/optics/media/scatter-model';
 import {
   defaultMediaVolumeForKind,
   isClimatePreset,
@@ -18,14 +18,14 @@ import {
   type MediaKind,
   type MediaLayer,
   type MediaPresetId,
-} from '../../physics/optics/media-optical-presets';
+} from '../../physics/optics/media/media-optical-presets';
 import {
   clampRelativeHumidity,
   clampTemperatureC,
-} from '../../physics/optics/atmosphere-climate';
+} from '../../physics/optics/atmosphere/atmosphere-climate';
 
-export type { ScatterModel } from '../../physics/optics/scatter-model';
-export type { MediaKind, MediaLayer, MediaPresetId } from '../../physics/optics/media-optical-presets';
+export type { ScatterModel } from '../../physics/optics/media/scatter-model';
+export type { MediaKind, MediaLayer, MediaPresetId } from '../../physics/optics/media/media-optical-presets';
 
 export interface MediaVolume {
   /** Preset identity (legacy field name `kind`). */
