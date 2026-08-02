@@ -35,6 +35,10 @@ uniform float uWaterDensity;
 uniform float uWaterScatter;
 uniform float uWaterAbsorb;
 uniform vec3 uWaterGravity;
+/** Same Gerstner params as analytical water PP (free-surface displacement). */
+uniform float uWaterWaveAmp;
+uniform float uWaterWaveFreq;
+uniform float uWaterWaveSteep;
 
 /** Environment irradiance → media in-scatter (cloud / fog lighting). */
 uniform vec3 uEnvHemi;
@@ -107,22 +111,55 @@ bool intersectBox(vec3 ro, vec3 rd, vec3 center, vec3 halfSize, out float tEnter
   return tExit > max(tEnter, 0.0);
 }
 
-bool pointInWaterSlab(vec3 pCam) {
-  if (uWaterMediumOn < 0.5) return false;
-  vec3 d = pCam - uWaterCenter;
-  vec3 local = vec3(dot(d, uWaterAxisX), dot(d, uWaterAxisY), dot(d, uWaterAxisZ));
-  if (any(greaterThan(abs(local), uWaterHalfExt + vec3(1e-4)))) return false;
+// @include fluid/wave_gerstner.glsl
+
+vec3 waterUp() {
   vec3 g = uWaterGravity;
   float glen = length(g);
-  vec3 up = glen > 1e-5 ? normalize(-g) : vec3(0.0, 1.0, 0.0);
+  return glen > 1e-5 ? normalize(-g) : vec3(0.0, 1.0, 0.0);
+}
+
+float waterFlatSurfaceH(vec3 up) {
   float extUp =
     abs(dot(uWaterAxisX, up)) * uWaterHalfExt.x +
     abs(dot(uWaterAxisY, up)) * uWaterHalfExt.y +
     abs(dot(uWaterAxisZ, up)) * uWaterHalfExt.z;
   float centerH = dot(uWaterCenter, up);
   float fill = clamp(uWaterFill, 0.0, 1.0);
-  float surfaceH = centerH - extUp + 2.0 * extUp * fill;
-  return dot(pCam, up) <= surfaceH + 1e-3;
+  return centerH - extUp + 2.0 * extUp * fill;
+}
+
+float waterDisplacedSurfaceH(vec3 pCam, vec3 up) {
+  vec3 ax;
+  vec3 az;
+  waveTangentFrame(up, ax, az);
+  float x = dot(pCam, ax);
+  float z = dot(pCam, az);
+  return waterFlatSurfaceH(up)
+    + waveHeight(x, z, uWaterWaveAmp, uWaterWaveFreq, uWaterWaveSteep, uTime);
+}
+
+float intersectWaterWavySurface(vec3 ro, vec3 rd, vec3 up) {
+  float yFlat = waterFlatSurfaceH(up);
+  float denom = dot(rd, up);
+  if (abs(denom) < 1e-5) return -1.0;
+  float t = (yFlat - dot(ro, up)) / denom;
+  for (int i = 0; i < 4; i++) {
+    vec3 p = ro + rd * t;
+    float target = waterDisplacedSurfaceH(p, up);
+    float err = target - dot(p, up);
+    t += err / denom;
+  }
+  return t;
+}
+
+bool pointInWaterSlab(vec3 pCam) {
+  if (uWaterMediumOn < 0.5) return false;
+  vec3 d = pCam - uWaterCenter;
+  vec3 local = vec3(dot(d, uWaterAxisX), dot(d, uWaterAxisY), dot(d, uWaterAxisZ));
+  if (any(greaterThan(abs(local), uWaterHalfExt + vec3(1e-4)))) return false;
+  vec3 up = waterUp();
+  return dot(pCam, up) <= waterDisplacedSurfaceH(pCam, up) + 1e-3;
 }
 
 void accumWaterMedium(
@@ -286,7 +323,7 @@ vec3 refractSafeMarch(vec3 i, vec3 n, float eta) {
 }
 
 /**
- * Analytical water free-surface medium switch (fillFraction slab).
+ * Analytical water free-surface medium switch (fillFraction + Gerstner waves).
  * Bounce >= 1: air to water Snell. Bounce >= 2: keep underwater OBB span.
  */
 void applyWaterMediumSwitch(inout vec3 ro, inout vec3 rd, inout float tEnter, inout float tExit) {
@@ -306,18 +343,9 @@ void applyWaterMediumSwitch(inout vec3 ro, inout vec3 rd, inout float tEnter, in
   te = max(te, 0.0);
   if (tx <= te + 1e-4) return;
 
-  vec3 g = uWaterGravity;
-  float glen = length(g);
-  vec3 up = glen > 1e-5 ? normalize(-g) : vec3(0.0, 1.0, 0.0);
-  float extUp =
-    abs(dot(ax, up)) * halfExt.x + abs(dot(ay, up)) * halfExt.y + abs(dot(az, up)) * halfExt.z;
-  float centerH = dot(center, up);
-  float fill = clamp(uWaterFill, 0.0, 1.0);
-  float surfaceH = centerH - extUp + 2.0 * extUp * fill;
-
-  float denom = dot(rd, up);
-  float tSurf = abs(denom) > 1e-5 ? (surfaceH - dot(ro, up)) / denom : -1.0;
-  bool fromAir = dot(ro, up) > surfaceH;
+  vec3 up = waterUp();
+  float tSurf = intersectWaterWavySurface(ro, rd, up);
+  bool fromAir = dot(ro, up) > waterDisplacedSurfaceH(ro, up);
 
   if (tSurf < te - 1e-3 || tSurf > tx + 1e-3) {
     if (!fromAir && uFluidMaxSurfaceBounces >= 1.5) {
@@ -327,7 +355,8 @@ void applyWaterMediumSwitch(inout vec3 ro, inout vec3 rd, inout float tEnter, in
     return;
   }
 
-  vec3 N = up;
+  vec3 hit = ro + rd * tSurf;
+  vec3 N = waveNormalAt(hit, up, uWaterWaveAmp, uWaterWaveFreq, uWaterWaveSteep, uTime);
   if (dot(N, -rd) < 0.0) N = -N;
   float eta = fromAir ? (1.0 / max(uWaterIor, 1.01)) : max(uWaterIor, 1.01);
 

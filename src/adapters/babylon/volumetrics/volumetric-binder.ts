@@ -723,6 +723,9 @@ export class VolumetricBinder {
           ? new Vector3(g[0] / gLen, g[1] / gLen, g[2] / gLen)
           : new Vector3(0, -1, 0),
       );
+      effect.setFloat('uWaterWaveAmp', water.waveAmplitude);
+      effect.setFloat('uWaterWaveFreq', water.waveFrequency);
+      effect.setFloat('uWaterWaveSteep', water.waveSteepness);
     } else {
       effect.setFloat('uWaterMediumOn', 0);
       effect.setVector3('uWaterCenter', Vector3.Zero());
@@ -737,6 +740,9 @@ export class VolumetricBinder {
       effect.setFloat('uWaterScatter', 0);
       effect.setFloat('uWaterAbsorb', 0);
       effect.setVector3('uWaterGravity', new Vector3(0, -1, 0));
+      effect.setFloat('uWaterWaveAmp', 0);
+      effect.setFloat('uWaterWaveFreq', 1);
+      effect.setFloat('uWaterWaveSteep', 0);
     }
 
     effect.setVector3('uEnvHemi', new Vector3(...pack.env.hemiRgb));
