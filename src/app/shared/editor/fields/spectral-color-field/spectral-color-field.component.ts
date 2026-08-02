@@ -4,6 +4,7 @@ import {
   VISIBLE_NM_MIN,
   clampRange,
   hexToRgb,
+  normalizeChromaticity,
   rgbToHex,
   rgbToWavelengthNm,
   wavelengthToRgb,
@@ -13,6 +14,7 @@ import { patchRgbChannel } from '../color-channel';
 /**
  * Light color: wavelength (nm) ↔ RGB ↔ hex via educational display mapping.
  * Source of truth is wavelengthNm; RGB/hex edits invert to nearest λ.
+ * Swatch uses max-normalized display RGB so it matches GPU laser chroma ratios.
  */
 @Component({
   selector: 'app-spectral-color-field',
@@ -33,7 +35,7 @@ export class SpectralColorFieldComponent {
   readonly nmMax = VISIBLE_NM_MAX;
 
   get rgb(): readonly [number, number, number] {
-    return wavelengthToRgb(this.wavelengthNm);
+    return normalizeChromaticity(wavelengthToRgb(this.wavelengthNm));
   }
 
   get hex(): string {

@@ -4,11 +4,19 @@ import {
   acesLuminanceToneMap,
   displayRgb,
   normalizeChromaticity,
+  srgbToLinear,
+  linearToSrgb,
 } from './color';
 import { laserDotDisplayBrightness } from './laser-brightness';
-import { wavelengthToRgb } from './wavelength';
+import { wavelengthToRgbLinear } from './wavelength';
 
 describe('hue-preserving display', () => {
+  it('round-trips sRGB ↔ linear for mid gray', () => {
+    const lin = srgbToLinear([0.5, 0.5, 0.5]);
+    expect(lin[0]).toBeCloseTo(0.214041, 4);
+    expect(linearToSrgb(lin)[0]).toBeCloseTo(0.5, 4);
+  });
+
   it('normalizes chromaticity so max channel is 1', () => {
     const [r, g, b] = normalizeChromaticity([0.2, 0.8, 0.1]);
     expect(g).toBeCloseTo(1);
@@ -17,7 +25,7 @@ describe('hue-preserving display', () => {
   });
 
   it('luminance ACES keeps 525 nm green-dominant at high intensity', () => {
-    const chroma = normalizeChromaticity(wavelengthToRgb(525));
+    const chroma = normalizeChromaticity(wavelengthToRgbLinear(525));
     const intensity = laserDotDisplayBrightness(50, 525);
     const [r, g, b] = displayRgb(chroma, intensity);
     expect(g).toBeGreaterThan(r);
@@ -27,7 +35,7 @@ describe('hue-preserving display', () => {
   });
 
   it('luminance ACES preserves chroma ratios under huge HDR', () => {
-    const chroma = normalizeChromaticity(wavelengthToRgb(525));
+    const chroma = normalizeChromaticity(wavelengthToRgbLinear(525));
     const hot = acesLuminanceToneMap([chroma[0] * 100, chroma[1] * 100, chroma[2] * 100]);
     const ratioChroma = chroma[0] / chroma[1];
     const ratioHot = hot[0] / hot[1];
@@ -36,14 +44,14 @@ describe('hue-preserving display', () => {
   });
 
   it('per-channel ACES on extreme HDR collapses toward white (why we use luminance ACES)', () => {
-    const chroma = normalizeChromaticity(wavelengthToRgb(525));
+    const chroma = normalizeChromaticity(wavelengthToRgbLinear(525));
     const perChannel = acesFilmToneMap([chroma[0] * 100, chroma[1] * 100, chroma[2] * 100]);
     expect(perChannel[0]).toBeCloseTo(1, 2);
     expect(perChannel[1]).toBeCloseTo(1, 2);
   });
 
   it('power changes brightness but keeps R/G ratio (colour from λ only)', () => {
-    const chroma = normalizeChromaticity(wavelengthToRgb(525));
+    const chroma = normalizeChromaticity(wavelengthToRgbLinear(525));
     const opts = { ambientLevel: 1 as const };
     const lowI = laserDotDisplayBrightness(0.005, 525, opts);
     const highI = laserDotDisplayBrightness(1, 525, opts);

@@ -11,6 +11,7 @@ import {
   isSpectralLightMode,
   isSuppressedSunEntity,
   refreshSceneSunBinding,
+  resolveVisionBrightnessOpts,
   setLightEmitterCommand,
   wavelengthToRgb,
   wouldSuppressAdditionalSun,
@@ -80,6 +81,7 @@ export class LightEditorService {
     this.engine.epoch();
     const vision = this.engine.world().resources.DisplayVision;
     const env = this.engine.world().resources.EnvironmentLighting;
+    const atmo = this.engine.world().resources.Atmosphere;
     return buildScienceReadout({
       wavelengthNm: fallback.wavelengthNm,
       powerW: fallback.powerW,
@@ -89,10 +91,7 @@ export class LightEditorService {
       intensityLm: fallback.intensityLm,
       useColorTemperature: fallback.useColorTemperature,
       colorTemperatureK: fallback.colorTemperatureK,
-      vision: {
-        ambientLevel: env.ambientLevel,
-        responseCurve: vision.responseCurve,
-      },
+      vision: resolveVisionBrightnessOpts(env.ambientLevel, atmo, vision.responseCurve),
     });
   });
 

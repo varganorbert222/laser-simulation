@@ -115,6 +115,8 @@ export class VolumetricBinder {
   private _meterSceneTex: BaseTexture | null = null;
   private _fog: FogBinder | null = null;
   private readonly _fluidDummy: RenderTargetTexture;
+  private theatricalBloomWeight = 0;
+  private theatricalBloomThreshold = 0.85;
 
   constructor(
     private readonly engine: Engine,
@@ -290,6 +292,8 @@ export class VolumetricBinder {
         'uOutputGamma',
         'uAutoExposure',
         'uAerialEnabled',
+        'uTheatricalBloomWeight',
+        'uTheatricalBloomThreshold',
         ...flareUniformNames,
       ],
       ['volumetricTexture', 'uAerialPerspectiveLUT', 'uSceneDepthFlare'],
@@ -326,6 +330,8 @@ export class VolumetricBinder {
       const aerialOn = this._aerialLut && this._world?.resources.Atmosphere?.enabled ? 1 : 0;
       fx.setFloat('uAerialEnabled', aerialOn);
       fx.setTexture('uAerialPerspectiveLUT', this._aerialLut ?? this._aerialDummy);
+      fx.setFloat('uTheatricalBloomWeight', this.theatricalBloomWeight);
+      fx.setFloat('uTheatricalBloomThreshold', this.theatricalBloomThreshold);
 
       this.applyLensFlareUniforms(fx);
     };
@@ -342,6 +348,12 @@ export class VolumetricBinder {
 
   bindFog(fog: FogBinder | null): void {
     this._fog = fog;
+  }
+
+  /** Pre-tonemap HDR theatrical bloom (from StudioPipeline.syncBloomFromLights). */
+  setTheatricalBloom(state: { enabled: boolean; weight: number; threshold: number }): void {
+    this.theatricalBloomWeight = state.enabled ? Math.max(0, state.weight) : 0;
+    this.theatricalBloomThreshold = Math.max(0.05, state.threshold);
   }
 
   /** Scene depth (camera-space Z) for solid occlusion — typically from DepthRenderer. */

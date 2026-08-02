@@ -15,6 +15,28 @@ export function clampRgb(rgb: Rgb01): [number, number, number] {
   return [clamp01(rgb[0]), clamp01(rgb[1]), clamp01(rgb[2])];
 }
 
+/** IEC 61966-2-1 sRGB EOTF (display → linear light). */
+export function srgbToLinearChannel(c: number): number {
+  const x = Number.isFinite(c) ? clamp01(c) : 0;
+  return x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+}
+
+/** IEC 61966-2-1 sRGB OETF (linear light → display). */
+export function linearToSrgbChannel(c: number): number {
+  const x = Number.isFinite(c) ? Math.max(0, c) : 0;
+  if (x <= 0.0031308) return clamp01(x * 12.92);
+  return clamp01(1.055 * Math.pow(x, 1 / 2.4) - 0.055);
+}
+
+/** Decode UI / hex / Helland-style sRGB RGB into linear working space. */
+export function srgbToLinear(rgb: Rgb01): [number, number, number] {
+  return [srgbToLinearChannel(rgb[0]), srgbToLinearChannel(rgb[1]), srgbToLinearChannel(rgb[2])];
+}
+
+export function linearToSrgb(rgb: Rgb01): [number, number, number] {
+  return [linearToSrgbChannel(rgb[0]), linearToSrgbChannel(rgb[1]), linearToSrgbChannel(rgb[2])];
+}
+
 /**
  * Max-normalize RGB so the brightest channel is 1 (chromaticity).
  * Colour depends on wavelength only — never on power.

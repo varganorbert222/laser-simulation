@@ -6,7 +6,7 @@ uniform sampler2D textureSampler;
 uniform sampler2D volumetricTexture;
 /** 0 = ACES, 1 = Reinhard, 2 = Hable (Uncharted 2). */
 uniform float uTonemapMode;
-/** 0 = SDR, 1 = HDR (tonemap strength — lighting stays linear HDR). */
+/** 0 = SDR (stronger display map), 1 = HDR (full headroom into tonemap). */
 uniform float uColorProfile;
 /** Display gamma for canvas encode after tonemap (typically 2.2 / 2.4). */
 uniform float uOutputGamma;
@@ -14,6 +14,9 @@ uniform float uOutputGamma;
 uniform float uAutoExposure;
 uniform float uAerialEnabled;
 uniform sampler3D uAerialPerspectiveLUT;
+/** Theatrical bloom weight (0 = off). Soft-threshold extract + cheap blur, pre-tonemap. */
+uniform float uTheatricalBloomWeight;
+uniform float uTheatricalBloomThreshold;
 
 // @include postfx/lens_flare.glsl
 
@@ -77,6 +80,46 @@ vec3 applyDisplayGamma(vec3 linearRgb, float gamma) {
   return pow(max(linearRgb, vec3(0.0)), vec3(1.0 / g));
 }
 
+/** Soft-threshold highlight residual (HDR). */
+vec3 softThresholdHdr(vec3 c, float threshold) {
+  float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float knee = max(threshold * 0.25, 1e-4);
+  float soft = clamp((y - threshold + knee) / (2.0 * knee), 0.0, 1.0);
+  float t = max(y - threshold, soft * soft * knee);
+  return c * (t / max(y, 1e-6));
+}
+
+/** Scene + volumetrics at UV (linear HDR). */
+vec3 sampleHdrComposite(vec2 uv) {
+  return texture2D(textureSampler, uv).rgb + texture2D(volumetricTexture, uv).rgb;
+}
+
+/**
+ * Cheap theatrical bloom on HDR composite (includes lasers).
+ * Dual-radius weighted taps — not a full mip pyramid, but energy-correct pre-tonemap.
+ */
+vec3 theatricalBloom(vec2 uv, float weight, float threshold) {
+  if (weight < 1e-4) return vec3(0.0);
+  // ~1.5 px in UV space (resolution-aware).
+  vec2 px = max(fwidth(uv), vec2(1e-5)) * 1.5;
+  vec3 acc = softThresholdHdr(sampleHdrComposite(uv), threshold) * 0.28;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2( px.x, 0.0)), threshold) * 0.12;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(-px.x, 0.0)), threshold) * 0.12;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(0.0,  px.y)), threshold) * 0.12;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(0.0, -px.y)), threshold) * 0.12;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2( px.x,  px.y)), threshold) * 0.06;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(-px.x,  px.y)), threshold) * 0.06;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2( px.x, -px.y)), threshold) * 0.06;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(-px.x, -px.y)), threshold) * 0.06;
+  // Wider halo
+  vec2 wide = px * 3.0;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2( wide.x, 0.0)), threshold) * 0.04;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(-wide.x, 0.0)), threshold) * 0.04;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(0.0,  wide.y)), threshold) * 0.04;
+  acc += softThresholdHdr(sampleHdrComposite(uv + vec2(0.0, -wide.y)), threshold) * 0.04;
+  return acc * weight;
+}
+
 void main(void) {
   vec3 scene = texture2D(textureSampler, vUV).rgb;
   // Optional distant aerial haze (Atmosphere LUT) — screen-space approx until depth-aware path.
@@ -89,17 +132,19 @@ void main(void) {
   }
   vec3 vol = texture2D(volumetricTexture, vUV).rgb;
 
-  // SDR: LDR headroom — clamp before tonemap so highlights don't explode the film curve.
+  // Linear HDR composite first — never clamp volumetrics before tonemap (laser energy).
+  float exposure = max(uAutoExposure, 1e-6);
+  vec3 combined = (scene + vol) * exposure;
+
+  // Theatrical bloom + lens flare on HDR (includes lasers), before tonemap — Unity/Unreal order.
+  combined += theatricalBloom(vUV, uTheatricalBloomWeight, uTheatricalBloomThreshold) * exposure;
+  combined += applyScreenSpaceLensFlare(vUV) * exposure;
+
+  // SDR display profile: mild pre-exposure (stronger film compression into LDR).
+  // HDR: full headroom into the same tonemap operator (sky/IBL may be >1).
   if (uColorProfile < 0.5) {
-    scene = clamp(scene, 0.0, 1.0);
-    vol = clamp(vol, 0.0, 1.0);
+    combined *= 0.55;
   }
-
-  // Linear HDR composite (scene + volumetric contribution), then eye / display exposure.
-  vec3 combined = (scene + vol) * max(uAutoExposure, 1e-6);
-
-  // Screen-space optical lens flare (ghosts / streaks / halo) — additive HDR, pre-tonemap.
-  combined += applyScreenSpaceLensFlare(vUV) * max(uAutoExposure, 1e-6);
 
   // Tonemap once for the full frame (ACES / Reinhard / Hable).
   vec3 mapped = applyTonemap(combined);

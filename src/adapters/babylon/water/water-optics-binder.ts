@@ -170,7 +170,8 @@ export class WaterOpticsBinder {
     camera.detachPostProcess(this.waterCompose);
     const chain = (camera as Camera & { _postProcesses?: (PostProcess | null)[] })._postProcesses;
     const idx = after && chain ? chain.indexOf(after) : -1;
-    camera.attachPostProcess(this.waterCompose, idx >= 0 ? idx + 1 : null);
+    // Insert *before* `after` (compose) so refraction runs on HDR scene, not LDR tonemap output.
+    camera.attachPostProcess(this.waterCompose, idx >= 0 ? idx : null);
   }
 
   setEnvTexture(tex: Texture | null): void {

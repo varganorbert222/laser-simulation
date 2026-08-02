@@ -28,10 +28,9 @@ export type ShadowQuality = 'off' | 'low' | 'medium' | 'high';
 
 /**
  * Output / display profile (Unity Camera.allowHDR + tonemapper headroom).
- * Working color space is always linear HDR (Unity Linear / Unreal working space).
- * This only changes the final compose stage:
- * - `hdr` — weaker tonemap; sky/IBL may write values >1 (physical sun)
- * - `sdr` — clamp sources + strong tonemap for LDR display
+ * Working color space is always linear HDR.
+ * - `hdr` — full headroom into tonemap; sky/IBL may write values >1
+ * - `sdr` — stronger display map (pre-exposure ×0.55 before the same tonemapper)
  * Display gamma ({@link Quality.outputGamma}) is applied after tonemap for both
  * (Babylon image processing is off — canvas is LDR).
  */

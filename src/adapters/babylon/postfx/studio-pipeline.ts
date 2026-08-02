@@ -13,21 +13,30 @@ import {
   type World,
 } from '@engine';
 
+/** HDR theatrical bloom parameters applied in volumetric compose (pre-tonemap). */
+export interface TheatricalBloomState {
+  enabled: boolean;
+  weight: number;
+  threshold: number;
+}
+
 export class StudioPipeline {
   readonly pipeline: DefaultRenderingPipeline;
   readonly glowLayer: GlowLayer;
+
+  /** Last sync result — compose samples this for pre-tonemap HDR bloom. */
+  theatricalBloom: TheatricalBloomState = {
+    enabled: false,
+    weight: 0,
+    threshold: 0.85,
+  };
 
   constructor(scene: Scene, camera: Camera) {
     this.pipeline = new DefaultRenderingPipeline('studioPipeline', true, scene, [camera]);
     this.pipeline.fxaaEnabled = true;
     this.pipeline.samples = 4;
-    this.pipeline.bloomEnabled = true;
-    this.pipeline.bloomThreshold = 0.75;
-    this.pipeline.bloomWeight = 0.28;
-    this.pipeline.bloomKernel = 40;
-    this.pipeline.bloomScale = 0.5;
-    // Keep image processing off materials: failed IP shaders spam glGetProgramiv.
-    // Exposure / tonemap for beams is handled in volumetric compose.
+    // Bloom runs in volumetric compose (HDR, includes lasers). DRP bloom stays off (LDR / post-γ).
+    this.pipeline.bloomEnabled = false;
     this.pipeline.imageProcessingEnabled = false;
 
     this.glowLayer = new GlowLayer('studioGlow', scene, {
@@ -44,9 +53,11 @@ export class StudioPipeline {
   }
 
   syncBloomFromLights(world: World): void {
+    this.pipeline.bloomEnabled = false;
+
     // Theatrical glow is presentation-only; physics path never depends on it.
     if (!world.resources.Quality.theatricalGlow) {
-      this.pipeline.bloomEnabled = false;
+      this.theatricalBloom = { enabled: false, weight: 0, threshold: 0.85 };
       this.glowLayer.intensity = 0;
       return;
     }
@@ -77,16 +88,17 @@ export class StudioPipeline {
       n += 1;
     }
     if (n === 0) {
-      this.pipeline.bloomEnabled = false;
+      this.theatricalBloom = { enabled: false, weight: 0, threshold: 0.85 };
       this.glowLayer.intensity = 0;
       return;
     }
     const bloomAvg = Math.min(1.0, bloomSum / n);
     const glowAvg = Math.min(1.0, glowSum / n);
-    this.pipeline.bloomEnabled = bloomAvg > 0.02;
-    this.pipeline.bloomWeight = Math.min(0.55, 0.18 + bloomAvg * 0.28);
-    this.pipeline.bloomThreshold = Math.max(0.65, 0.9 - bloomAvg * 0.2);
-    this.pipeline.bloomKernel = Math.min(64, 28 + bloomAvg * 24);
+    this.theatricalBloom = {
+      enabled: bloomAvg > 0.02,
+      weight: Math.min(0.55, 0.18 + bloomAvg * 0.28),
+      threshold: Math.max(0.65, 0.9 - bloomAvg * 0.2),
+    };
     this.glowLayer.intensity = Math.min(1.2, 0.25 + glowAvg * 0.45);
   }
 

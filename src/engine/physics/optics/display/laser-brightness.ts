@@ -6,8 +6,8 @@
  *   I_vis ≈ P × V_eff(λ) × S_Rayleigh/Mie × Q_beam
  *
  * Two GPU scales:
- *   - physicalLuminousScale → volumetric march (linear in P·V·exposure; ACES at compose)
- *   - displayLuminousPower → surface/UI (Weber–Fechner / editable curve)
+ *   - physicalLuminousScale → volumetric march **and** surface radiance (linear HDR; ACES at compose)
+ *   - displayLuminousPower → UI / science readout only (Weber–Fechner / editable curve)
  *
  * Physical BeamModel irradiance stays ∝ P; waist is not grown with power (étendue).
  *
@@ -189,7 +189,7 @@ export function laserDotDisplayBrightness(
 
 /**
  * Educational display luminous scale for emitters (V_eff(λ) + ambient exposure + response curve).
- * Used as GpuLight.powerDisplay for surfaces/UI; volumetrics use physicalLuminousScale.
+ * Used for UI / science readout display brightness; GPU surfaces+volumetrics use physicalLuminousScale.
  */
 export function displayLuminousPower(
   powerW: number,

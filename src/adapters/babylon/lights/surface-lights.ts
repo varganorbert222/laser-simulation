@@ -20,11 +20,10 @@ import {
 } from '../materials/surface-radiance-plugin';
 
 /**
- * Maps BeamModel irradiance (includes DISPLAY_RADIANCE_SCALE) × display power
- * into a StandardMaterial-additive range comparable to the old SpotLight×2 path.
- * Optics stay in BeamModel; this is presentation scale only.
+ * Maps BeamModel irradiance × **linear** luminous scale into StandardMaterial-additive HDR.
+ * Same physical scale family as volumetrics (`powerLinear`); film tonemap runs once in compose.
  */
-const SURFACE_OPTICS_DISPLAY_GAIN = 1800;
+const SURFACE_OPTICS_LINEAR_GAIN = 48;
 
 /**
  * Optical surface lighting: LightEmitter → SurfaceRadiancePlugin
@@ -103,7 +102,7 @@ export class SurfaceLightSync {
         origin: [pose.position[0], pose.position[1], pose.position[2]],
         direction: [pose.direction[0], pose.direction[1], pose.direction[2]],
         color: [appearance.chroma[0], appearance.chroma[1], appearance.chroma[2]],
-        power: Math.max(0, appearance.powerDisplay) * SURFACE_OPTICS_DISPLAY_GAIN,
+        power: Math.max(0, appearance.powerLinear) * SURFACE_OPTICS_LINEAR_GAIN,
         mode: gpu.mode,
         p0: gpu.p0,
         p1: gpu.p1,

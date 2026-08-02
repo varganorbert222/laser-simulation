@@ -98,8 +98,7 @@
           float absorb = clamp(uSrAbsorption, 0.0, 1.0);
           {{SURFACE_LIGHT_EVAL_LOOP}}
           acc += srProjectedCaustic(worldPos, N) * albedo;
-          // Soft HDR ceiling only (∞ → ~1/k). Not a film curve — ACES/Reinhard/Hable
-          // run once in volumetric compose on the full-frame linear composite.
-          return acc / (vec3(1.0) + acc * 0.08);
+          // Linear HDR accumulation — film tonemap + gamma run once in volumetric compose.
+          return acc;
         }
         #endif

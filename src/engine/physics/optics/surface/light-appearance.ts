@@ -4,7 +4,7 @@
  */
 
 import { clamp01, clampRange } from '../../../math/clamp';
-import { clampRgb, normalizeChromaticity, type Rgb01 } from '../display/color';
+import { clampRgb, normalizeChromaticity, srgbToLinear, type Rgb01 } from '../display/color';
 import {
   displayLuminousToneMap,
   eyeAdaptationGainFromAmbient,
@@ -16,7 +16,7 @@ import {
 import { ENVIRONMENT_AMBIENT_DEFAULT } from '../scene/environment-lighting';
 import type { LightMode } from '../beam/modes';
 import { isSunMode } from '../beam/modes';
-import { rayleighScatterWeight, wavelengthToRgb } from '../display/wavelength';
+import { rayleighScatterWeight, wavelengthToRgbLinear } from '../display/wavelength';
 
 /** Lasers stay spectral (λ + W). All other emitters use HDR lamp fields. */
 export function isSpectralLightMode(mode: LightMode): boolean {
@@ -96,7 +96,8 @@ export function clampIntensityLm(v: number, fallback = 800): number {
 }
 
 /**
- * Approximate blackbody chromaticity (Tanner Helland fit) → linear RGB filter.
+ * Approximate blackbody chromaticity (Tanner Helland fit) → display-referred RGB.
+ * Output is sRGB-like 0–1 for UI / storage; lighting must decode via {@link resolveHdrChroma}.
  * Valid roughly 1000–40000 K; clamped to our UI range.
  */
 export function colorTemperatureToRgb(kelvin: number): [number, number, number] {
@@ -152,12 +153,15 @@ export function normalizeHdrAppearance(
   };
 }
 
-/** Final filter chromaticity for an HDR lamp (CCT overrides RGB when enabled). */
+/**
+ * Final filter chromaticity for an HDR lamp (CCT overrides RGB when enabled).
+ * Color-picker / Helland CCT values are sRGB-like — decode to linear before normalize.
+ */
 export function resolveHdrChroma(hdr: LightHdrAppearance): [number, number, number] {
-  if (hdr.useColorTemperature) {
-    return normalizeChromaticity(colorTemperatureToRgb(hdr.colorTemperatureK));
-  }
-  return normalizeChromaticity(hdr.colorRgb);
+  const displayRgb = hdr.useColorTemperature
+    ? colorTemperatureToRgb(hdr.colorTemperatureK)
+    : hdr.colorRgb;
+  return normalizeChromaticity(srgbToLinear(displayRgb));
 }
 
 function lampLuminousProduct(
@@ -218,7 +222,7 @@ export function resolveEmitterAppearance(
   opts?: VisionBrightnessOpts | null,
 ): ResolvedEmitterAppearance {
   if (isSpectralLightMode(emitter.params.mode)) {
-    const chroma = normalizeChromaticity(wavelengthToRgb(emitter.wavelengthNm) as Rgb01);
+    const chroma = normalizeChromaticity(wavelengthToRgbLinear(emitter.wavelengthNm) as Rgb01);
     return {
       chroma,
       powerDisplay: displayLuminousPower(emitter.powerW, emitter.wavelengthNm, opts),

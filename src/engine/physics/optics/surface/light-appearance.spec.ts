@@ -4,6 +4,8 @@ import {
   estimateIntensityLmFromSpectral,
   normalizeLightEmitter,
   resolveEmitterAppearance,
+  resolveHdrChroma,
+  srgbToLinear,
   defaultLightEmitter,
   defaultLightEmitterForMode,
 } from '../../../index';
@@ -14,6 +16,31 @@ describe('light appearance (HDR lamps)', () => {
     const cool = colorTemperatureToRgb(9000);
     expect(warm[0]).toBeGreaterThan(warm[2]!);
     expect(cool[2]).toBeGreaterThan(cool[0]!);
+  });
+
+  it('decodes sRGB lamp RGB to linear chromaticity', () => {
+    const midGray = resolveHdrChroma({
+      colorRgb: [0.5, 0.5, 0.5],
+      intensityLm: 100,
+      useColorTemperature: false,
+      colorTemperatureK: 6500,
+    });
+    const expected = srgbToLinear([0.5, 0.5, 0.5])[0]!;
+    // After max-normalize, mid gray stays equal channels at 1.
+    expect(midGray[0]).toBeCloseTo(1, 5);
+    expect(midGray[1]).toBeCloseTo(1, 5);
+    expect(midGray[2]).toBeCloseTo(1, 5);
+    // Non-equal sRGB: red channel stays dominant after linearize+normalize.
+    const red = resolveHdrChroma({
+      colorRgb: [0.8, 0.2, 0.1],
+      intensityLm: 100,
+      useColorTemperature: false,
+      colorTemperatureK: 6500,
+    });
+    expect(red[0]).toBeCloseTo(1, 5);
+    expect(red[1]).toBeLessThan(red[0]!);
+    expect(red[2]).toBeLessThan(red[1]!);
+    expect(srgbToLinear([0.5, 0.5, 0.5])[0]).toBeCloseTo(expected, 5);
   });
 
   it('resolves lasers spectrally and lamps via lumens', () => {

@@ -50,7 +50,7 @@ export const hu = {
   colorProfileHdr: 'HDR',
   colorProfileSdr: 'SDR',
   hintColorProfile:
-    'Unity Camera.allowHDR mintára. Working space mindig linear. HDR: gyengébb tonemap, égbolt/IBL >1. SDR: forrás clamp + erős tonemap. Alapértelmezés: HDR.',
+    'Working space mindig linear HDR. HDR: teljes dinamika a tonemapbe, égbolt/IBL >1. SDR: erősebb display map (×0.55 a tonemap előtt). Alapértelmezés: HDR.',
   outputGamma: 'Gamma',
   hintOutputGamma:
     'Megjelenítési gamma a tonemap után (2.2 / 2.4 / egyéni). A canvas LDR — Babylon image processing helyett itt encode-olunk.',
@@ -667,7 +667,7 @@ export const en = {
   colorProfileHdr: 'HDR',
   colorProfileSdr: 'SDR',
   hintColorProfile:
-    'Like Unity Camera.allowHDR. Working space is always linear. HDR: weaker tonemap, sky/IBL may exceed 1. SDR: source clamp + strong tonemap. Default: HDR.',
+    'Working space is always linear HDR. HDR: full headroom into tonemap; sky/IBL may exceed 1. SDR: stronger display map (×0.55 before tonemap). Default: HDR.',
   outputGamma: 'Gamma',
   hintOutputGamma:
     'Display gamma after tonemap (2.2 / 2.4 / custom). Canvas is LDR — encode here (Babylon image processing is off).',

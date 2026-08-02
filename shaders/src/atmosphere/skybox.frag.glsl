@@ -75,10 +75,13 @@ vec3 atmoSampleMoon(vec3 viewDir, vec3 moonDir, float angularRadius) {
   return rgb * 1.35 * max(uMoonExposure, 0.0);
 }
 
-/** Push chroma away from luminance — vivid noon blues without blowing energy. */
+/** Push chroma away from luminance, then restore Y so energy stays physically scaled. */
 vec3 atmoBoostChroma(vec3 c, float amount) {
   float y = dot(c, vec3(0.2126, 0.7152, 0.0722));
-  return max(mix(vec3(y), c, amount), vec3(0.0));
+  if (y < 1e-8) return vec3(0.0);
+  vec3 boosted = max(mix(vec3(y), c, amount), vec3(0.0));
+  float y2 = dot(boosted, vec3(0.2126, 0.7152, 0.0722));
+  return boosted * (y / max(y2, 1e-8));
 }
 
 /** Simple display sky so the dome is never pitch-black if LUTs are empty/unready. */
@@ -144,7 +147,7 @@ void main() {
   // Keep a little analytical fill so empty LUT regions never go pure black
   daySky = max(daySky, analytical * 0.28);
   // Vivid chroma (noon blue / sunset orange) without changing luminance much.
-  daySky = atmoBoostChroma(daySky, 1.4);
+  daySky = atmoBoostChroma(daySky, 1.25);
 
   // Night: starfield + moon (full-moon ≈ anti-solar = light travel dir).
   float night = atmoNightFactor(towardSun);

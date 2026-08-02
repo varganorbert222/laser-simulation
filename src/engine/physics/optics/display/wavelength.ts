@@ -28,44 +28,137 @@ export function deriveFromWavelengthNm(wavelengthNm: number): WavelengthDerived 
 }
 
 /**
- * Display mapping λ → RGB (educational approximation from common CIE-ish piecewise).
- * Tagged as visualized / approximated — not a calibrated colorimetric transform.
+ * Refined Academo piecewise RGB × vision-limit factor — **no γ encode**.
+ * Use for GPU / working-space chromaticity (Linear HDR pipeline).
  */
-export function wavelengthToRgb(nm: number): readonly [number, number, number] {
-  const w = clampRange(nm, VISIBLE_NM_MIN, 809);
+export function wavelengthToRgbLinear(nm: number): readonly [number, number, number] {
+  if (!Number.isFinite(nm)) return [0, 0, 0];
+  const wavelength = nm;
+
   let red = 0;
   let green = 0;
   let blue = 0;
 
-  if (w >= 380 && w < 440) {
-    red = -(w - 440) / (440 - 380);
-    blue = 1;
-  } else if (w >= 440 && w < 490) {
-    green = (w - 440) / (490 - 440);
-    blue = 1;
-  } else if (w >= 490 && w < 510) {
-    green = 1;
-    blue = -(w - 510) / (510 - 490);
-  } else if (w >= 510 && w < 580) {
-    red = (w - 510) / (580 - 510);
-    green = 1;
-  } else if (w >= 580 && w < 645) {
+  if (wavelength >= 380 && wavelength < 440) {
+    red = -(wavelength - 440) / (440 - 380);
+    green = 0;
+    blue = 0.9;
+  } else if (wavelength >= 440 && wavelength < 490) {
+    red = 0;
+    green = (wavelength - 440) / (490 - 430);
+    blue = 0.75;
+  } else if (wavelength >= 490 && wavelength < 510) {
+    red = 0;
+    green = 0.85;
+    blue = -(wavelength - 510) / (510 - 490);
+  } else if (wavelength >= 510 && wavelength < 580) {
+    red = (wavelength - 510) / (580 - 510);
+    green = 0.85;
+    blue = 0;
+  } else if (wavelength >= 580 && wavelength < 645) {
     red = 1;
-    green = -(w - 645) / (645 - 580);
-  } else if (w >= 645 && w < 809) {
+    green = -(wavelength - 645) / (645 - 573);
+    blue = 0;
+  } else if (wavelength >= 645 && wavelength < 781) {
     red = 1;
+    green = 0;
+    blue = 0;
+  } else {
+    return [0, 0, 0];
   }
 
   let factor = 0;
-  if (w >= 380 && w < 420) factor = 0.3 + (0.7 * (w - 380)) / (420 - 380);
-  else if (w >= 420 && w < 645) factor = 1;
-  else if (w >= 645 && w < 809) factor = 0.3 + (0.7 * (809 - w)) / (809 - 645);
+  if (wavelength >= 380 && wavelength < 420) {
+    factor = 0.15 + (0.7 * (wavelength - 380)) / (420 - 380);
+  } else if (wavelength >= 420 && wavelength < 645) {
+    factor = 1;
+  } else if (wavelength >= 645 && wavelength < 781) {
+    factor = 0.3 + (0.7 * (780 - wavelength)) / (780 - 645);
+  }
 
+  return [red * factor, green * factor, blue * factor];
+}
+
+/**
+ * Display λ → RGB in [0, 1] (Academo γ = 0.80 encode for UI swatches).
+ * For lighting / volumetrics use {@link wavelengthToRgbLinear} + normalizeChromaticity.
+ */
+export function wavelengthToRgb(nm: number): readonly [number, number, number] {
+  const [r, g, b] = wavelengthToRgbLinear(nm);
   const gamma = 0.8;
-  const R = red > 0 ? Math.pow(red * factor, gamma) : 0;
-  const G = green > 0 ? Math.pow(green * factor, gamma) : 0;
-  const B = blue > 0 ? Math.pow(blue * factor, gamma) : 0;
+  return [
+    r !== 0 ? Math.pow(r, gamma) : 0,
+    g !== 0 ? Math.pow(g, gamma) : 0,
+    b !== 0 ? Math.pow(b, gamma) : 0,
+  ];
+}
+
+/**
+ * Classic Academo / Dan Bruton nm→RGB (0–1), kept for comparison / docs.
+ * Prefer {@link wavelengthToRgb} for product tint.
+ */
+export function wavelengthToRgbAcademoOriginal(nm: number): readonly [number, number, number] {
+  if (!Number.isFinite(nm)) return [0, 0, 0];
+  const wavelength = nm;
+  const gamma = 0.8;
+
+  let red = 0;
+  let green = 0;
+  let blue = 0;
+
+  if (wavelength >= 380 && wavelength < 440) {
+    red = -(wavelength - 440) / (440 - 380);
+    green = 0;
+    blue = 1;
+  } else if (wavelength >= 440 && wavelength < 490) {
+    red = 0;
+    green = (wavelength - 440) / (490 - 440);
+    blue = 1;
+  } else if (wavelength >= 490 && wavelength < 510) {
+    red = 0;
+    green = 1;
+    blue = -(wavelength - 510) / (510 - 490);
+  } else if (wavelength >= 510 && wavelength < 580) {
+    red = (wavelength - 510) / (580 - 510);
+    green = 1;
+    blue = 0;
+  } else if (wavelength >= 580 && wavelength < 645) {
+    red = 1;
+    green = -(wavelength - 645) / (645 - 580);
+    blue = 0;
+  } else if (wavelength >= 645 && wavelength < 781) {
+    red = 1;
+    green = 0;
+    blue = 0;
+  } else {
+    return [0, 0, 0];
+  }
+
+  let factor = 0;
+  if (wavelength >= 380 && wavelength < 420) {
+    factor = 0.3 + (0.7 * (wavelength - 380)) / (420 - 380);
+  } else if (wavelength >= 420 && wavelength < 701) {
+    factor = 1;
+  } else if (wavelength >= 701 && wavelength < 781) {
+    factor = 0.3 + (0.7 * (780 - wavelength)) / (780 - 700);
+  }
+
+  const R = red !== 0 ? Math.pow(red * factor, gamma) : 0;
+  const G = green !== 0 ? Math.pow(green * factor, gamma) : 0;
+  const B = blue !== 0 ? Math.pow(blue * factor, gamma) : 0;
   return [R, G, B];
+}
+
+/**
+ * 8-bit RGB (0–255) for hex/UI previews — same locus as {@link wavelengthToRgb}.
+ */
+export function wavelengthToRgb255(nm: number): readonly [number, number, number] {
+  const [r, g, b] = wavelengthToRgb(nm);
+  return [
+    Math.round(255 * r),
+    Math.round(255 * g),
+    Math.round(255 * b),
+  ];
 }
 
 type SpectralSample = { nm: number; rgb: Rgb01 };

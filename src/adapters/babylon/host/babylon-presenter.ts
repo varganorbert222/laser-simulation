@@ -178,7 +178,7 @@ export class BabylonPresenter implements FramePresenter {
     this.meshes.setSurfaceMaterialHook((mat, sm) => this.lights.attachMaterial(mat, sm));
     this.meshes.setWorld(this.world);
     // Low-res volumetric RTT + native compose PP (Babylon multi-pass pattern).
-    // StudioPipeline (bloom/FXAA) attaches after so the scene RT stays native.
+    // StudioPipeline keeps FXAA after tonemap; theatrical bloom runs inside compose (HDR).
     this.volumetrics = new VolumetricBinder(
       this.engine,
       this.scene,
@@ -246,7 +246,7 @@ export class BabylonPresenter implements FramePresenter {
     this.depthRenderer.forceDepthWriteTransparentMeshes = false;
     this.depthRenderer.enabled = false;
     this.volumetrics.setSceneDepthTexture(this.depthRenderer.getDepthMap());
-    // Fog atlases; analytical water PP sits right after volumetric compose; StudioPipeline bloom/FXAA attaches after.
+    // Fog atlases; water PP runs on HDR scene *before* compose; StudioPipeline keeps FXAA after tonemap.
     this.fog.attach(
       this.world,
       this.camera,
@@ -260,7 +260,7 @@ export class BabylonPresenter implements FramePresenter {
       this.volumetrics.compose,
     );
     this.pipeline = new StudioPipeline(this.scene, this.camera);
-    // DRP may reshuffle the chain — re-insert water after compose.
+    // DRP may reshuffle the chain — re-assert water immediately before compose.
     this.waters.attach(
       this.world,
       this.camera,
@@ -417,6 +417,7 @@ export class BabylonPresenter implements FramePresenter {
     this.meshes.sync();
     this.lights.sync(world, world.resources.RenderFrame);
     this.pipeline.syncBloomFromLights(world);
+    this.volumetrics.setTheatricalBloom(this.pipeline.theatricalBloom);
     this.volumetrics.bindWorld(world, this.camera);
     this.volumetrics.applyRenderScale(world.resources.Quality.renderScale);
   }
