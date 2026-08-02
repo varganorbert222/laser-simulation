@@ -41,11 +41,13 @@ export function resolveVisionBrightnessOpts(
   ambientStored: number,
   atmosphere: AtmosphereSettings | null | undefined,
   responseCurve: DisplayResponseCurve,
+  colorProfile: 'hdr' | 'sdr' = 'hdr',
 ): VisionBrightnessOpts {
   const autoSky = !!atmosphere?.enabled;
   return {
     ambientLevel: resolveSceneAmbientLevel(ambientStored, atmosphere),
     responseCurve: autoSky ? null : responseCurve,
     packSideAdaptation: !autoSky,
+    colorProfile: colorProfile === 'sdr' ? 'sdr' : 'hdr',
   };
 }

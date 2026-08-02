@@ -533,6 +533,7 @@ export class BabylonPresenter implements FramePresenter {
             world.resources.EnvironmentLighting.ambientLevel,
             atmo,
             world.resources.DisplayVision.responseCurve,
+            world.resources.Quality.colorProfile,
           ),
         );
         // Soft educational scale from lumen intensity (~80 klm ≈ default demo sun).

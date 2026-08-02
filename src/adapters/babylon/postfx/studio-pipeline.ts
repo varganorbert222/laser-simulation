@@ -75,6 +75,7 @@ export class StudioPipeline {
           world.resources.EnvironmentLighting.ambientLevel,
           world.resources.Atmosphere,
           world.resources.DisplayVision.responseCurve,
+          world.resources.Quality.colorProfile,
         ),
       );
       const sm = world.get(id, 'SurfaceMaterial') ?? null;

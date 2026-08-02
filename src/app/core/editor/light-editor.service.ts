@@ -92,7 +92,12 @@ export class LightEditorService {
       intensityLm: fallback.intensityLm,
       useColorTemperature: fallback.useColorTemperature,
       colorTemperatureK: fallback.colorTemperatureK,
-      vision: resolveVisionBrightnessOpts(env.ambientLevel, atmo, vision.responseCurve),
+      vision: resolveVisionBrightnessOpts(
+        env.ambientLevel,
+        atmo,
+        vision.responseCurve,
+        this.engine.world().resources.Quality.colorProfile,
+      ),
     });
   });
 

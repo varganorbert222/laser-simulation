@@ -1,9 +1,9 @@
 /**
  * Linear RGB helpers + educational HDR→SDR display mapping.
  *
- * Pipeline (laser sim):
- *   λ → chromaticity (hue fixed)
- *   P(W) · V(λ) · Rayleigh → intensity (HDR)
+ * Laser pipeline:
+ *   λ → chromaticity (hue; Bruton nm→RGB, max-normalized)
+ *   P · V(λ) → relative luminance → linear HDR emissive
  *   chroma × intensity → ACES / hue-preserving tonemap → monitor RGB
  */
 

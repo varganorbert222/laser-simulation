@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
   eyeSensitivity,
+  LASER_EMISSIVE_GAIN_HDR,
+  LASER_EMISSIVE_GAIN_SDR,
   laserBeamLuminousProduct,
   laserDotLuminousProduct,
+  luminousFluxLm,
   packSideEyeAdaptationGain,
   photopicLuminousEfficacy,
   photopicVisionWeight,
   physicalLuminousScale,
   relativeBeamBrightness,
   relativeDotBrightness,
+  relativeLaserLuminance,
 } from './laser-brightness';
 import { scotopicLuminousEfficacy } from './scotopic-efficacy';
 
@@ -17,6 +21,35 @@ describe('laser brightness (photopic + Rayleigh)', () => {
     expect(photopicLuminousEfficacy(555)).toBeCloseTo(1, 5);
     expect(photopicLuminousEfficacy(532)).toBeGreaterThan(photopicLuminousEfficacy(650));
     expect(photopicLuminousEfficacy(450)).toBeLessThan(photopicLuminousEfficacy(532));
+  });
+
+  it('Φ_v ≈ 683 · P · V(λ)', () => {
+    const v = photopicLuminousEfficacy(532);
+    expect(luminousFluxLm(1, 532)).toBeCloseTo(683 * v, 5);
+    expect(luminousFluxLm(0.005, 532)).toBeCloseTo(683 * 0.005 * v, 5);
+  });
+
+  it('relative luminance is 1 for the 1 W @ 532 nm reference', () => {
+    expect(relativeLaserLuminance(1, 532)).toBeCloseTo(1, 5);
+    expect(relativeLaserLuminance(2, 532)).toBeCloseTo(2, 5);
+    expect(relativeLaserLuminance(1, 650)).toBeLessThan(0.3);
+  });
+
+  it('same power: green ≫ blue / red on L_rel (hue is separate)', () => {
+    const green = relativeLaserLuminance(1, 532);
+    const blue = relativeLaserLuminance(1, 445);
+    const amber = relativeLaserLuminance(1, 593);
+    expect(green).toBeGreaterThan(blue * 5);
+    expect(amber).toBeGreaterThan(blue);
+    expect(amber).toBeLessThan(green);
+  });
+
+  it('physical scale = L_rel · eye · emissiveGain(HDR|SDR)', () => {
+    const hdr = physicalLuminousScale(1, 532, { ambientLevel: 1, colorProfile: 'hdr' });
+    const sdr = physicalLuminousScale(1, 532, { ambientLevel: 1, colorProfile: 'sdr' });
+    expect(hdr).toBeCloseTo(LASER_EMISSIVE_GAIN_HDR, 5);
+    expect(sdr).toBeCloseTo(LASER_EMISSIVE_GAIN_SDR, 5);
+    expect(hdr).toBeGreaterThan(sdr);
   });
 
   it('dot brightness scales with P·V(λ) like the calculator', () => {
@@ -74,15 +107,13 @@ describe('laser brightness (photopic + Rayleigh)', () => {
 
   it('sky ON disables pack-side eye adaptation gain', () => {
     expect(packSideEyeAdaptationGain({ ambientLevel: 0, packSideAdaptation: false })).toBe(1);
-    const withGain = physicalLuminousScale(0.1, 532, { ambientLevel: 0 });
+    const withGain = physicalLuminousScale(0.1, 532, { ambientLevel: 0, colorProfile: 'hdr' });
     const without = physicalLuminousScale(0.1, 532, {
       ambientLevel: 0,
       packSideAdaptation: false,
+      colorProfile: 'hdr',
     });
     expect(withGain).toBeGreaterThan(without);
-    expect(without).toBeCloseTo(
-      laserDotLuminousProduct(0.1, 532, 0, false) / 35,
-      5,
-    );
+    expect(without).toBeCloseTo(0.1 * LASER_EMISSIVE_GAIN_HDR, 5);
   });
 });

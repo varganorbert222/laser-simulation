@@ -233,6 +233,7 @@ export class DisplayResponseCurveComponent implements OnChanges, AfterViewInit, 
       world.resources.EnvironmentLighting.ambientLevel,
       atmo,
       world.resources.DisplayVision.responseCurve,
+      world.resources.Quality.colorProfile,
     );
     const packSide = opts.packSideAdaptation !== false;
     const activeCurve = this.autoMode

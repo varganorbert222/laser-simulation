@@ -10,9 +10,11 @@ import {
   laserBeamLuminousProduct,
   laserDotDisplayBrightness,
   laserDotLuminousProduct,
+  luminousFluxLm,
   photopicLuminousEfficacy,
   relativeBeamBrightness,
   relativeDotBrightness,
+  relativeLaserLuminance,
   type VisionBrightnessOpts,
 } from '../display/laser-brightness';
 import { ENVIRONMENT_AMBIENT_DEFAULT } from './environment-lighting';
@@ -110,6 +112,8 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
   const ambient = input.vision?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
   const V = photopicLuminousEfficacy(input.wavelengthNm);
   const adapt = eyeAdaptationGainFromAmbient(ambient);
+  const phiV = luminousFluxLm(input.powerW, input.wavelengthNm);
+  const lRel = relativeLaserLuminance(input.powerW, input.wavelengthNm, ambient);
   const dotLuminous = laserDotLuminousProduct(input.powerW, input.wavelengthNm, ambient);
   const beamLuminous = laserBeamLuminousProduct(input.powerW, input.wavelengthNm, 550, ambient);
   const displayBrightness = laserDotDisplayBrightness(
@@ -171,7 +175,7 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       value: rgb.map((c) => c.toFixed(2)).join(', '),
       unit: '',
       kind: 'approximated',
-      note: 'kijelző-leképezés',
+      note: 'hue only (Bruton λ→RGB) — luminance is separate (V(λ))',
     },
     {
       id: 'Vlambda',
@@ -180,6 +184,22 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
       unit: '',
       kind: 'approximated',
       note: 'CIE fotopikus fényhasznosítás (555 nm = 1)',
+    },
+    {
+      id: 'phiV',
+      label: 'Φ_v',
+      value: fmt(phiV, 3),
+      unit: 'lm',
+      kind: 'approximated',
+      note: '≈ 683 · P · V(λ) monokromatikus luminous flux',
+    },
+    {
+      id: 'lRel',
+      label: 'L_rel',
+      value: fmt(lRel, 3),
+      unit: '×',
+      kind: 'approximated',
+      note: 'relatív luminance vs 1 W @ 532 nm — (P·V_eff)/(P_ref·V_eff)',
     },
     {
       id: 'ambient',

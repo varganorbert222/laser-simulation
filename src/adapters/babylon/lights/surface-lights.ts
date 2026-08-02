@@ -93,6 +93,7 @@ export class SurfaceLightSync {
           world.resources.EnvironmentLighting.ambientLevel,
           world.resources.Atmosphere,
           world.resources.DisplayVision.responseCurve,
+          world.resources.Quality.colorProfile,
         ),
       );
       const beam = beamModelFromEmitter(emitter);

@@ -305,6 +305,7 @@ export function gatherRenderPack(world: World): GatheredFrame {
     envRes.ambientLevel,
     atmo,
     vision.responseCurve,
+    world.resources.Quality.colorProfile,
   );
   const globalFlare = world.resources.Quality.lensFlare !== false;
   const lightsTune = world.resources.Quality.lensFlareLights;

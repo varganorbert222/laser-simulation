@@ -222,6 +222,7 @@ export function resolveEmitterAppearance(
   opts?: VisionBrightnessOpts | null,
 ): ResolvedEmitterAppearance {
   if (isSpectralLightMode(emitter.params.mode)) {
+    // Hue only (Bruton chromaticity). Luminance is powerLinear from P·V(λ).
     const chroma = normalizeChromaticity(wavelengthToRgbLinear(emitter.wavelengthNm) as Rgb01);
     return {
       chroma,

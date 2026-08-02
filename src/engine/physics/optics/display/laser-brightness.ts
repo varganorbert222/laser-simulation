@@ -1,17 +1,18 @@
 /**
- * Laser apparent brightness: CIE photopic / scotopic V(λ) + environment-driven
- * eye exposure + editable power→HDR curve.
+ * Laser apparent brightness: CIE V(λ) luminance vs Bruton hue.
  *
- * Perceived visibility (educational, LaserPointerHub form):
- *   I_vis ≈ P × V_eff(λ) × S_Rayleigh/Mie × Q_beam
+ * Separation (monitor approximation of real lasers):
+ *   - **Hue / chromaticity** → nm→RGB (Dan Bruton); never scales power.
+ *   - **Luminance** → Φ_v ≈ 683 · P · V(λ), then relative to a reference laser
+ *     (default 1 W @ 532 nm) and multiplied onto linear HDR emissive.
  *
- * Two GPU scales:
- *   - physicalLuminousScale → volumetric march **and** surface radiance (linear HDR; ACES at compose)
- *   - displayLuminousPower → UI / science readout only (Weber–Fechner / editable curve)
+ * Two GPU/UI scales:
+ *   - {@link physicalLuminousScale} → volumetric + surface (linear; ACES at compose)
+ *   - {@link displayLuminousPower} → UI / science (Weber–Fechner / editable curve)
  *
  * Physical BeamModel irradiance stays ∝ P; waist is not grown with power (étendue).
  *
- * Relative wavelength ordering (Laser Beam and Dot Relative Brightness):
+ * Relative ordering (Laser Beam and Dot Relative Brightness):
  *   relDot ∝ P·V · relBeam ∝ P·V·(λ_ref/λ)⁴
  *   (global eye exposure cancels in ratios)
  */
@@ -43,10 +44,20 @@ const DARK_ENVIRONMENT_ADAPTATION_GAIN = 12;
 const PHOTOPIC_AMBIENT_FLOOR = 0.35;
 
 /**
- * Divides CIE luminous product (mW·V·exposure) into a volumetric GPU scale.
- * ~35 ⇒ 150 mW green at night (product ~1.4e3) → scale ~40, visible with outdoor haze.
+ * Reference laser for relative luminance (user / industry pointer baseline).
+ * L_rel(1 W, 532 nm) = 1 before emissive gain / eye adaptation.
  */
-const PHYSICAL_LUMINOUS_REF = 35;
+export const LASER_LUMINANCE_REF_NM = 532;
+export const LASER_LUMINANCE_REF_POWER_W = 1;
+
+/**
+ * Linear emissive multiplier after L_rel for GPU (volumetric `powerLinear`).
+ * HDR keeps more headroom into compose tonemap; SDR is milder (compose also ×0.55).
+ */
+export const LASER_EMISSIVE_GAIN_HDR = 28;
+export const LASER_EMISSIVE_GAIN_SDR = 16;
+
+export type ColorProfileBrightness = 'hdr' | 'sdr';
 
 export interface VisionBrightnessOpts {
   /** Scene ambient level [0,1] — drives mesopic V_eff and (when pack-side) eye gain. */
@@ -58,6 +69,11 @@ export interface VisionBrightnessOpts {
    * handles display adaptation (Atmosphere / sky ON). Default true (lab / sky OFF).
    */
   packSideAdaptation?: boolean;
+  /**
+   * Display colour profile from Quality — scales emissive headroom after L_rel.
+   * Default `'hdr'`.
+   */
+  colorProfile?: ColorProfileBrightness;
 }
 
 /**
@@ -97,6 +113,14 @@ export function eyeSensitivity(
 }
 
 /**
+ * Monochromatic luminous flux (lm): Φ_v ≈ 683 · P · V(λ) (CIE photopic).
+ * Educational — real lasers are narrowband; this is the standard CIE shortcut.
+ */
+export function luminousFluxLm(powerW: number, wavelengthNm: number): number {
+  return Math.max(0, powerW) * 683 * photopicLuminousEfficacy(wavelengthNm);
+}
+
+/**
  * Eye exposure from environment brightness (inverse of ambient fill).
  * Dark lab → high gain; bright day → ~1×.
  * Used only when pack-side adaptation is on (sky OFF); sky ON uses compose AE.
@@ -110,6 +134,32 @@ export function eyeAdaptationGainFromAmbient(ambientLevel = ENVIRONMENT_AMBIENT_
 export function packSideEyeAdaptationGain(opts?: VisionBrightnessOpts | null): number {
   if (opts?.packSideAdaptation === false) return 1;
   return eyeAdaptationGainFromAmbient(opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT);
+}
+
+export function laserEmissiveGainForProfile(
+  profile: ColorProfileBrightness | null | undefined,
+): number {
+  return profile === 'sdr' ? LASER_EMISSIVE_GAIN_SDR : LASER_EMISSIVE_GAIN_HDR;
+}
+
+/**
+ * Relative luminance vs a reference laser (default 1 W @ 532 nm):
+ *   L_rel = (P · V_eff(λ)) / (P_ref · V_eff(λ_ref))
+ *
+ * Hue is not involved — only spectral sensitivity and power.
+ * Eye adaptation is applied later ({@link physicalLuminousScale}) so dark-lab
+ * gain brightens all wavelengths equally.
+ */
+export function relativeLaserLuminance(
+  powerW: number,
+  wavelengthNm: number,
+  ambientLevel = ENVIRONMENT_AMBIENT_DEFAULT,
+  refPowerW = LASER_LUMINANCE_REF_POWER_W,
+  refNm = LASER_LUMINANCE_REF_NM,
+): number {
+  const num = Math.max(0, powerW) * eyeSensitivity(wavelengthNm, ambientLevel);
+  const den = Math.max(1e-12, Math.max(0, refPowerW) * eyeSensitivity(refNm, ambientLevel));
+  return num / den;
 }
 
 /** Relative perceived brightness of a laser spot: P(mW) · V_eff(λ) · exposure(ambient). */
@@ -144,8 +194,11 @@ export function laserBeamLuminousProduct(
 }
 
 /**
- * Linear luminous scale for volumetric in-scatter (no Weber–Fechner).
- * ∝ P · V_eff · eyeAdaptation — power differences remain visible until ACES compose.
+ * Linear luminous scale for volumetric in-scatter / surface emissive (no Weber–Fechner).
+ *
+ *   powerLinear = L_rel(P, λ) · eyeAdaptation · emissiveGain(HDR|SDR)
+ *
+ * Chromaticity (nm→RGB) is applied separately as a unit-peak filter.
  */
 export function physicalLuminousScale(
   powerW: number,
@@ -153,10 +206,10 @@ export function physicalLuminousScale(
   opts?: VisionBrightnessOpts | null,
 ): number {
   const ambient = opts?.ambientLevel ?? ENVIRONMENT_AMBIENT_DEFAULT;
-  const packSide = opts?.packSideAdaptation !== false;
-  return (
-    laserDotLuminousProduct(powerW, wavelengthNm, ambient, packSide) / PHYSICAL_LUMINOUS_REF
-  );
+  const rel = relativeLaserLuminance(powerW, wavelengthNm, ambient);
+  const eye = packSideEyeAdaptationGain(opts);
+  const emissive = laserEmissiveGainForProfile(opts?.colorProfile);
+  return rel * eye * emissive;
 }
 
 /**

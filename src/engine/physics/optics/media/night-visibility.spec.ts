@@ -24,7 +24,9 @@ describe('150 mW green night visibility (clearNight)', () => {
     });
     // Display curve is compressive — ratio ≪ 10.
     expect(dHigh / dLow).toBeLessThan(4);
-    expect(pLow).toBeGreaterThan(dLow);
+    // Physical stays in linear luminous units; display is a separate HDR tone map.
+    expect(pLow).toBeGreaterThan(0);
+    expect(dLow).toBeGreaterThan(0);
   });
 
   it('clearNight haze + linear power → path integral ≫ old ~0.03 ACES-dim regime', () => {
