@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "generate:shaders": "node scripts/generate-shaders.mjs",
+    "generate:cie": "node scripts/cie/convert-cie-datasheets.mjs",
     "prebuild": "npm run generate:shaders",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",

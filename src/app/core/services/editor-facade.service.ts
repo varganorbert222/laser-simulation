@@ -36,6 +36,9 @@ import {
   type LensFlareOptics,
   type LensFlareElement,
   type LensFlareElementKind,
+  type ObserverId,
+  type DebugViewMode,
+  type ConeFatigueSettings,
 } from '@engine';
 import { EngineHostService } from './engine-host.service';
 import { HierarchyEditorService } from '../editor/hierarchy-editor.service';
@@ -110,6 +113,9 @@ export class EditorFacade {
   readonly windEnvironment = this.session.windEnvironment;
   readonly globalSunVolumetrics = this.session.globalSunVolumetrics;
   readonly responseCurve = this.session.responseCurve;
+  readonly activeObserverId = this.session.activeObserverId;
+  readonly debugViewMode = this.session.debugViewMode;
+  readonly coneFatigue = this.session.coneFatigue;
   readonly powerPresets = this.light.powerPresets;
   readonly sceneList = this.session.sceneList;
   readonly activeSceneId = this.session.activeSceneId;
@@ -525,6 +531,18 @@ export class EditorFacade {
 
   resetResponseCurve(): void {
     this.session.resetResponseCurve();
+  }
+
+  setActiveObserverId(id: ObserverId): void {
+    this.session.setActiveObserverId(id);
+  }
+
+  setDebugViewMode(mode: DebugViewMode): void {
+    this.session.setDebugViewMode(mode);
+  }
+
+  setConeFatigue(partial: Partial<ConeFatigueSettings>): void {
+    this.session.setConeFatigue(partial);
   }
 
   saveToLibrary(opts?: { id?: string | null; label?: string; asNew?: boolean }): void {

@@ -1,0 +1,55 @@
+{
+  "converted": "2026-08-02",
+  "sources": [
+    {
+      "id": "photopic",
+      "file": "vl1924e_1.csv",
+      "md5": "3d655c6c16dbca242c5843edb8ad107b",
+      "bytes": 10360,
+      "cite": "CIE 1924 photopic V(λ), 1 nm (CVRL mirror of CIE table)",
+      "doi": "https://doi.org/10.25039/CIE.DS.dktna2s3",
+      "url": "http://www.cvrl.org/database/data/lum/vl1924e_1.csv",
+      "staged": "scripts/cie/raw/vl1924e_1.csv"
+    },
+    {
+      "id": "scotopic",
+      "file": "scvle_1.csv",
+      "md5": "3d9a8869f187491796e188b791450611",
+      "bytes": 7617,
+      "cite": "CIE 1951 scotopic V′(λ), 1 nm (CVRL / Wyszecki & Stiles)",
+      "doi": null,
+      "url": "http://www.cvrl.org/database/data/lum/scvle_1.csv",
+      "staged": "scripts/cie/raw/scvle_1.csv"
+    },
+    {
+      "id": "cmf",
+      "file": "ciexyz31_1.csv",
+      "md5": "6dfc8143bff1e445b2555a6a7df2df22",
+      "bytes": 23548,
+      "cite": "CIE 1931 2° colour-matching functions x̄,ȳ,z̄, 1 nm (CVRL)",
+      "doi": null,
+      "url": "http://www.cvrl.org/database/data/cmfs/ciexyz31_1.csv",
+      "staged": "scripts/cie/raw/ciexyz31_1.csv"
+    },
+    {
+      "id": "lms",
+      "file": "linss2_10e_1.csv",
+      "md5": "23fdce9023f311990e9a77b04a504dfb",
+      "bytes": 17930,
+      "cite": "Stockman & Sharpe (2000) 2° cone fundamentals L,M,S — CIE 2006-compatible LMS, 1 nm (CVRL)",
+      "doi": null,
+      "url": "http://www.cvrl.org/database/data/cones/linss2_10e_1.csv",
+      "staged": "scripts/cie/raw/linss2_10e_1.csv"
+    },
+    {
+      "id": "mesopic-m08",
+      "file": "(derived)",
+      "md5": "02f6ede7a3dd21fa635c0af6b9bd4389",
+      "bytes": 3208,
+      "cite": "Educational blend target: normalize(0.8·V + 0.2·V′). Not a claim of CIE 191 dynamic mesopic compliance.",
+      "doi": null,
+      "url": null,
+      "staged": "derived from photopic + scotopic with m=0.8"
+    }
+  ]
+}

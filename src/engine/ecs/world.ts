@@ -32,7 +32,8 @@ import type { Quality } from '../render/quality';
 import { createQuality } from '../render/quality';
 import type { GatheredFrame } from '../render/pack';
 
-export const SAVE_SCHEMA_VERSION = 3;
+/** v4: DisplayVision gains activeObserver / debugView / fatigue / legacyLuminousPack. */
+export const SAVE_SCHEMA_VERSION = 4;
 
 export interface WorldResources {
   ActiveScene: ActiveScene;

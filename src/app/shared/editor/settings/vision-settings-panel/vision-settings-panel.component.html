@@ -1,4 +1,52 @@
 <div class="vision-settings">
+  <div class="observer-block">
+    <label class="select-row">
+      <span>{{ l10n.t('activeObserver') }}</span>
+      <select
+        [value]="editor.activeObserverId()"
+        [disabled]="!editor.isEditMode()"
+        (change)="onObserverChange($any($event.target).value)"
+      >
+        @for (group of observerGroups; track group.category) {
+          <optgroup [label]="categoryLabel(group.category)">
+            @for (o of group.observers; track o.id) {
+              <option [value]="o.id">{{ observerLabel(o.id, o.labelKey) }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+    </label>
+    @if (observerStatusNote(); as noteKey) {
+      <p class="hint">{{ l10n.t(noteKey) }}</p>
+    }
+    <p class="hint">{{ l10n.t('hintActiveObserver') }}</p>
+
+    <label class="select-row">
+      <span>{{ l10n.t('debugViewMode') }}</span>
+      <select
+        [value]="editor.debugViewMode()"
+        [disabled]="!editor.isEditMode()"
+        (change)="onDebugViewChange($any($event.target).value)"
+      >
+        @for (m of debugModes; track m) {
+          <option [value]="m">{{ debugLabel(m) }}</option>
+        }
+      </select>
+    </label>
+    <p class="hint">{{ l10n.t('hintDebugViewMode') }}</p>
+
+    <label class="check">
+      <input
+        type="checkbox"
+        [checked]="editor.coneFatigue().enabled"
+        [disabled]="!editor.isEditMode() || editor.activeObserverId() !== 'human-eye'"
+        (change)="editor.setConeFatigue({ enabled: $any($event.target).checked })"
+      />
+      {{ l10n.t('coneFatigueEnabled') }}
+    </label>
+    <p class="hint">{{ l10n.t('hintConeFatigue') }}</p>
+  </div>
+
   <app-display-response-curve
     [curve]="editor.responseCurve()"
     [ambientLevel]="visionAmbientLevel()"

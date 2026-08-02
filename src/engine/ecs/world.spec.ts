@@ -45,9 +45,12 @@ describe('save/load', () => {
     worldTransformSystem(world);
     const json = serializeWorld(world);
     const parsed = JSON.parse(json);
-    expect(parsed.schemaVersion).toBe(3);
+    expect(parsed.schemaVersion).toBe(4);
     expect(parsed.resources.DisplayVision).toBeDefined();
     expect(parsed.resources.DisplayVision.responseCurve.points.length).toBeGreaterThanOrEqual(2);
+    expect(parsed.resources.DisplayVision.activeObserverId).toBe('human-eye');
+    expect(parsed.resources.DisplayVision.debugViewMode).toBe('final');
+    expect(parsed.resources.DisplayVision.legacyLuminousPack).toBe(true);
     expect(parsed.resources.EnvironmentLighting.ambientLevel).toBeGreaterThan(0);
     expect(JSON.stringify(parsed)).not.toContain('WorldXform');
 

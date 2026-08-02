@@ -10,6 +10,20 @@
   line-height: 1.35;
 }
 
+.observer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.65rem;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--ls-muted);
+}
+
+.observer-meta .val {
+  color: #d4c48a;
+  font-family: var(--ls-font-mono);
+}
+
 .formula {
   margin: 0;
 }

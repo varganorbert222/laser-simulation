@@ -180,6 +180,39 @@ export const hu = {
   hintVisionAuto:
     'Sky ON: ambient a napszakból (SPA), szem-adaptáció a HDR képkocka log-átlag luminanciájából (lézer csak a látható szóródással számít). Tudományos válaszgörbe.',
   renderVision: 'Látás',
+  activeObserver: 'Megfigyelő',
+  hintActiveObserver:
+    'Fizikai RadianceBuffer változatlan. Shipped: emberi szem, kamerák, kutya (Neitz 429/555 nm). Új perceptor: registerObserver / registerAnimalObserverAndPublish.',
+  observerCategoryHuman: 'Emberi',
+  observerCategoryColourBlind: 'Színlátás-zavar',
+  observerCategoryCamera: 'Kamerák',
+  observerCategoryAnimal: 'Állat',
+  observerCategoryCustom: 'Egyedi',
+  hintObserverApproximated:
+    'Ez a megfigyelő approximated proxyt használ (RGB HDR — nincs valódi UV/IR csatorna), de a compose-ban látható.',
+  hintObserverGpuPending:
+    'Megfigyelő kiválasztva; a GPU post még nem kész — HumanEye / passthrough.',
+  debugViewMode: 'Debug nézet',
+  hintDebugViewMode:
+    'final = Observer→Display; radiance-* = fizikai buffer; observer-bypass = tonemap szem/faj nélkül.',
+  debugView_final: 'Végső (observer + display)',
+  debugView_radiance_rgb: 'Radiance RGB',
+  debugView_radiance_luminance: 'Radiance luminancia',
+  debugView_radiance_split: 'Radiance | Perceptual',
+  debugView_observer_bypass: 'Observer bypass',
+  coneFatigueEnabled: 'Csap fáradás / utókép',
+  hintConeFatigue:
+    'Csak HumanEye; opt-in demó. Soha nem ír a RadianceBufferbe. Alapból ki.',
+  observerHumanEye: 'Emberi szem (CIE)',
+  observerProtanopia: 'Protanopia',
+  observerDeuteranopia: 'Deuteranopia',
+  observerTritanopia: 'Tritanopia',
+  observerDigitalCamera: 'Digitális kamera',
+  observerThermalCamera: 'Hőkamera (szenzor)',
+  observerInfraredCamera: 'IR kamera (szenzor)',
+  observerAnimalDog: 'Kutya (dichromát)',
+  hintObserverAnimalDog:
+    'Dichromát: S≈429 nm, ML≈555 nm (Neitz/Jacobs) — Gaussian educational lobes, approximated RGB map.',
   autoExposureReadout: 'Auto exposure',
   atmosphereEnabled: 'Eljárásos égbolt',
   atmosphereLatitude: 'Szélesség (°)',
@@ -799,6 +832,39 @@ export const en = {
   hintVisionAuto:
     'Sky ON: ambient from time of day (SPA); eye adaptation from HDR frame log-average luminance (lasers count only via visible scatter). Scientific response curve.',
   renderVision: 'Vision',
+  activeObserver: 'Observer',
+  hintActiveObserver:
+    'Physical RadianceBuffer stays unchanged. Shipped: human eye, cameras, dog (Neitz 429/555 nm). New perceptor: registerObserver / registerAnimalObserverAndPublish.',
+  observerCategoryHuman: 'Human',
+  observerCategoryColourBlind: 'Colour blindness',
+  observerCategoryCamera: 'Cameras',
+  observerCategoryAnimal: 'Animal',
+  observerCategoryCustom: 'Custom',
+  hintObserverApproximated:
+    'This observer uses an approximated proxy (RGB HDR — no true UV/IR channel), but it is applied in compose.',
+  hintObserverGpuPending:
+    'Observer selected; GPU post not ready yet — HumanEye / passthrough.',
+  debugViewMode: 'Debug view',
+  hintDebugViewMode:
+    'final = Observer→Display; radiance-* = physical buffer; observer-bypass = tonemap without species/eye.',
+  debugView_final: 'Final (observer + display)',
+  debugView_radiance_rgb: 'Radiance RGB',
+  debugView_radiance_luminance: 'Radiance luminance',
+  debugView_radiance_split: 'Radiance | Perceptual',
+  debugView_observer_bypass: 'Observer bypass',
+  coneFatigueEnabled: 'Cone fatigue / afterimage',
+  hintConeFatigue:
+    'HumanEye only; opt-in demo. Never writes RadianceBuffer. Default off.',
+  observerHumanEye: 'Human eye (CIE)',
+  observerProtanopia: 'Protanopia',
+  observerDeuteranopia: 'Deuteranopia',
+  observerTritanopia: 'Tritanopia',
+  observerDigitalCamera: 'Digital camera',
+  observerThermalCamera: 'Thermal camera (sensor)',
+  observerInfraredCamera: 'IR camera (sensor)',
+  observerAnimalDog: 'Dog (dichromat)',
+  hintObserverAnimalDog:
+    'Dichromat: S≈429 nm, ML≈555 nm (Neitz/Jacobs) — Gaussian educational lobes, approximated RGB map.',
   autoExposureReadout: 'Auto exposure',
   atmosphereEnabled: 'Procedural sky',
   atmosphereLatitude: 'Latitude (°)',

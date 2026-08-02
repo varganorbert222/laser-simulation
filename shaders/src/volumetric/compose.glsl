@@ -19,6 +19,7 @@ uniform float uTheatricalBloomWeight;
 uniform float uTheatricalBloomThreshold;
 
 // @include postfx/lens_flare.glsl
+// @include postfx/observer_apply.glsl
 
 float acesFilmCurve(float x) {
   float a = 2.51;
@@ -146,8 +147,11 @@ void main(void) {
     combined *= 0.55;
   }
 
+  // Perception post-layer on physical HDR (or radiance debug / bypass).
+  vec3 perceptual = applyObserverAndDebugView(combined, vUV);
+
   // Tonemap once for the full frame (ACES / Reinhard / Hable).
-  vec3 mapped = applyTonemap(combined);
+  vec3 mapped = applyTonemap(perceptual);
 
   // Final display encode for the LDR canvas (both profiles).
   vec3 outc = applyDisplayGamma(mapped, uOutputGamma);

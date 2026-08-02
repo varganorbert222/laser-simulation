@@ -71,6 +71,12 @@ export interface LightEmitterInput {
   intensityLm?: number;
   useColorTemperature?: boolean;
   colorTemperatureK?: number;
+  /** Active perception observer id (DisplayVision). */
+  observerId?: string;
+  /** Radiance debug view mode (DisplayVision). */
+  debugViewMode?: string;
+  /** HumanEye fatigue enabled flag for HUD. */
+  fatigueEnabled?: boolean;
 }
 
 export interface ScienceQuantity {
@@ -91,6 +97,10 @@ export interface ScienceReadout {
   scatterWeight: number;
   displayBrightness: number;
   safetyNote?: string;
+  /** Active ObserverLayer id. */
+  observerId: string;
+  debugViewMode: string;
+  fatigueEnabled: boolean;
 }
 
 function fmt(n: number, digits = 3): string {
@@ -501,6 +511,23 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
     }
   }
 
+  const observerId = input.observerId ?? 'human-eye';
+  const debugViewMode = input.debugViewMode ?? 'final';
+  const fatigueEnabled = input.fatigueEnabled === true;
+  quantities.unshift({
+    id: 'observer',
+    label: 'Observer',
+    value: observerId,
+    unit: '',
+    kind: 'calculated',
+    note:
+      debugViewMode !== 'final'
+        ? `debug: ${debugViewMode}`
+        : fatigueEnabled
+          ? 'fatigue on'
+          : undefined,
+  });
+
   return {
     insight,
     formula,
@@ -510,6 +537,9 @@ export function buildScienceReadout(input: LightEmitterInput): ScienceReadout {
     scatterWeight,
     displayBrightness,
     safetyNote,
+    observerId,
+    debugViewMode,
+    fatigueEnabled,
   };
 }
 
@@ -594,6 +624,18 @@ function buildHdrLampReadout(input: LightEmitterInput): ScienceReadout {
     insight += ' Stray spill a fő nyaláb körül.';
   }
 
+  const observerId = input.observerId ?? 'human-eye';
+  const debugViewMode = input.debugViewMode ?? 'final';
+  const fatigueEnabled = input.fatigueEnabled === true;
+  quantities.unshift({
+    id: 'observer',
+    label: 'Observer',
+    value: observerId,
+    unit: '',
+    kind: 'calculated',
+    note: debugViewMode !== 'final' ? `debug: ${debugViewMode}` : undefined,
+  });
+
   return {
     insight,
     formula,
@@ -601,6 +643,9 @@ function buildHdrLampReadout(input: LightEmitterInput): ScienceReadout {
     rgb,
     scatterWeight: appearance.scatterWeight,
     displayBrightness: appearance.powerDisplay,
+    observerId,
+    debugViewMode,
+    fatigueEnabled,
   };
 }
 

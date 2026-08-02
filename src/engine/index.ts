@@ -58,6 +58,7 @@ export * from './physics/optics/display/laser-brightness';
 export * from './physics/optics/display/scotopic-efficacy';
 export * from './physics/optics/display/display-response-curve';
 export * from './physics/optics/display/display-vision';
+export * from './physics/optics/observer';
 export * from './physics/optics/scene/environment-lighting';
 export * from './physics/optics/scene/global-sun-volumetrics';
 export * from './physics/optics/scene/ambient-from-solar';

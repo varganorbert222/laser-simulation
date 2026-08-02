@@ -63,6 +63,9 @@ import {
   type LensFlareOptics,
   type LensFlareElement,
   type LensFlareElementKind,
+  type ObserverId,
+  type DebugViewMode,
+  type ConeFatigueSettings,
   type World,
 } from '@engine';
 import {
@@ -425,6 +428,12 @@ export class SessionService {
 
   readonly responseCurve = computed(() => this.displayVision().responseCurve);
 
+  readonly activeObserverId = computed(() => this.displayVision().activeObserverId);
+
+  readonly debugViewMode = computed(() => this.displayVision().debugViewMode);
+
+  readonly coneFatigue = computed(() => this.displayVision().coneFatigue);
+
   readonly ambientLevel = computed(() => {
     this.engine.epoch();
     return this.engine.world().resources.EnvironmentLighting.ambientLevel;
@@ -639,6 +648,36 @@ export class SessionService {
 
   resetResponseCurve(): void {
     this.setResponseCurve(createDefaultDisplayResponseCurve());
+  }
+
+  setActiveObserverId(id: ObserverId): void {
+    this.engine.mutate((world) => {
+      world.resources.DisplayVision = normalizeDisplayVision({
+        ...world.resources.DisplayVision,
+        activeObserverId: id,
+      });
+    });
+  }
+
+  setDebugViewMode(mode: DebugViewMode): void {
+    this.engine.mutate((world) => {
+      world.resources.DisplayVision = normalizeDisplayVision({
+        ...world.resources.DisplayVision,
+        debugViewMode: mode,
+      });
+    });
+  }
+
+  setConeFatigue(partial: Partial<ConeFatigueSettings>): void {
+    this.engine.mutate((world) => {
+      world.resources.DisplayVision = normalizeDisplayVision({
+        ...world.resources.DisplayVision,
+        coneFatigue: {
+          ...world.resources.DisplayVision.coneFatigue,
+          ...partial,
+        },
+      });
+    });
   }
 
   /** Persist current world into the browser scene library (overwrite or create). */

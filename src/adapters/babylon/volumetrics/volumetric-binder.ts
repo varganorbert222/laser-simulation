@@ -39,6 +39,10 @@ import {
   type World,
 } from '@engine';
 import {
+  readObserverPostFxState,
+  type ObserverPostFxState,
+} from '../postfx/observer-postfx';
+import {
   VOLUMETRIC_COMPOSE_FRAGMENT,
   VOLUMETRIC_COMPOSE_SHADER_KEY,
   VOLUMETRIC_FRAGMENT,
@@ -84,6 +88,12 @@ export class VolumetricBinder {
   /** Last smoothed compose exposure (for UI readout). */
   get autoExposure(): number {
     return this.smoothedExposure;
+  }
+
+  /** Phase A+ observer / debug-view contract state (GPU apply in Phase B). */
+  private _observerPostFx: ObserverPostFxState | null = null;
+  get observerPostFx(): ObserverPostFxState | null {
+    return this._observerPostFx;
   }
 
   private readonly effectRenderer: EffectRenderer;
@@ -294,6 +304,11 @@ export class VolumetricBinder {
         'uAerialEnabled',
         'uTheatricalBloomWeight',
         'uTheatricalBloomThreshold',
+        'uObserverMode',
+        'uDebugViewMode',
+        'uObserverMatR0',
+        'uObserverMatR1',
+        'uObserverMatR2',
         ...flareUniformNames,
       ],
       ['volumetricTexture', 'uAerialPerspectiveLUT', 'uSceneDepthFlare'],
@@ -313,6 +328,17 @@ export class VolumetricBinder {
       fx.setFloat('uTonemapMode', mode);
       fx.setFloat('uColorProfile', profile === 'sdr' ? 0 : 1);
       fx.setFloat('uOutputGamma', typeof q?.outputGamma === 'number' ? q.outputGamma : 2.2);
+
+      if (this._world) {
+        this._observerPostFx = readObserverPostFxState(this._world);
+        this.applyObserverUniforms(fx, this._observerPostFx);
+      } else {
+        fx.setFloat('uObserverMode', 0);
+        fx.setFloat('uDebugViewMode', 0);
+        fx.setVector3('uObserverMatR0', new Vector3(1, 0, 0));
+        fx.setVector3('uObserverMatR1', new Vector3(0, 1, 0));
+        fx.setVector3('uObserverMatR2', new Vector3(0, 0, 1));
+      }
 
       const autoSky = !!this._world?.resources.Atmosphere?.enabled;
       if (autoSky) {
@@ -354,6 +380,16 @@ export class VolumetricBinder {
   setTheatricalBloom(state: { enabled: boolean; weight: number; threshold: number }): void {
     this.theatricalBloomWeight = state.enabled ? Math.max(0, state.weight) : 0;
     this.theatricalBloomThreshold = Math.max(0.05, state.threshold);
+  }
+
+  private applyObserverUniforms(fx: EffectLike, state: ObserverPostFxState): void {
+    const { gpu } = state;
+    fx.setFloat('uObserverMode', gpu.observerMode);
+    fx.setFloat('uDebugViewMode', gpu.debugViewMode);
+    const [r0, r1, r2] = gpu.matrixRows;
+    fx.setVector3('uObserverMatR0', new Vector3(r0[0], r0[1], r0[2]));
+    fx.setVector3('uObserverMatR1', new Vector3(r1[0], r1[1], r1[2]));
+    fx.setVector3('uObserverMatR2', new Vector3(r2[0], r2[1], r2[2]));
   }
 
   /** Scene depth (camera-space Z) for solid occlusion — typically from DepthRenderer. */

@@ -98,6 +98,9 @@ export class LightEditorService {
         vision.responseCurve,
         this.engine.world().resources.Quality.colorProfile,
       ),
+      observerId: vision.activeObserverId,
+      debugViewMode: vision.debugViewMode,
+      fatigueEnabled: vision.coneFatigue.enabled,
     });
   });
 

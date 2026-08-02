@@ -1,5 +1,12 @@
 @if (editor.scienceReadout(); as readout) {
   <article class="readout">
+    <p class="observer-meta">
+      <span class="label">{{ l10n.t('activeObserver') }}</span>
+      <span class="val">{{ readout.observerId }}</span>
+      @if (readout.debugViewMode !== 'final') {
+        <span class="note">{{ readout.debugViewMode }}</span>
+      }
+    </p>
     <p class="insight">{{ readout.insight }}</p>
     <p class="formula"><code>{{ readout.formula }}</code></p>
     @if (readout.example) {

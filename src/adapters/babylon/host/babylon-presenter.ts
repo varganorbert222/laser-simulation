@@ -581,6 +581,10 @@ export class BabylonPresenter implements FramePresenter {
     return this.volumetrics.autoExposure;
   }
 
+  get observerPostFx() {
+    return this.volumetrics.observerPostFx;
+  }
+
   getCameraPose(): CameraPose {
     const pos = this.camera.position;
     const target = this.camera.getTarget();
