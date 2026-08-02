@@ -4,17 +4,17 @@ import {
   VISIBLE_NM_MIN,
   clampRange,
   hexToRgb,
-  normalizeChromaticity,
   rgbToHex,
   rgbToWavelengthNm,
   wavelengthToRgb,
+  wavelengthToRgb255,
 } from '@engine';
 import { patchRgbChannel } from '../color-channel';
 
 /**
- * Light color: wavelength (nm) ↔ RGB ↔ hex via educational display mapping.
- * Source of truth is wavelengthNm; RGB/hex edits invert to nearest λ.
- * Swatch uses max-normalized display RGB so it matches GPU laser chroma ratios.
+ * Light color: wavelength (nm) ↔ RGB ↔ hex.
+ * Forward preview: Dan Bruton spectrum (Wavelength → Color) — same as colorUtils.
+ * Inverse: CIE xy (D65) dominant / complementary wavelength + purity.
  */
 @Component({
   selector: 'app-spectral-color-field',
@@ -34,12 +34,15 @@ export class SpectralColorFieldComponent {
   readonly nmMin = VISIBLE_NM_MIN;
   readonly nmMax = VISIBLE_NM_MAX;
 
+  /** Display RGB [0,1] — Bruton × γ=0.8 including edge falloff (not max-normalized). */
   get rgb(): readonly [number, number, number] {
-    return normalizeChromaticity(wavelengthToRgb(this.wavelengthNm));
+    return wavelengthToRgb(this.wavelengthNm);
   }
 
+  /** Native `<input type="color">` value — same 8-bit rounding as colorUtils.wavelengthToRgb. */
   get hex(): string {
-    return rgbToHex(this.rgb);
+    const [r, g, b] = wavelengthToRgb255(this.wavelengthNm);
+    return rgbToHex([r / 255, g / 255, b / 255]);
   }
 
   onNmSlider(raw: string): void {

@@ -19,7 +19,7 @@ import {
   estimateIntensityLmFromSpectral,
   normalizeHdrAppearance,
 } from '../../physics/optics/surface/light-appearance';
-import { wavelengthToRgb } from '../../physics/optics/display/wavelength';
+import { wavelengthToRgb, clampVisibleWavelengthNm } from '../../physics/optics/display/wavelength';
 
 export type { OpticsSpillParams } from '../../physics/optics/beam/optics-spill';
 
@@ -176,8 +176,10 @@ export function normalizeLightEmitter(
   );
 
   const params = normalizeModeParams(raw.params as ModeParams | undefined, d.params);
-  const wavelengthNm =
-    typeof raw.wavelengthNm === 'number' ? raw.wavelengthNm : d.wavelengthNm;
+  const wavelengthNm = clampVisibleWavelengthNm(
+    typeof raw.wavelengthNm === 'number' ? raw.wavelengthNm : d.wavelengthNm,
+    d.wavelengthNm,
+  );
   const powerW = clampPowerW(typeof raw.powerW === 'number' ? raw.powerW : d.powerW);
   const modeFallback = defaultHdrAppearance(params.mode);
   const migratedHdr =

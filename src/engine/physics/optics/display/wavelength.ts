@@ -1,6 +1,9 @@
 import { C, EV, H, VISIBLE_NM_MAX, VISIBLE_NM_MIN } from './constants';
-import { clamp01, clampRange } from '../../../math/clamp';
+import { clampRange } from '../../../math/clamp';
 import type { Rgb01 } from './color';
+import { rgbToDominantWavelength } from './cie-dominant-wavelength';
+
+export { VISIBLE_NM_MAX, VISIBLE_NM_MIN } from './constants';
 
 export interface WavelengthDerived {
   wavelengthNm: number;
@@ -28,60 +31,78 @@ export function deriveFromWavelengthNm(wavelengthNm: number): WavelengthDerived 
 }
 
 /**
- * Refined Academo piecewise RGB × vision-limit factor — **no γ encode**.
- * Use for GPU / working-space chromaticity (Linear HDR pipeline).
+ * Clamp to the display/colour spectrum ({@link VISIBLE_NM_MIN}–{@link VISIBLE_NM_MAX}).
  */
-export function wavelengthToRgbLinear(nm: number): readonly [number, number, number] {
-  if (!Number.isFinite(nm)) return [0, 0, 0];
-  const wavelength = nm;
-
-  let red = 0;
-  let green = 0;
-  let blue = 0;
-
-  if (wavelength >= 380 && wavelength < 440) {
-    red = -(wavelength - 440) / (440 - 380);
-    green = 0;
-    blue = 0.9;
-  } else if (wavelength >= 440 && wavelength < 490) {
-    red = 0;
-    green = (wavelength - 440) / (490 - 430);
-    blue = 0.75;
-  } else if (wavelength >= 490 && wavelength < 510) {
-    red = 0;
-    green = 0.85;
-    blue = -(wavelength - 510) / (510 - 490);
-  } else if (wavelength >= 510 && wavelength < 580) {
-    red = (wavelength - 510) / (580 - 510);
-    green = 0.85;
-    blue = 0;
-  } else if (wavelength >= 580 && wavelength < 645) {
-    red = 1;
-    green = -(wavelength - 645) / (645 - 573);
-    blue = 0;
-  } else if (wavelength >= 645 && wavelength < 781) {
-    red = 1;
-    green = 0;
-    blue = 0;
-  } else {
-    return [0, 0, 0];
-  }
-
-  let factor = 0;
-  if (wavelength >= 380 && wavelength < 420) {
-    factor = 0.15 + (0.7 * (wavelength - 380)) / (420 - 380);
-  } else if (wavelength >= 420 && wavelength < 645) {
-    factor = 1;
-  } else if (wavelength >= 645 && wavelength < 781) {
-    factor = 0.3 + (0.7 * (780 - wavelength)) / (780 - 645);
-  }
-
-  return [red * factor, green * factor, blue * factor];
+export function clampVisibleWavelengthNm(nm: number, fallback = 550): number {
+  return clampRange(nm, VISIBLE_NM_MIN, VISIBLE_NM_MAX, fallback);
 }
 
 /**
- * Display λ → RGB in [0, 1] (Academo γ = 0.80 encode for UI swatches).
- * For lighting / volumetrics use {@link wavelengthToRgbLinear} + normalizeChromaticity.
+ * Dan Bruton piecewise λ → RGB (pre-γ) — exact match of `temp/colorUtils.js`
+ * (`wavelengthToRgb`), spectrum **380–700 nm** only.
+ */
+function brutonPiecewise(nm: number): { r: number; g: number; b: number; factor: number } {
+  if (!Number.isFinite(nm)) return { r: 0, g: 0, b: 0, factor: 0 };
+
+  let r = 0;
+  let g = 0;
+  let b = 0;
+
+  if (nm >= 380 && nm < 440) {
+    r = -(nm - 440) / (440 - 380);
+    g = 0;
+    b = 1;
+  } else if (nm >= 440 && nm < 490) {
+    r = 0;
+    g = (nm - 440) / (490 - 440);
+    b = 1;
+  } else if (nm >= 490 && nm < 510) {
+    r = 0;
+    g = 1;
+    b = -(nm - 510) / (510 - 490);
+  } else if (nm >= 510 && nm < 580) {
+    r = (nm - 510) / (580 - 510);
+    g = 1;
+    b = 0;
+  } else if (nm >= 580 && nm < 645) {
+    r = 1;
+    g = -(nm - 645) / (645 - 580);
+    b = 0;
+  } else if (nm >= 645 && nm <= 700) {
+    r = 1;
+    g = 0;
+    b = 0;
+  } else {
+    return { r: 0, g: 0, b: 0, factor: 0 };
+  }
+
+  // Intensity falloff at edges of visible spectrum (colorUtils.js)
+  let factor: number;
+  if (nm >= 380 && nm < 420) {
+    factor = 0.3 + (0.7 * (nm - 380)) / (420 - 380);
+  } else if (nm >= 420 && nm <= 680) {
+    factor = 1.0;
+  } else if (nm > 680 && nm <= 700) {
+    factor = 0.3 + (0.7 * (700 - nm)) / (700 - 680);
+  } else {
+    factor = 0;
+  }
+
+  return { r, g, b, factor };
+}
+
+/**
+ * Linear working-space λ → RGB (Bruton × factor, **no γ encode**).
+ * Use for GPU / lighting chromaticity (+ normalizeChromaticity).
+ */
+export function wavelengthToRgbLinear(nm: number): readonly [number, number, number] {
+  const { r, g, b, factor } = brutonPiecewise(nm);
+  return [r * factor, g * factor, b * factor];
+}
+
+/**
+ * Display λ → RGB in [0, 1] — `colorUtils.wavelengthToRgb` with γ = 0.80
+ * (floats instead of 0–255; see {@link wavelengthToRgb255}).
  */
 export function wavelengthToRgb(nm: number): readonly [number, number, number] {
   const [r, g, b] = wavelengthToRgbLinear(nm);
@@ -94,63 +115,7 @@ export function wavelengthToRgb(nm: number): readonly [number, number, number] {
 }
 
 /**
- * Classic Academo / Dan Bruton nm→RGB (0–1), kept for comparison / docs.
- * Prefer {@link wavelengthToRgb} for product tint.
- */
-export function wavelengthToRgbAcademoOriginal(nm: number): readonly [number, number, number] {
-  if (!Number.isFinite(nm)) return [0, 0, 0];
-  const wavelength = nm;
-  const gamma = 0.8;
-
-  let red = 0;
-  let green = 0;
-  let blue = 0;
-
-  if (wavelength >= 380 && wavelength < 440) {
-    red = -(wavelength - 440) / (440 - 380);
-    green = 0;
-    blue = 1;
-  } else if (wavelength >= 440 && wavelength < 490) {
-    red = 0;
-    green = (wavelength - 440) / (490 - 440);
-    blue = 1;
-  } else if (wavelength >= 490 && wavelength < 510) {
-    red = 0;
-    green = 1;
-    blue = -(wavelength - 510) / (510 - 490);
-  } else if (wavelength >= 510 && wavelength < 580) {
-    red = (wavelength - 510) / (580 - 510);
-    green = 1;
-    blue = 0;
-  } else if (wavelength >= 580 && wavelength < 645) {
-    red = 1;
-    green = -(wavelength - 645) / (645 - 580);
-    blue = 0;
-  } else if (wavelength >= 645 && wavelength < 781) {
-    red = 1;
-    green = 0;
-    blue = 0;
-  } else {
-    return [0, 0, 0];
-  }
-
-  let factor = 0;
-  if (wavelength >= 380 && wavelength < 420) {
-    factor = 0.3 + (0.7 * (wavelength - 380)) / (420 - 380);
-  } else if (wavelength >= 420 && wavelength < 701) {
-    factor = 1;
-  } else if (wavelength >= 701 && wavelength < 781) {
-    factor = 0.3 + (0.7 * (780 - wavelength)) / (780 - 700);
-  }
-
-  const R = red !== 0 ? Math.pow(red * factor, gamma) : 0;
-  const G = green !== 0 ? Math.pow(green * factor, gamma) : 0;
-  const B = blue !== 0 ? Math.pow(blue * factor, gamma) : 0;
-  return [R, G, B];
-}
-
-/**
- * 8-bit RGB (0–255) for hex/UI previews — same locus as {@link wavelengthToRgb}.
+ * 8-bit RGB (0–255) — same rounding as `colorUtils.wavelengthToRgb`.
  */
 export function wavelengthToRgb255(nm: number): readonly [number, number, number] {
   const [r, g, b] = wavelengthToRgb(nm);
@@ -161,42 +126,15 @@ export function wavelengthToRgb255(nm: number): readonly [number, number, number
   ];
 }
 
-type SpectralSample = { nm: number; rgb: Rgb01 };
-
-let spectralLut: SpectralSample[] | null = null;
-
-function getSpectralLut(): SpectralSample[] {
-  if (!spectralLut) {
-    const samples: SpectralSample[] = [];
-    for (let nm = VISIBLE_NM_MIN; nm <= VISIBLE_NM_MAX; nm += 1) {
-      samples.push({ nm, rgb: wavelengthToRgb(nm) });
-    }
-    spectralLut = samples;
-  }
-  return spectralLut;
-}
-
 /**
- * Inverse display mapping RGB → nearest visible λ (nm).
- * Educational approximation — non-spectral colors (gray, magenta) snap to closest locus sample.
+ * Inverse for UI: sRGB → CIE dominant (or complementary) wavelength in nm.
+ * Chromaticity mapping only — not a physical monochromatic decomposition.
+ * Achromatic → 550 nm; result clamped to 380–700 nm.
  */
 export function rgbToWavelengthNm(rgb: Rgb01): number {
-  const r = clamp01(rgb[0]);
-  const g = clamp01(rgb[1]);
-  const b = clamp01(rgb[2]);
-  let bestNm = 550;
-  let bestDist = Number.POSITIVE_INFINITY;
-  for (const sample of getSpectralLut()) {
-    const dr = sample.rgb[0] - r;
-    const dg = sample.rgb[1] - g;
-    const db = sample.rgb[2] - b;
-    const dist = dr * dr + dg * dg + db * db;
-    if (dist < bestDist) {
-      bestDist = dist;
-      bestNm = sample.nm;
-    }
-  }
-  return bestNm;
+  const result = rgbToDominantWavelength(rgb);
+  if (result.wavelengthNm == null) return 550;
+  return Math.round(clampVisibleWavelengthNm(result.wavelengthNm));
 }
 
 /**
@@ -204,6 +142,14 @@ export function rgbToWavelengthNm(rgb: Rgb01): number {
  * Educational weight only — not a full atmospheric model.
  */
 export function rayleighScatterWeight(nm: number, refNm = 550): number {
-  const clamped = clampRange(nm, VISIBLE_NM_MIN, VISIBLE_NM_MAX);
+  const clamped = clampVisibleWavelengthNm(nm);
   return Math.pow(refNm / clamped, 4);
 }
+
+export type { DominantWavelengthKind, DominantWavelengthResult } from './cie-dominant-wavelength';
+export {
+  rgbToDominantWavelength,
+  hexToDominantWavelength,
+  rgb01ToXy,
+  CIE_D65_WHITE,
+} from './cie-dominant-wavelength';

@@ -14,6 +14,7 @@ import {
   resolveVisionBrightnessOpts,
   setLightEmitterCommand,
   wavelengthToRgb,
+  clampVisibleWavelengthNm,
   wouldSuppressAdditionalSun,
   writeLightEmitter,
   type LightEmitter,
@@ -167,7 +168,15 @@ export class LightEditorService {
   }
 
   setWavelength(nm: number): void {
-    this.updateLight({ wavelengthNm: nm }, { coalesce: true });
+    const wavelengthNm = clampVisibleWavelengthNm(nm);
+    this.updateLight(
+      {
+        wavelengthNm,
+        // Keep stored HDR colour in sync with Bruton preview (laser colour picker / migrations).
+        colorRgb: wavelengthToRgb(wavelengthNm) as [number, number, number],
+      },
+      { coalesce: true },
+    );
   }
 
   setPower(powerW: number): void {
@@ -180,7 +189,7 @@ export class LightEditorService {
 }
 
 function mergeLight(before: LightEmitter, patch: Partial<LightEmitter>): LightEmitter {
-  return {
+  const merged = {
     ...structuredClone(before),
     ...patch,
     params: patch.params ? structuredClone(patch.params) : structuredClone(before.params),
@@ -194,4 +203,6 @@ function mergeLight(before: LightEmitter, patch: Partial<LightEmitter>): LightEm
         }
       : structuredClone(before.spill),
   };
+  merged.wavelengthNm = clampVisibleWavelengthNm(merged.wavelengthNm, before.wavelengthNm);
+  return merged;
 }

@@ -3,11 +3,14 @@ import { hexToRgb, rgbToHex } from '../display/color';
 import {
   deriveFromWavelengthNm,
   rayleighScatterWeight,
+  rgbToDominantWavelength,
   rgbToWavelengthNm,
   wavelengthToRgb,
   wavelengthToRgb255,
-  wavelengthToRgbAcademoOriginal,
   wavelengthToRgbLinear,
+  clampVisibleWavelengthNm,
+  VISIBLE_NM_MAX,
+  VISIBLE_NM_MIN,
 } from '../display/wavelength';
 import { beamRadiusAt, divergenceMrad, rayleighRange } from './laser';
 import { buildScienceReadout } from '../scene/science-readout';
@@ -24,54 +27,59 @@ describe('wavelength optics', () => {
   it('keeps linear chroma separate from display γ encode', () => {
     const lin = wavelengthToRgbLinear(532);
     const disp = wavelengthToRgb(532);
-    // Display applies γ=0.8 → mid channels rise toward 1 vs linear.
     expect(disp[1]).toBeGreaterThan(lin[1] - 1e-9);
     expect(Math.max(...lin)).toBeLessThanOrEqual(1);
   });
 
-  it('maps green wavelength to green-dominant RGB', () => {
+  it('maps green wavelength to green-dominant RGB (Bruton / colorUtils)', () => {
     const [r, g, b] = wavelengthToRgb(532);
     expect(g).toBeGreaterThan(r);
     expect(g).toBeGreaterThan(b);
   });
 
-  it('matches refined Academo nm→RGB locus at key wavelengths', () => {
-    // Outside visible → black
+  it('matches colorUtils.js Dan Bruton locus at key wavelengths', () => {
     expect(wavelengthToRgb(300)).toEqual([0, 0, 0]);
-    expect(wavelengthToRgb(800)).toEqual([0, 0, 0]);
+    expect(wavelengthToRgb(701)).toEqual([0, 0, 0]);
+    expect(wavelengthToRgb(780)).toEqual([0, 0, 0]);
 
-    // 439 nm: end of violet→blue ramp (blue peak 0.9)
-    const at439 = wavelengthToRgb(439);
-    expect(at439[1]).toBe(0);
-    expect(at439[2]).toBeCloseTo(Math.pow(0.9, 0.8), 5);
-
-    // 440 nm: start of cyan band (blue held at 0.75)
+    // 440 nm: start of cyan band (blue = 1)
     const at440 = wavelengthToRgb(440);
     expect(at440[0]).toBe(0);
     expect(at440[1]).toBe(0);
-    expect(at440[2]).toBeCloseTo(Math.pow(0.75, 0.8), 5);
+    expect(at440[2]).toBeCloseTo(1, 5);
 
-    // 510 nm: green peak softened to 0.85 → after γ
+    // 510 nm: green peak
     const at510 = wavelengthToRgb(510);
     expect(at510[0]).toBe(0);
-    expect(at510[1]).toBeCloseTo(Math.pow(0.85, 0.8), 5);
+    expect(at510[1]).toBeCloseTo(1, 5);
     expect(at510[2]).toBe(0);
 
-    // 645 nm: pure red at the start of the deep-red band (factor = 1)
+    // 645 nm: pure red (factor = 1 through 680)
     const at645 = wavelengthToRgb(645);
     expect(at645[0]).toBeCloseTo(1, 5);
     expect(at645[1]).toBe(0);
     expect(at645[2]).toBe(0);
 
-    // Near-UV intensity falloff (factor starts at 0.15)
-    expect(wavelengthToRgb(400)[2]).toBeLessThan(Math.pow(0.9, 0.8));
-    // Mid green band uses 0.85 peak (not full 1.0)
-    expect(wavelengthToRgb(550)[1]).toBeCloseTo(Math.pow(0.85, 0.8), 5);
-    // Refined curve is less saturated in the violet peak than classic Academo
-    expect(wavelengthToRgb(400)[2]).toBeLessThan(wavelengthToRgbAcademoOriginal(400)[2]);
+    // 700 nm: deep red with edge falloff (factor = 0.3)
+    const at700 = wavelengthToRgbLinear(700);
+    expect(at700[0]).toBeCloseTo(0.3, 5);
+    expect(at700[1]).toBe(0);
+    expect(at700[2]).toBe(0);
+
+    // Near-UV intensity falloff
+    expect(wavelengthToRgb(400)[2]).toBeLessThan(1);
+    // Mid green band full green
+    expect(wavelengthToRgb(550)[1]).toBeCloseTo(1, 5);
   });
 
-  it('exposes 8-bit RGB for UI previews', () => {
+  it('limits the colour spectrum to 380–700 nm', () => {
+    expect(VISIBLE_NM_MIN).toBe(380);
+    expect(VISIBLE_NM_MAX).toBe(700);
+    expect(clampVisibleWavelengthNm(350)).toBe(380);
+    expect(clampVisibleWavelengthNm(750)).toBe(700);
+  });
+
+  it('exposes 8-bit RGB matching colorUtils rounding', () => {
     const [r, g, b] = wavelengthToRgb255(500);
     expect(r).toBeGreaterThanOrEqual(0);
     expect(r).toBeLessThanOrEqual(255);
@@ -83,12 +91,40 @@ describe('wavelength optics', () => {
     expect(rayleighScatterWeight(450)).toBeGreaterThan(rayleighScatterWeight(650));
   });
 
-  it('round-trips spectral λ → RGB → λ within a few nm', () => {
-    // Skip the flat deep-red band (≥645 nm): maps to nearly the same RGB.
+  it('maps sRGB to CIE dominant wavelength', () => {
+    const green = rgbToDominantWavelength([0, 1, 0]);
+    expect(green.type).toBe('dominant');
+    expect(green.wavelengthNm).toBeGreaterThan(500);
+    expect(green.wavelengthNm).toBeLessThan(570);
+    expect(green.purity).toBeGreaterThan(50);
+
+    const gray = rgbToDominantWavelength([0.5, 0.5, 0.5]);
+    expect(gray.type).toBe('achromatic');
+    expect(gray.wavelengthNm).toBeNull();
+  });
+
+  it('reports complementary λ for line-of-purples (magenta)', () => {
+    const magenta = rgbToDominantWavelength([1, 0, 1]);
+    expect(magenta.type).toBe('complementary');
+    expect(magenta.wavelengthNm).not.toBeNull();
+    expect(magenta.purity).toBeGreaterThan(0);
+    expect(magenta.purity!).toBeLessThanOrEqual(100);
+  });
+
+  it('gives lower purity to washed-out greens than saturated greens', () => {
+    const vivid = rgbToDominantWavelength([0, 1, 0]);
+    const pale = rgbToDominantWavelength([0.75, 0.9, 0.75]);
+    expect(vivid.type).toBe('dominant');
+    expect(pale.type).toBe('dominant');
+    expect(pale.purity!).toBeLessThan(vivid.purity!);
+  });
+
+  it('round-trips spectral λ → RGB → dominant λ within tolerance', () => {
+    // Bruton RGB is not exactly on the CIE locus — allow educational slack.
     for (const nm of [450, 532, 600]) {
       const rgb = wavelengthToRgb(nm);
       const back = rgbToWavelengthNm(rgb);
-      expect(Math.abs(back - nm)).toBeLessThanOrEqual(3);
+      expect(Math.abs(back - nm)).toBeLessThanOrEqual(25);
     }
   });
 });
@@ -122,7 +158,17 @@ describe('science readout', () => {
       powerW: 0.005,
       params: {
         mode: 'laser',
-        laser: { w0M: 0.002, m2: 1.3, probeDistanceM: 10, ellipticRatio: 1, waistOffsetM: 0, topHatMix: 0, sphericalAberration: 0, coma: 0, astigmatism: 0 },
+        laser: {
+          w0M: 0.002,
+          m2: 1.3,
+          probeDistanceM: 10,
+          ellipticRatio: 1,
+          waistOffsetM: 0,
+          topHatMix: 0,
+          sphericalAberration: 0,
+          coma: 0,
+          astigmatism: 0,
+        },
       },
     });
     expect(readout.quantities.some((q) => q.id === 'zR' && q.kind === 'calculated')).toBe(true);

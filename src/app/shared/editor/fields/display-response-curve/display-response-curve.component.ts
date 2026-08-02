@@ -36,6 +36,7 @@ import {
   resolveVisionBrightnessOpts,
   scientificDisplayLuminousToneMap,
   sliderTFromPowerW,
+  wavelengthToRgb,
   type DisplayResponseCurve,
   type DisplayResponsePoint,
 } from '@engine';
@@ -253,12 +254,8 @@ export class DisplayResponseCurveComponent implements OnChanges, AfterViewInit, 
           opts.ambientLevel ?? this.ambientLevel,
           packSide,
         );
-        // Rough RGB from wavelength for marker color — appearance resolve is heavier.
-        const nm = emitter.wavelengthNm;
-        if (nm < 490) chroma = [0.35, 0.55, 1];
-        else if (nm < 570) chroma = [0.25, 1, 0.35];
-        else if (nm < 600) chroma = [1, 0.85, 0.2];
-        else chroma = [1, 0.3, 0.25];
+        const rgb = wavelengthToRgb(emitter.wavelengthNm);
+        chroma = [rgb[0], rgb[1], rgb[2]];
       } else {
         const gain = packSideEyeAdaptationGain(opts);
         luminous = Math.max(0, emitter.intensityLm) * gain;

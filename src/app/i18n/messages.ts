@@ -79,7 +79,8 @@ export const hu = {
   approximated: 'Közelített / vizualizált',
   noSelection: 'Válassz egy fényforrást vagy ködöt.',
   hintFog: 'Köd nélkül a nyaláb alig látszik — válts ködre/füstre, vagy növeld a density-t.',
-  hintColor: 'A szín a λ → RGB kijelző-leképezés; nem kalibrált kolorimetria.',
+  hintColor:
+    'λ → RGB: Dan Bruton spektrum. RGB → λ: CIE domináns (vagy komplementer) hullámhossz + purity — kromatikusság, nem monokromatikus spektrum.',
   presentationEdit: 'Editor mode',
   presentationPhoto: 'Photo mode',
   hintEditorMode:
@@ -290,7 +291,7 @@ export const hu = {
 
   // Parameter tooltips (hover on control labels)
   tipWavelength:
-    'Hullámhossz λ (nm): a fény színe és a fotonenergia. V(λ) és a Rayleigh λ⁻⁴ is ettől függ.',
+    'Hullámhossz λ (nm, 380–700): lézerforrásnál fizikai λ. Színválasztóból: CIE domináns/komplementer λ (D65), nem „egyetlen hullámhosszú” keverék.',
   tipPower:
     'Optikai teljesítmény P (W). A fizikai irradiance ∝ P; a kijelző Weber–Fechner szerint kompresszál.',
   tipPowerUnit: 'Megjelenítési egység (mW / W / kW) — csak a számmező skálája, a belső érték watt.',
@@ -696,7 +697,8 @@ export const en = {
   approximated: 'Approximated / visualized',
   noSelection: 'Select a light or media volume.',
   hintFog: 'Without fog the beam is nearly invisible — switch to fog/smoke, or raise density.',
-  hintColor: 'Color is a display λ → RGB mapping; not calibrated colorimetry.',
+  hintColor:
+    'λ → RGB: Dan Bruton spectrum. RGB → λ: CIE dominant (or complementary) wavelength + purity — chromaticity, not a monochromatic spectrum.',
   presentationEdit: 'Editor mode',
   presentationPhoto: 'Photo mode',
   hintEditorMode:
@@ -908,7 +910,7 @@ export const en = {
 
   // Parameter tooltips (hover on control labels)
   tipWavelength:
-    'Wavelength λ (nm): sets color and photon energy. Also drives V(λ) and Rayleigh λ⁻⁴.',
+    'Wavelength λ (nm, 380–700): physical λ for laser sources. From a colour picker: CIE dominant/complementary λ (D65), not a claim the colour is monochromatic.',
   tipPower:
     'Optical power P (W). Physical irradiance ∝ P; the display applies Weber–Fechner compression.',
   tipPowerUnit: 'Display unit (mW / W / kW) — scales the number field only; internal value is watts.',
